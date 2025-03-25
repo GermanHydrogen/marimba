@@ -250,6 +250,7 @@ def package_command(
         dataset_wrapper = project_wrapper.create_dataset(
             dataset_name,
             dataset_mapping,
+            project_wrapper.get_pipeline_post_processors(pipeline_names),
             operation=operation,
             version=version,
             contact_name=contact_name,
