@@ -380,6 +380,7 @@ class DatasetWrapper(LogMixin):
         project_log_path: Path,
         pipeline_log_paths: Iterable[Path],
         mapping_processor_decorator: list[DECORATOR_TYPE],
+        post_package_processors: list[Callable[[Path], None]],
         operation: Operation = Operation.copy,
         zoom: int | None = None,
         max_workers: int | None = None,
@@ -400,6 +401,7 @@ class DatasetWrapper(LogMixin):
             project_log_path: A Path object pointing to the project log file.
             pipeline_log_paths: An iterable of Path objects pointing to individual pipeline log files.
             mapping_processor_decorator: Dataset mapping processor decorator.
+            post_package_processors: Processors which are applied to the dataset after the metadata file is created.
             operation: An Operation enum specifying whether to copy or move files (default: Operation.copy).
             zoom: An optional integer specifying the zoom level for the dataset map generation (default: None).
             max_workers: Maximum number of worker processes to use. If None, uses all available CPU cores.
@@ -420,6 +422,9 @@ class DatasetWrapper(LogMixin):
         mapped_dataset_items = self._populate_files(dataset_mapping, operation, max_workers)
         self._process_files_with_metadata(reduced_dataset_mapping, max_workers)
         self.generate_metadata(dataset_name, mapped_dataset_items, mapping_processor_decorator, max_workers)
+
+        for post_package_processor in post_package_processors:
+            post_package_processor(self.root_dir)
 
         dataset_items = flatten_mapping(flatten_middle_mapping(mapped_dataset_items))
         self.generate_dataset_summary(dataset_items)
