@@ -28,6 +28,15 @@ repos:
         pass_filenames: false
         args : ['.']
 
+      - id: vulture
+        name: Vulture
+        entry: uv run vulture
+        language: system
+        types: [ python ]
+        args: [ '--min-confidence', '80', 'marimba/', 'config/vulture.py' ]
+        exclude: ^tests/|^docs/
+        pass_filenames: false
+
       - id: mypy
         name: Mypy
         entry: uv run mypy
