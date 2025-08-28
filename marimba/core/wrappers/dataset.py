@@ -594,6 +594,7 @@ class DatasetWrapper(LogMixin):
             metadata_type.process_files(
                 dataset_mapping=files,
                 max_workers=max_workers,
+                logger=self.logger,
                 dry_run=self.dry_run,
                 chunk_size=exif_chunk_size,
             )

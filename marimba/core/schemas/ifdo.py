@@ -19,18 +19,23 @@ Classes:
     iFDOMetadata: Implements the BaseMetadata interface for iFDO-specific metadata
 """
 
+import io
 import json
 import logging
-import os
+import random
 import tempfile
 import uuid
 from collections.abc import Callable
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, cast
+from typing import Any, cast
 
 import exiftool
+import psutil
 from exiftool.exceptions import ExifToolException
+from ifdo import ImageData, ImageSetHeader
+from ifdo.models.ifdo import iFDO
 from PIL import Image
 from rich.progress import Progress, SpinnerColumn, TaskID
 
@@ -43,81 +48,135 @@ from marimba.core.utils.rich import get_default_columns
 from marimba.lib import image
 from marimba.lib.decorators import multithreaded
 
-if TYPE_CHECKING:
-    from ifdo import ImageData, ImageSetHeader
-    from ifdo.models.ifdo import iFDO
-else:
-    from ifdo import ImageData, ImageSetHeader
-    from ifdo.models.ifdo import iFDO
-
-
 logger = get_logger(__name__)
 
-# Configuration for batch processing
-DEFAULT_CHUNK_SIZE = 50  # Number of files to process in each batch
+# Memory-aware batch processing (no fixed chunk size)
 
-# Constants for adaptive chunk sizing
-_VERY_SMALL_DATASET_THRESHOLD = 20
-_SMALL_DATASET_THRESHOLD = 100
-_MEDIUM_DATASET_THRESHOLD = 500
-_LARGE_DATASET_THRESHOLD = 2000
+# Memory management constants
+_ESTIMATED_IMAGE_MEMORY_MB = 100  # Conservative estimate per 24MP image
+_MEMORY_SAFETY_FACTOR = 0.7  # Use 70% of available memory
 
 
-def _calculate_optimal_chunk_size(dataset_size: int, max_workers: int | None = None) -> int:
+@dataclass
+class ProcessedImageData:
+    """Lightweight structure for processed image information."""
+
+    file_path: Path
+    image_data: "ImageData"
+    ancillary_data: dict[str, Any] | None
+    # Pre-computed image properties (no PIL objects stored)
+    width: int
+    height: int
+    thumbnail_data: bytes | None = None
+    processing_error: str | None = None
+
+
+def _get_available_memory_mb() -> int:
+    """Get available system memory in MB with cross-platform support."""
+    # Primary: Use psutil for cross-platform accuracy
+    try:
+        available_bytes = psutil.virtual_memory().available
+        return int(available_bytes // (1024 * 1024))
+    except (AttributeError, OSError):
+        pass
+
+    # Secondary fallback using Linux /proc/meminfo for older systems
+    try:
+        meminfo_path = Path("/proc/meminfo")
+        if meminfo_path.exists():
+            with meminfo_path.open() as f:
+                for line in f:
+                    if line.startswith("MemAvailable:"):
+                        return int(line.split()[1]) // 1024
+    except (FileNotFoundError, ValueError, IndexError, OSError):
+        pass
+
+    # Conservative fallback for all platforms
+    return 4096  # 4GB default - safe for most systems
+
+
+def _estimate_memory_from_headers(file_path: Path) -> int:
     """
-    Calculate optimal chunk size based on dataset size and available workers.
+    Fast estimation using only image headers (~1-5ms per file).
 
     Args:
-        dataset_size: Total number of files to process
-        max_workers: Maximum number of worker threads
+        file_path: Path to image file
 
     Returns:
-        Optimal chunk size for the given dataset
-
-    Environment Variables:
-        MARIMBA_EXIF_CHUNK_SIZE: Override chunk size calculation
-        MARIMBA_EXIF_MIN_CHUNK_SIZE: Minimum chunk size (default: 1)
-        MARIMBA_EXIF_MAX_CHUNK_SIZE: Maximum chunk size (default: 200)
+        Estimated memory in MB for this image
     """
-    # Check for environment variable override
-    env_chunk_size = os.environ.get("MARIMBA_EXIF_CHUNK_SIZE")
-    if env_chunk_size:
-        try:
-            return max(1, int(env_chunk_size))
-        except ValueError:
-            pass  # Fall back to calculation
+    try:
+        with Image.open(file_path) as img:
+            # PIL loads headers automatically, but not pixel data
+            channels = len(img.getbands()) or 3  # Fallback to RGB
+            memory_bytes = img.width * img.height * channels * 4  # 4 bytes per channel
+            return int(memory_bytes // (1024 * 1024))  # Convert to MB
+    except (OSError, ValueError, AttributeError):
+        return _ESTIMATED_IMAGE_MEMORY_MB  # Fallback estimate
 
-    # Get configuration from environment
-    min_chunk_size = int(os.environ.get("MARIMBA_EXIF_MIN_CHUNK_SIZE", "1"))
-    max_chunk_size = int(os.environ.get("MARIMBA_EXIF_MAX_CHUNK_SIZE", "200"))
 
-    # Determine effective worker count
-    effective_workers = max_workers if max_workers else os.cpu_count() or 4
+def _estimate_dataset_memory_requirements(dataset_files: list[Path], sample_size: int = 5) -> int:
+    """
+    Estimate memory requirements per image by sampling actual files from the dataset.
 
-    # Calculate base chunk size to ensure good thread utilization
-    # Aim for 2-4 chunks per worker to allow for load balancing
-    target_chunks = effective_workers * 3
-    base_chunk_size = max(1, dataset_size // target_chunks)
+    Args:
+        dataset_files: List of image file paths to sample from
+        sample_size: Number of files to sample for estimation
 
-    # Apply size-based adjustments
-    if dataset_size <= _VERY_SMALL_DATASET_THRESHOLD:
-        # Very small datasets: process all files in single chunk to minimize overhead
-        calculated_size = dataset_size
-    elif dataset_size <= _SMALL_DATASET_THRESHOLD:
-        # Small datasets: use smaller chunks but not too small
-        calculated_size = max(base_chunk_size, min(dataset_size // 4, _VERY_SMALL_DATASET_THRESHOLD))
-    elif dataset_size <= _MEDIUM_DATASET_THRESHOLD:
-        # Medium datasets: balanced approach
-        calculated_size = max(base_chunk_size, min(dataset_size // 6, 75))
-    elif dataset_size <= _LARGE_DATASET_THRESHOLD:
-        # Large datasets: larger chunks for efficiency
-        calculated_size = max(base_chunk_size, min(dataset_size // 8, 150))
+    Returns:
+        Estimated memory in MB per image
+    """
+    if not dataset_files:
+        return _ESTIMATED_IMAGE_MEMORY_MB
+
+    # Sample a few files, but not more than available
+    actual_sample_size = min(sample_size, len(dataset_files))
+    sample_files = random.sample(dataset_files, actual_sample_size)
+
+    total_memory_mb = 0
+    successful_samples = 0
+
+    for file_path in sample_files:
+        memory_mb = _estimate_memory_from_headers(file_path)
+        if memory_mb > 0:  # Only count successful estimates
+            total_memory_mb += memory_mb
+            successful_samples += 1
+
+    if successful_samples == 0:
+        # Fallback to conservative estimate if no files could be sampled
+        return _ESTIMATED_IMAGE_MEMORY_MB
+
+    avg_memory_per_image = total_memory_mb / successful_samples
+    # Add some buffer for processing overhead (20%)
+    estimated_memory = int(avg_memory_per_image * 1.2)
+
+    # Reasonable bounds: at least 10MB, at most 2GB per image
+    return max(10, min(estimated_memory, 2048))
+
+
+def _calculate_safe_image_batch_size(dataset_files: list[Path] | None = None) -> int:
+    """
+    Calculate safe batch size for image processing based on available memory.
+
+    Args:
+        dataset_files: Optional list of files to sample for better memory estimation
+
+    Returns:
+        Safe batch size (number of images to process simultaneously)
+    """
+    available_mb = _get_available_memory_mb()
+    usable_mb = int(available_mb * _MEMORY_SAFETY_FACTOR)
+
+    # Use dataset-specific estimation if files provided
+    if dataset_files:
+        estimated_memory_per_image = _estimate_dataset_memory_requirements(dataset_files)
     else:
-        # Very large datasets: optimize for memory and stability
-        calculated_size = max(base_chunk_size, min(dataset_size // 10, 200))
+        estimated_memory_per_image = _ESTIMATED_IMAGE_MEMORY_MB
 
-    # Apply environment-based constraints
-    return max(min_chunk_size, min(calculated_size, max_chunk_size))
+    safe_batch_size = max(1, usable_mb // estimated_memory_per_image)
+
+    # Cap at reasonable limits (at least 1, at most 100 images)
+    return max(1, min(safe_batch_size, 100))
 
 
 class iFDOMetadata(BaseMetadata):  # noqa: N801
@@ -366,7 +425,7 @@ class iFDOMetadata(BaseMetadata):  # noqa: N801
     @staticmethod
     def _chunk_dataset(
         dataset_mapping: dict[Path, tuple[list[BaseMetadata], dict[str, Any] | None]],
-        chunk_size: int = DEFAULT_CHUNK_SIZE,
+        chunk_size: int,
     ) -> list[list[tuple[Path, tuple[list[BaseMetadata], dict[str, Any] | None]]]]:
         """
         Split the dataset into chunks for batch processing.
@@ -404,10 +463,30 @@ class iFDOMetadata(BaseMetadata):  # noqa: N801
         # Use the provided logger if available, otherwise use the module logger
         log = logger or get_logger(__name__)
 
-        # Calculate optimal chunk size if not provided
+        # Use dataset-aware memory batch size as chunk size if not provided
         if chunk_size is None:
-            chunk_size = _calculate_optimal_chunk_size(len(dataset_mapping), max_workers)
-            log.info(f"Auto-calculated chunk size: {chunk_size} for {len(dataset_mapping)} files")
+            # Get image files for sampling
+            image_files = [
+                file_path
+                for file_path, _ in dataset_mapping.items()
+                if file_path.suffix.lower() in EXIF_SUPPORTED_EXTENSIONS
+            ]
+
+            chunk_size = _calculate_safe_image_batch_size(image_files)
+            available_memory = _get_available_memory_mb()
+
+            if image_files:
+                log.info(
+                    f"Dataset-aware batching: {available_memory}MB available, "
+                    f"sampled {min(5, len(image_files))} images, using chunks of {chunk_size} files each",
+                )
+            else:
+                log.info(
+                    f"Memory-aware batching: {available_memory}MB available, "
+                    f"using default chunks of {chunk_size} files each (no images to sample)",
+                )
+        else:
+            log.info(f"Using specified chunk size: {chunk_size} files per chunk")
 
         # Split dataset into chunks for batch processing
         chunks = cls._chunk_dataset(dataset_mapping, chunk_size)
@@ -423,8 +502,12 @@ class iFDOMetadata(BaseMetadata):  # noqa: N801
             task: TaskID | None = None,
         ) -> None:
             chunk = item
-            exif_batch, non_exif_files = cls._prepare_chunk_for_processing(chunk, logger)
-            cls._process_exif_batch(exif_batch, thread_num, logger)
+
+            # Phase 1: Memory-aware image processing
+            processed_images, non_exif_files = cls._process_images_memory_safe(chunk, thread_num, logger)
+
+            # Phase 2: Batch EXIF writing (no image loading)
+            cls._write_exif_batch(processed_images, thread_num, logger)
             cls._log_non_exif_files(non_exif_files, thread_num, logger)
 
             # Update progress for entire chunk
@@ -436,15 +519,18 @@ class iFDOMetadata(BaseMetadata):  # noqa: N801
             process_chunk(cls, items=chunks, progress=progress, task=task, logger=log)  # type: ignore[call-arg]
 
     @classmethod
-    def _prepare_chunk_for_processing(
+    def _process_images_memory_safe(
         cls,
         chunk: list[tuple[Path, tuple[list[BaseMetadata], dict[str, Any] | None]]],
+        thread_num: str,
         logger: logging.Logger,
-    ) -> tuple[list[tuple[Path, ImageData, dict[str, Any] | None, Image.Image]], list[Path]]:
-        """Prepare a chunk of files for EXIF processing."""
-        exif_batch = []
-        non_exif_files = []
+    ) -> tuple[list[ProcessedImageData], list[Path]]:
+        """Phase 1: Image processing - chunk is already memory-sized."""
+        processed_images: list[ProcessedImageData] = []
+        non_exif_files: list[Path] = []
 
+        # Separate EXIF-supported files from others
+        exif_candidates = []
         for file_path, (metadata_items, ancillary_data) in chunk:
             file_extension = file_path.suffix.lower()
 
@@ -453,39 +539,259 @@ class iFDOMetadata(BaseMetadata):  # noqa: N801
                 ifdo_metadata_items = [item for item in metadata_items if isinstance(item, iFDOMetadata)]
 
                 if ifdo_metadata_items:
-                    # Use the primary ImageData from the first iFDO metadata item
                     image_data = ifdo_metadata_items[0].primary_image_data
+                    exif_candidates.append((file_path, image_data, ancillary_data))
+                    continue
 
-                    try:
-                        # Open image file for processing with proper context management
-                        with Image.open(file_path) as image_file:
-                            # Extract image properties first while image is still open
-                            cls._extract_image_properties(image_file, image_data)
+            non_exif_files.append(file_path)
 
-                            # Add to batch for exiftool processing
-                            exif_batch.append((file_path, image_data, ancillary_data, image_file.copy()))
+        if not exif_candidates:
+            return processed_images, non_exif_files
 
-                    except OSError as e:
-                        logger.warning(f"Failed to open image file {file_path}: {e}")
-            else:
-                non_exif_files.append(file_path)
+        # Process all images with adaptive batch sizing
+        logger.debug(f"Thread {thread_num} - Processing {len(exif_candidates)} images with adaptive batching")
+        processed_images = cls._process_image_batch_adaptive(exif_candidates, thread_num, logger)
 
-        return exif_batch, non_exif_files
+        return processed_images, non_exif_files
 
     @classmethod
-    def _process_exif_batch(
+    def _process_image_batch_adaptive(
         cls,
-        exif_batch: list[tuple[Path, ImageData, dict[str, Any] | None, Image.Image]],
+        image_batch: list[tuple[Path, "ImageData", dict[str, Any] | None]],
+        thread_num: str,
+        logger: logging.Logger,
+        initial_batch_size: int | None = None,
+    ) -> list[ProcessedImageData]:
+        """
+        Process images with adaptive batch sizing - retry with smaller batches on OOM.
+
+        Args:
+            image_batch: List of images to process
+            thread_num: Thread identifier for logging
+            logger: Logger instance
+            initial_batch_size: Starting batch size (uses len(image_batch) if None)
+
+        Returns:
+            List of processed image data
+        """
+        if not image_batch:
+            return []
+
+        current_batch_size = initial_batch_size or len(image_batch)
+        current_batch_size = min(current_batch_size, len(image_batch))
+        all_results = []
+
+        # Process in adaptive batches
+        start_idx = 0
+        while start_idx < len(image_batch):
+            batch_slice = image_batch[start_idx : start_idx + current_batch_size]
+
+            try:
+                # Attempt to process current batch
+                batch_results = cls._process_image_batch(batch_slice, thread_num, logger)
+                all_results.extend(batch_results)
+                start_idx += current_batch_size
+
+                # Success - can potentially increase batch size for next iteration
+                if current_batch_size < len(image_batch) and start_idx < len(image_batch):
+                    # Cautiously increase batch size by 50% for next batch
+                    current_batch_size = min(int(current_batch_size * 1.5), len(image_batch) - start_idx)
+
+            except MemoryError:
+                if current_batch_size <= 1:
+                    # Can't reduce further - skip this problematic image
+                    logger.warning(
+                        f"Thread {thread_num} - Skipping image due to memory constraints: {batch_slice[0][0]}",
+                    )
+                    # Create error result for the failed image
+                    failed_image = ProcessedImageData(
+                        file_path=batch_slice[0][0],
+                        image_data=batch_slice[0][1],
+                        ancillary_data=batch_slice[0][2],
+                        width=0,
+                        height=0,
+                        processing_error="Memory error - image too large to process",
+                    )
+                    all_results.append(failed_image)
+                    start_idx += 1
+                else:
+                    # Halve batch size and retry
+                    current_batch_size = max(1, current_batch_size // 2)
+                    logger.warning(f"Thread {thread_num} - Memory error, reducing batch size to {current_batch_size}")
+                    # Don't increment start_idx - retry the same batch with smaller size
+
+        return all_results
+
+    @classmethod
+    def _process_image_batch(
+        cls,
+        image_batch: list[tuple[Path, "ImageData", dict[str, Any] | None]],
+        thread_num: str,
+        logger: logging.Logger,
+    ) -> list[ProcessedImageData]:
+        """Process a small batch of images with controlled threading."""
+        results: list[ProcessedImageData] = []
+
+        def process_single_image(
+            file_data: tuple[Path, "ImageData", dict[str, Any] | None],
+        ) -> ProcessedImageData:
+            file_path, image_data, ancillary_data = file_data
+
+            try:
+                with Image.open(file_path) as image_file:
+                    # Extract image properties
+                    cls._extract_image_properties(image_file, image_data)
+                    width, height = image_file.size
+
+                    # Generate thumbnail data (in memory)
+                    thumbnail_data = cls._create_thumbnail_data(image_file)
+
+                    return ProcessedImageData(
+                        file_path=file_path,
+                        image_data=image_data,
+                        ancillary_data=ancillary_data,
+                        width=width,
+                        height=height,
+                        thumbnail_data=thumbnail_data,
+                    )
+
+            except (OSError, ValueError, AttributeError, MemoryError) as e:
+                logger.warning(f"Thread {thread_num} - Failed to process image {file_path}: {e}")
+                return ProcessedImageData(
+                    file_path=file_path,
+                    image_data=image_data,
+                    ancillary_data=ancillary_data,
+                    width=0,
+                    height=0,
+                    processing_error=str(e),
+                )
+
+        # Process images sequentially within each chunk (chunks are already parallel)
+        for file_data in image_batch:
+            result = process_single_image(file_data)
+            results.append(result)
+
+        return results
+
+    @staticmethod
+    def _create_thumbnail_data(image_file: Image.Image) -> bytes:
+        """Create thumbnail data as bytes (no file I/O)."""
+        # Create thumbnail
+        thumbnail = image_file.copy()
+        thumbnail.thumbnail((160, 120), Image.Resampling.LANCZOS)
+
+        # Convert to bytes
+        buffer = io.BytesIO()
+        thumbnail.save(buffer, format="JPEG", quality=85)
+        return buffer.getvalue()
+
+    @classmethod
+    def _write_exif_batch(
+        cls,
+        processed_images: list[ProcessedImageData],
         thread_num: str,
         logger: logging.Logger,
     ) -> None:
-        """Process a batch of EXIF files."""
-        if exif_batch:
-            try:
-                cls._inject_metadata_with_exiftool_batch(exif_batch, logger)
-                logger.debug(f"Thread {thread_num} - Processed batch of {len(exif_batch)} EXIF files")
-            except (OSError, ExifToolException) as e:
-                logger.warning(f"Thread {thread_num} - Failed to process EXIF batch: {e}")
+        """Phase 2: Batch EXIF writing without loading images."""
+        if not processed_images:
+            return
+
+        # Separate successful from failed processing
+        successful_images = [img for img in processed_images if img.processing_error is None]
+        failed_images = [img for img in processed_images if img.processing_error is not None]
+
+        if failed_images:
+            logger.warning(f"Thread {thread_num} - Skipping {len(failed_images)} images due to processing errors")
+
+        if not successful_images:
+            return
+
+        logger.debug(f"Thread {thread_num} - Writing EXIF data for {len(successful_images)} images")
+
+        try:
+            with exiftool.ExifToolHelper() as et:
+                # Get existing metadata for all files in batch
+                file_paths = [str(img.file_path) for img in successful_images]
+                existing_metadata_list = et.get_metadata(file_paths)
+
+                # Build a mapping of existing EXIF data
+                existing_exif_map = {}
+                for i, metadata in enumerate(existing_metadata_list):
+                    existing_exif_map[file_paths[i]] = metadata if metadata else {}
+
+                # Process EXIF tags for all files
+                cls._process_exif_tags_batch(et, successful_images, existing_exif_map)
+
+                # Handle thumbnails separately (using pre-generated data)
+                cls._embed_thumbnail_batch(et, successful_images, logger)
+
+                logger.debug(f"Thread {thread_num} - Successfully wrote EXIF data for {len(successful_images)} images")
+
+        except FileNotFoundError as e:
+            if "exiftool" in str(e).lower():
+                show_dependency_error_and_exit(ToolDependency.EXIFTOOL, str(e))
+            else:
+                logger.warning(f"Thread {thread_num} - File not found during batch EXIF processing: {e}")
+        except ExifToolException as e:
+            logger.warning(f"Thread {thread_num} - Failed to write EXIF metadata in batch: {e}")
+
+    @classmethod
+    def _process_exif_tags_batch(
+        cls,
+        et: exiftool.ExifToolHelper,
+        successful_images: list[ProcessedImageData],
+        existing_exif_map: dict[str, dict[str, Any]],
+    ) -> None:
+        """Build and apply EXIF tags for all images in batch."""
+        for img in successful_images:
+            file_path_str = str(img.file_path)
+            existing_exif = existing_exif_map.get(file_path_str, {})
+
+            exif_tags: dict[str, Any] = {}
+
+            # Add pre-computed image dimensions
+            if img.width > 0 and "EXIF:ExifImageWidth" not in existing_exif:
+                exif_tags["EXIF:ExifImageWidth"] = img.width
+            if img.height > 0 and "EXIF:ExifImageHeight" not in existing_exif:
+                exif_tags["EXIF:ExifImageHeight"] = img.height
+
+            # Add metadata-only EXIF tags (no image required)
+            cls._add_datetime_tags(exif_tags, img.image_data)
+            cls._add_identifier_tags(exif_tags, img.image_data)
+            cls._add_gps_tags(exif_tags, img.image_data)
+            cls._add_user_comment(exif_tags, img.image_data, img.ancillary_data)
+
+            # Apply tags if any were built
+            if exif_tags:
+                et.set_tags([file_path_str], exif_tags, params=["-overwrite_original_in_place"])
+
+    @staticmethod
+    def _embed_thumbnail_batch(
+        et: exiftool.ExifToolHelper,
+        processed_images: list[ProcessedImageData],
+        logger: logging.Logger,
+    ) -> None:
+        """Embed pre-generated thumbnails using ExifTool."""
+        for img in processed_images:
+            if img.thumbnail_data:
+                try:
+                    # Write thumbnail data to temporary file
+                    with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as tmp_file:
+                        tmp_file.write(img.thumbnail_data)
+                        tmp_file.flush()
+
+                        # Embed thumbnail using ExifTool
+                        et.set_tags(
+                            [str(img.file_path)],
+                            {"ThumbnailImage": tmp_file.name},
+                            params=["-overwrite_original_in_place", "-tagsfromfile", tmp_file.name],
+                        )
+
+                    # Clean up temporary file
+                    Path(tmp_file.name).unlink()
+
+                except (OSError, ExifToolException) as e:
+                    logger.warning(f"Failed to embed thumbnail for {img.file_path}: {e}")
 
     @classmethod
     def _log_non_exif_files(
@@ -497,146 +803,6 @@ class iFDOMetadata(BaseMetadata):  # noqa: N801
         """Log non-EXIF files that were skipped."""
         for file_path in non_exif_files:
             logger.debug(f"Thread {thread_num} - Skipping EXIF processing for non-supported file: {file_path}")
-
-    @staticmethod
-    def _inject_metadata_with_exiftool_batch(
-        file_batch: list[tuple[Path, ImageData, dict[str, Any] | None, Image.Image]],
-        logger: logging.Logger,
-    ) -> None:
-        """
-        Inject metadata into EXIF for a batch of files using a single exiftool instance.
-
-        Args:
-            file_batch: List of tuples containing (file_path, image_data, ancillary_data, image_file).
-            logger: Logger instance.
-        """
-        if not file_batch:
-            return
-
-        try:
-            with exiftool.ExifToolHelper() as et:
-                existing_exif_map = iFDOMetadata._get_existing_metadata_map(et, file_batch)
-                batch_file_tags = iFDOMetadata._build_batch_tags(file_batch, existing_exif_map)
-                iFDOMetadata._apply_batch_tags(et, batch_file_tags)
-                iFDOMetadata._add_batch_thumbnails(file_batch, logger)
-
-                logger.debug(f"Successfully processed batch of {len(file_batch)} files with exiftool")
-
-        except FileNotFoundError as e:
-            if "exiftool" in str(e).lower():
-                show_dependency_error_and_exit(ToolDependency.EXIFTOOL, str(e))
-            else:
-                logger.warning(f"File not found during batch EXIF processing: {e}")
-        except ExifToolException as e:
-            logger.warning(f"Failed to inject EXIF metadata in batch with exiftool: {e}")
-
-    @staticmethod
-    def _get_existing_metadata_map(
-        et: exiftool.ExifToolHelper,
-        file_batch: list[tuple[Path, ImageData, dict[str, Any] | None, Image.Image]],
-    ) -> dict[str, dict[str, Any]]:
-        """Get existing EXIF metadata for all files in the batch."""
-        file_paths = [str(item[0]) for item in file_batch]
-        existing_metadata_list = et.get_metadata(file_paths)
-
-        existing_exif_map = {}
-        for i, metadata in enumerate(existing_metadata_list):
-            existing_exif_map[file_paths[i]] = metadata if metadata else {}
-
-        return existing_exif_map
-
-    @staticmethod
-    def _build_batch_tags(
-        file_batch: list[tuple[Path, ImageData, dict[str, Any] | None, Image.Image]],
-        existing_exif_map: dict[str, dict[str, Any]],
-    ) -> dict[str, dict[str, Any]]:
-        """Build EXIF tags for all files in the batch."""
-        batch_file_tags: dict[str, dict[str, Any]] = {}
-
-        for file_path, image_data, ancillary_data, image_file in file_batch:
-            file_path_str = str(file_path)
-            existing_exif = existing_exif_map.get(file_path_str, {})
-
-            exif_tags: dict[str, Any] = {}
-
-            # Build EXIF tags using helper methods
-            iFDOMetadata._add_image_dimensions(exif_tags, existing_exif, image_file)
-            iFDOMetadata._add_datetime_tags(exif_tags, image_data)
-            iFDOMetadata._add_identifier_tags(exif_tags, image_data)
-            iFDOMetadata._add_gps_tags(exif_tags, image_data)
-            iFDOMetadata._add_user_comment(exif_tags, image_data, ancillary_data)
-
-            if exif_tags:
-                batch_file_tags[file_path_str] = exif_tags
-
-        return batch_file_tags
-
-    @staticmethod
-    def _apply_batch_tags(
-        et: exiftool.ExifToolHelper,
-        batch_file_tags: dict[str, dict[str, Any]],
-    ) -> None:
-        """Apply EXIF tags to all files in the batch."""
-        if batch_file_tags:
-            # Apply tags per file using batch mode
-            for file_path_str, tags in batch_file_tags.items():
-                et.set_tags([file_path_str], tags, params=["-overwrite_original_in_place"])
-
-    @staticmethod
-    def _add_batch_thumbnails(
-        file_batch: list[tuple[Path, ImageData, dict[str, Any] | None, Image.Image]],
-        logger: logging.Logger,
-    ) -> None:
-        """Add thumbnails to all files in the batch."""
-        failed_thumbnails = []
-
-        # Process all thumbnails and collect failures
-        for file_path, _image_data, _ancillary_data, image_file in file_batch:
-            error = iFDOMetadata._safe_add_thumbnail(file_path, image_file, logger)
-            if error:
-                failed_thumbnails.append((file_path, error))
-
-        # Log all failures at once
-        for file_path, error in failed_thumbnails:
-            logger.warning(f"Failed to add thumbnail for {file_path}: {error}")
-
-    @staticmethod
-    def _safe_add_thumbnail(
-        file_path: Path,
-        image_file: Image.Image,
-        logger: logging.Logger,
-    ) -> str | None:
-        """Safely add thumbnail and return error message if failed."""
-        try:
-            iFDOMetadata._add_thumbnail_to_exif(file_path, image_file, logger)
-        except (OSError, ExifToolException) as e:
-            return str(e)
-        else:
-            return None
-
-    @staticmethod
-    def _inject_metadata_with_exiftool(
-        file_path: Path,
-        image_data: ImageData,
-        ancillary_data: dict[str, Any] | None,
-        image_file: Image.Image,
-        logger: logging.Logger,
-    ) -> None:
-        """
-        Inject metadata into EXIF using exiftool (single file fallback).
-
-        Args:
-            file_path: Path to the image file.
-            image_data: The image data containing metadata information.
-            ancillary_data: Any ancillary data to include.
-            image_file: PIL Image object for extracting dimensions.
-            logger: Logger instance.
-        """
-        # Use batch processing with single file for consistency
-        iFDOMetadata._inject_metadata_with_exiftool_batch(
-            [(file_path, image_data, ancillary_data, image_file)],
-            logger,
-        )
 
     @staticmethod
     def _add_image_dimensions(
