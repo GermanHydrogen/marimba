@@ -1025,6 +1025,8 @@ class DatasetWrapper(LogMixin):
         for pipeline_data_mapping in dataset_mapping.values():
             total_tasks += len(pipeline_data_mapping) * 4
 
+        validation_errors = []
+
         with Progress(SpinnerColumn(), *get_default_columns()) as progress:
             task = progress.add_task(
                 "[green]Checking dataset mapping (2/12)",
@@ -1032,33 +1034,48 @@ class DatasetWrapper(LogMixin):
             )
 
             for pipeline_data_mapping in dataset_mapping.values():
-                self._verify_source_paths_exist(
+                errors = self._verify_source_paths_exist(
                     pipeline_data_mapping,
                     progress,
                     task,
                     max_workers,
                 )
-                self._verify_unique_source_resolutions(
+                validation_errors.extend(errors)
+
+                errors = self._verify_unique_source_resolutions(
                     pipeline_data_mapping,
                     progress,
                     task,
                     max_workers,
                 )
-                self._verify_relative_destination_paths(
+                validation_errors.extend(errors)
+
+                errors = self._verify_relative_destination_paths(
                     pipeline_data_mapping,
                     progress,
                     task,
                     max_workers,
                 )
-                self._verify_no_destination_collisions(
+                validation_errors.extend(errors)
+
+                errors = self._verify_no_destination_collisions(
                     pipeline_data_mapping,
                     progress,
                     task,
                     max_workers,
                 )
+                validation_errors.extend(errors)
 
             # Ensure progress reaches 100%
             progress.update(task, completed=total_tasks)
+
+        # If any validation errors were found, raise an exception with all of them
+        if validation_errors:
+            error_message = "; ".join(validation_errors)
+            self.logger.error(f"Dataset mapping validation failed: {error_message}")
+            raise DatasetWrapper.InvalidDatasetMappingError(
+                f"Dataset mapping validation failed: {error_message}",
+            )
 
         self.logger.info("Dataset mapping is valid")
 
@@ -1071,30 +1088,38 @@ class DatasetWrapper(LogMixin):
         progress: Progress,
         task: TaskID,
         max_workers: int | None = None,
-    ) -> None:
+    ) -> list[str]:
+        """Verify source paths exist and return list of error messages."""
+
         @multithreaded(max_workers=max_workers)
         def verify_path(
             self: DatasetWrapper,  # noqa: ARG001
             thread_num: str,  # noqa: ARG001
             item: Path,
-            logger: logging.Logger | None = None,  # noqa: ARG001
+            logger: logging.Logger | None = None,
             progress: Progress | None = None,
             task: TaskID | None = None,
-        ) -> None:
+        ) -> str | None:
+            """Return error message if path doesn't exist, None otherwise."""
             if not item.exists():
-                raise DatasetWrapper.InvalidDatasetMappingError(
-                    f"Source path {item} does not exist",
-                )
+                error_msg = f"Source path {item} does not exist"
+                if logger:
+                    logger.error(error_msg)
+                return error_msg
             if progress and task is not None:
                 progress.advance(task)
+            return None
 
-        verify_path(
+        results = verify_path(
             self,
             items=list(pipeline_data_mapping.keys()),
             logger=self.logger,
             progress=progress,
             task=task,
         )  # type: ignore[call-arg]
+
+        # Collect non-None error messages
+        return [error for error in results if error is not None]  # type: ignore[union-attr]
 
     def _verify_unique_source_resolutions(
         self,
@@ -1104,37 +1129,31 @@ class DatasetWrapper(LogMixin):
         ],
         progress: Progress,
         task: TaskID,
-        max_workers: int | None = None,
-    ) -> None:
+        max_workers: int | None = None,  # noqa: ARG002
+    ) -> list[str]:
+        """Verify source path resolutions are unique and return list of error messages."""
+        errors = []
+
+        # Pre-compute all resolutions to avoid race conditions
+        path_resolutions = {}
+        for path in pipeline_data_mapping:
+            resolved = path.resolve().absolute()
+            path_resolutions[path] = resolved
+
+        # Check for duplicates
         reverse_src_resolution: dict[Path, Path] = {}
-
-        @multithreaded(max_workers=max_workers)
-        def verify_resolution(
-            self: DatasetWrapper,  # noqa: ARG001
-            thread_num: str,  # noqa: ARG001
-            item: Path,
-            reverse_src_resolution: dict[Path, Path],
-            logger: logging.Logger | None = None,  # noqa: ARG001
-            progress: Progress | None = None,
-            task: TaskID | None = None,
-        ) -> None:
-            resolved = item.resolve().absolute()
+        for path, resolved in path_resolutions.items():
             if resolved in reverse_src_resolution:
-                raise DatasetWrapper.InvalidDatasetMappingError(
-                    f"Source paths {item} and {reverse_src_resolution[resolved]} both resolve to {resolved}",
-                )
-            reverse_src_resolution[resolved] = item
-            if progress and task is not None:
-                progress.advance(task)
+                error_msg = f"Source paths {path} and {reverse_src_resolution[resolved]} both resolve to {resolved}"
+                self.logger.error(error_msg)
+                errors.append(error_msg)
+            else:
+                reverse_src_resolution[resolved] = path
 
-        verify_resolution(
-            self,
-            items=pipeline_data_mapping.keys(),
-            reverse_src_resolution=reverse_src_resolution,
-            logger=self.logger,
-            progress=progress,
-            task=task,
-        )  # type: ignore[call-arg]
+            # Update progress
+            progress.advance(task)
+
+        return errors
 
     def _verify_relative_destination_paths(
         self,
@@ -1145,7 +1164,8 @@ class DatasetWrapper(LogMixin):
         progress: Progress,
         task: TaskID,
         max_workers: int | None = None,
-    ) -> None:
+    ) -> list[str]:
+        """Verify destination paths are relative and return list of error messages."""
         destinations = [dst for dst, _, _ in pipeline_data_mapping.values()]
 
         @multithreaded(max_workers=max_workers)
@@ -1153,24 +1173,30 @@ class DatasetWrapper(LogMixin):
             self: DatasetWrapper,  # noqa: ARG001
             thread_num: str,  # noqa: ARG001
             item: Path,
-            logger: logging.Logger | None = None,  # noqa: ARG001
+            logger: logging.Logger | None = None,
             progress: Progress | None = None,
             task: TaskID | None = None,
-        ) -> None:
-            if item.is_absolute():
-                raise DatasetWrapper.InvalidDatasetMappingError(
-                    f"Destination path {item} must be relative",
-                )
+        ) -> str | None:
+            """Return error message if path is absolute, None otherwise."""
+            if item is not None and item.is_absolute():
+                error_msg = f"Destination path {item} must be relative"
+                if logger:
+                    logger.error(error_msg)
+                return error_msg
             if progress and task is not None:
                 progress.advance(task)
+            return None
 
-        verify_destination_path(
+        results = verify_destination_path(
             self,
             items=destinations,
             logger=self.logger,
             progress=progress,
             task=task,
         )  # type: ignore[call-arg]
+
+        # Collect non-None error messages
+        return [error for error in results if error is not None]  # type: ignore[union-attr]
 
     def _verify_no_destination_collisions(
         self,
@@ -1180,39 +1206,31 @@ class DatasetWrapper(LogMixin):
         ],
         progress: Progress,
         task: TaskID,
-        max_workers: int | None = None,
-    ) -> None:
-        reverse_mapping: dict[Path, Path] = {
-            dst.resolve(): src for src, (dst, _, _) in pipeline_data_mapping.items() if dst is not None
-        }
+        max_workers: int | None = None,  # noqa: ARG002
+    ) -> list[str]:
+        """Verify no destination path collisions and return list of error messages."""
+        errors = []
 
-        @multithreaded(max_workers=max_workers)
-        def verify_no_collision(
-            self: DatasetWrapper,  # noqa: ARG001
-            thread_num: str,  # noqa: ARG001
-            item: tuple[Path, Path],
-            reverse_mapping: dict[Path, Path],
-            logger: logging.Logger | None = None,  # noqa: ARG001
-            progress: Progress | None = None,
-            task: TaskID | None = None,
-        ) -> None:
-            (src, dst) = item
+        # Pre-compute destination mappings to avoid race conditions
+        destination_mappings: dict[Path, Path] = {}
+
+        for src, (dst, _, _) in pipeline_data_mapping.items():
             if dst is not None:
-                src_other = reverse_mapping.get(dst.resolve())
-                if src_other is not None and src.resolve() != src_other.resolve():
-                    raise DatasetWrapper.InvalidDatasetMappingError(
-                        f"Resolved destination path {dst.resolve()} is the same for source paths {src} and {src_other}",
-                    )
-            if progress and task is not None:
-                progress.advance(task)
+                resolved_dst = dst.resolve()
+                if resolved_dst in destination_mappings:
+                    # Found a collision
+                    existing_src = destination_mappings[resolved_dst]
+                    if src.resolve() != existing_src.resolve():
+                        error_msg = (
+                            f"Resolved destination path {resolved_dst} is the same for "
+                            f"source paths {src} and {existing_src}"
+                        )
+                        self.logger.error(error_msg)
+                        errors.append(error_msg)
+                else:
+                    destination_mappings[resolved_dst] = src
 
-        items = [(src, dst) for src, (dst, _, _) in pipeline_data_mapping.items()]
+            # Update progress
+            progress.advance(task)
 
-        verify_no_collision(
-            self,
-            items=items,
-            reverse_mapping=reverse_mapping,
-            logger=self.logger,
-            progress=progress,
-            task=task,
-        )  # type: ignore[call-arg]
+        return errors

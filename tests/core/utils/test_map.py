@@ -82,10 +82,10 @@ class TestCoordinateConversions:
             # Test round-trip conversions
             x = lon_to_x(lon, zoom)
             y = lat_to_y(lat, zoom)
-            
+
             converted_lon = x_to_lon(x, zoom)
             converted_lat = y_to_lat(y, zoom)
-            
+
             assert abs(lat - converted_lat) < 0.001
             assert abs(lon - converted_lon) < 0.001
 
@@ -110,7 +110,7 @@ class TestGridCalculations:
     def test_calculate_grid_intervals_normal_range(self):
         """Test grid interval calculation for normal coordinate range."""
         positions, decimals = calculate_grid_intervals(-1.0, 1.0, 3)
-        
+
         assert len(positions) == 5  # 3 + 2
         assert positions[0] == -1.0
         assert positions[-1] == 1.0
@@ -120,7 +120,7 @@ class TestGridCalculations:
         """Test grid interval calculation for very small coordinate range."""
         # Very small range should be expanded
         positions, decimals = calculate_grid_intervals(0.0, 1e-12, 3)
-        
+
         assert len(positions) == 5
         assert decimals >= 2
         # Range should be expanded to DEFAULT_SMALL_RANGE
@@ -132,15 +132,15 @@ class TestGridCalculations:
         # Large interval -> fewer decimal places
         positions, decimals = calculate_grid_intervals(0.0, 10.0, 3)
         assert decimals == 2
-        
+
         # Medium interval (need larger range to get smaller interval)
         positions, decimals = calculate_grid_intervals(0.0, 0.02, 3)
         assert decimals == 3
-        
+
         # Small interval
         positions, decimals = calculate_grid_intervals(0.0, 0.002, 3)
         assert decimals == 4
-        
+
         # Tiny interval
         positions, decimals = calculate_grid_intervals(0.0, 0.0002, 3)
         assert decimals == 5
@@ -156,7 +156,7 @@ class TestGridCalculations:
     def test_calculate_grid_intervals_negative_range(self):
         """Test grid calculation with negative coordinate range."""
         positions, decimals = calculate_grid_intervals(-5.0, -2.0, 2)
-        
+
         assert len(positions) == 4
         assert positions[0] == -5.0
         assert positions[-1] == -2.0
@@ -171,11 +171,9 @@ class TestVisibleBounds:
         center_lat, center_lon = 0.0, 0.0
         zoom = 1
         width, height = 512, 512
-        
-        min_lat, max_lat, min_lon, max_lon = calculate_visible_bounds(
-            center_lat, center_lon, zoom, width, height
-        )
-        
+
+        min_lat, max_lat, min_lon, max_lon = calculate_visible_bounds(center_lat, center_lon, zoom, width, height)
+
         # At zoom level 1 with 512x512, should cover significant area
         assert min_lat < center_lat < max_lat
         assert min_lon < center_lon < max_lon
@@ -186,11 +184,11 @@ class TestVisibleBounds:
         """Test visible bounds with different map sizes."""
         center_lat, center_lon = 37.7749, -122.4194
         zoom = 10
-        
+
         # Larger map should have larger bounds
         bounds_small = calculate_visible_bounds(center_lat, center_lon, zoom, 256, 256)
         bounds_large = calculate_visible_bounds(center_lat, center_lon, zoom, 1024, 1024)
-        
+
         # Large map should cover more area
         small_lat_range = bounds_small[1] - bounds_small[0]
         large_lat_range = bounds_large[1] - bounds_large[0]
@@ -200,11 +198,11 @@ class TestVisibleBounds:
         """Test visible bounds with different zoom levels."""
         center_lat, center_lon = 37.7749, -122.4194
         width, height = 512, 512
-        
+
         # Lower zoom should have larger bounds
         bounds_low = calculate_visible_bounds(center_lat, center_lon, 5, width, height)
         bounds_high = calculate_visible_bounds(center_lat, center_lon, 15, width, height)
-        
+
         low_lat_range = bounds_low[1] - bounds_low[0]
         high_lat_range = bounds_high[1] - bounds_high[0]
         assert low_lat_range > high_lat_range
@@ -213,17 +211,17 @@ class TestVisibleBounds:
         """Test visible bounds with rectangular (non-square) dimensions."""
         center_lat, center_lon = 0.0, 0.0
         zoom = 10
-        
+
         # Wide rectangle
         bounds_wide = calculate_visible_bounds(center_lat, center_lon, zoom, 1024, 256)
-        # Tall rectangle  
+        # Tall rectangle
         bounds_tall = calculate_visible_bounds(center_lat, center_lon, zoom, 256, 1024)
-        
+
         wide_lon_range = bounds_wide[3] - bounds_wide[2]
         wide_lat_range = bounds_wide[1] - bounds_wide[0]
         tall_lon_range = bounds_tall[3] - bounds_tall[2]
         tall_lat_range = bounds_tall[1] - bounds_tall[0]
-        
+
         # Wide map should have larger longitude range
         assert wide_lon_range > tall_lon_range
         # Tall map should have larger latitude range
@@ -233,11 +231,11 @@ class TestVisibleBounds:
 class TestAxesDrawing:
     """Test axes drawing functionality."""
 
-    @patch('marimba.core.utils.map.ImageDraw.ImageDraw')
+    @patch("marimba.core.utils.map.ImageDraw.ImageDraw")
     def test_add_axes_basic(self, mock_draw):
         """Test basic axes drawing functionality."""
         mock_draw_instance = Mock()
-        
+
         add_axes(
             mock_draw_instance,
             width=500,
@@ -248,18 +246,18 @@ class TestAxesDrawing:
             max_lat=38.0,
             min_lon=-123.0,
             max_lon=-122.0,
-            zoom=10
+            zoom=10,
         )
-        
+
         # Should call draw methods (line and text)
         assert mock_draw_instance.line.called
         assert mock_draw_instance.text.called
 
-    @patch('marimba.core.utils.map.ImageDraw.ImageDraw')
+    @patch("marimba.core.utils.map.ImageDraw.ImageDraw")
     def test_add_axes_no_lines(self, mock_draw):
         """Test axes drawing with no grid lines."""
         mock_draw_instance = Mock()
-        
+
         add_axes(
             mock_draw_instance,
             width=500,
@@ -270,18 +268,18 @@ class TestAxesDrawing:
             max_lat=38.0,
             min_lon=-123.0,
             max_lon=-122.0,
-            zoom=10
+            zoom=10,
         )
-        
+
         # Should still work but with minimal drawing
         # Grid interval calculation should still return valid results
         assert True  # Function should not raise an error
 
-    @patch('marimba.core.utils.map.ImageDraw.ImageDraw')
+    @patch("marimba.core.utils.map.ImageDraw.ImageDraw")
     def test_add_axes_large_decimal_precision(self, mock_draw):
         """Test axes drawing with high precision coordinates."""
         mock_draw_instance = Mock()
-        
+
         # Very small coordinate range requiring high precision
         add_axes(
             mock_draw_instance,
@@ -293,9 +291,9 @@ class TestAxesDrawing:
             max_lat=37.7750,  # Very small range
             min_lon=-122.4200,
             max_lon=-122.4190,  # Very small range
-            zoom=18  # High zoom for precision
+            zoom=18,  # High zoom for precision
         )
-        
+
         # Should handle high precision coordinates
         assert mock_draw_instance.line.called
         assert mock_draw_instance.text.called
@@ -316,7 +314,7 @@ class TestZoomCalculation:
         # Small area should use higher zoom
         zoom_small = calculate_zoom_level(37.77, 37.78, -122.42, -122.41, width=512, height=512)
         zoom_large = calculate_zoom_level(30.0, 40.0, -130.0, -120.0, width=512, height=512)
-        
+
         assert zoom_small >= zoom_large
 
     def test_calculate_zoom_level_extreme_values(self):
@@ -324,97 +322,97 @@ class TestZoomCalculation:
         # Very small area should get high zoom (clamped to max)
         zoom_tiny = calculate_zoom_level(0.0, 0.00001, 0.0, 0.00001, width=512, height=512)
         assert 15 <= zoom_tiny <= 19
-        
-        # Very large area should get low zoom  
+
+        # Very large area should get low zoom
         zoom_huge = calculate_zoom_level(-85.0, 85.0, -180.0, 180.0, width=512, height=512)
         assert 0 <= zoom_huge <= 5
 
     def test_calculate_zoom_level_different_dimensions(self):
         """Test zoom calculation with different image dimensions."""
         coords = (37.0, 38.0, -123.0, -122.0)
-        
+
         # Larger image can accommodate higher zoom
         zoom_small = calculate_zoom_level(*coords, width=256, height=256)
         zoom_large = calculate_zoom_level(*coords, width=2048, height=2048)
-        
+
         assert zoom_large >= zoom_small
 
 
 class TestMapGeneration:
     """Test map generation functionality."""
 
-    @patch('marimba.core.utils.map.requests.head')
-    @patch('marimba.core.utils.map.StaticMap')
-    @patch('marimba.core.utils.map.Image.new')
-    @patch('marimba.core.utils.map.ImageDraw.Draw')
+    @patch("marimba.core.utils.map.requests.head")
+    @patch("marimba.core.utils.map.StaticMap")
+    @patch("marimba.core.utils.map.Image.new")
+    @patch("marimba.core.utils.map.ImageDraw.Draw")
     def test_make_summary_map_basic(self, mock_draw, mock_image_new, mock_static_map, mock_head):
         """Test basic map generation."""
         # Mock successful network response
         mock_response = Mock()
         mock_response.status_code = 200
         mock_head.return_value = mock_response
-        
+
         # Mock StaticMap
         mock_map = Mock()
         mock_map.render.return_value = Mock()
         mock_static_map.return_value = mock_map
-        
+
         # Mock PIL Image
         mock_img = Mock()
         mock_image_new.return_value = mock_img
         mock_draw.return_value = Mock()
-        
+
         coords = [(37.7749, -122.4194), (37.7849, -122.4094)]
-        
+
         result = make_summary_map(coords, width=500, height=500)
-        
+
         assert result is not None
         mock_static_map.assert_called_once()
         mock_map.render.assert_called_once()
 
-    @patch('marimba.core.utils.map.StaticMap')
+    @patch("marimba.core.utils.map.StaticMap")
     def test_make_summary_map_network_error(self, mock_static_map):
         """Test map generation with network error."""
         # Mock StaticMap to raise ConnectionError
         mock_map = Mock()
-        mock_map.render.side_effect = __import__('requests').exceptions.ConnectionError("Network error")
+        mock_map.render.side_effect = __import__("requests").exceptions.ConnectionError("Network error")
         mock_static_map.return_value = mock_map
-        
+
         coords = [(37.7749, -122.4194), (37.7849, -122.4094)]
-        
+
         with pytest.raises(NetworkConnectionError):
             make_summary_map(coords, width=500, height=500)
 
-    @patch('marimba.core.utils.map.requests.head')
-    @patch('marimba.core.utils.map.StaticMap')
+    @patch("marimba.core.utils.map.requests.head")
+    @patch("marimba.core.utils.map.StaticMap")
     def test_make_summary_map_empty_coords(self, mock_static_map, mock_head):
         """Test map generation with empty coordinates."""
         mock_response = Mock()
         mock_response.status_code = 200
         mock_head.return_value = mock_response
-        
+
         # Should handle empty coordinates gracefully
         result = make_summary_map([], width=500, height=500)
-        
+
         # Should not create a map with no coordinates
         mock_static_map.assert_not_called()
 
-    @patch('marimba.core.utils.map.requests.head')
-    @patch('marimba.core.utils.map.StaticMap')
+    @patch("marimba.core.utils.map.requests.head")
+    @patch("marimba.core.utils.map.StaticMap")
     def test_make_summary_map_single_coordinate(self, mock_static_map, mock_head):
         """Test map generation with single coordinate."""
         mock_response = Mock()
-        mock_response.status_code = 200  
+        mock_response.status_code = 200
         mock_head.return_value = mock_response
-        
+
         mock_map = Mock()
         mock_map.render.return_value = Mock()
         mock_static_map.return_value = mock_map
-        
+
         coords = [(37.7749, -122.4194)]  # Single coordinate
-        
+
         result = make_summary_map(coords, width=500, height=500)
-        
+
         # Should handle single coordinate
         mock_static_map.assert_called_once()
 
