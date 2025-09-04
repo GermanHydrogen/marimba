@@ -1205,6 +1205,7 @@ class ProjectWrapper(LogMixin):
         *,
         force: bool = False,
         exif_chunk_size: int | None = None,
+        allow_destination_collisions: bool = False,
     ) -> DatasetWrapper:
         """
         Create a Marimba dataset from a dataset mapping.
@@ -1224,6 +1225,8 @@ class ProjectWrapper(LogMixin):
                 Defaults to None.
             force: Skip hard-link warning prompts and proceed with packaging. Defaults to False.
             exif_chunk_size: Chunk size for EXIF metadata processing. If None, uses adaptive sizing. Defaults to None.
+            allow_destination_collisions: Allow multiple source files to map to the same destination path.
+                Uses the first source file encountered. Defaults to False.
 
         Returns:
             A DatasetWrapper instance representing the created dataset.
@@ -1268,6 +1271,7 @@ class ProjectWrapper(LogMixin):
             zoom=zoom,
             max_workers=max_workers,
             exif_chunk_size=exif_chunk_size,
+            allow_destination_collisions=allow_destination_collisions,
         )
 
         # Validate it

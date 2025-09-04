@@ -170,3 +170,27 @@ class TestDatasetWrapper(TestCase):
 
             error_message = str(context.exception)
             self.assertIn("both resolve to", error_message)
+
+    def test_allow_destination_collisions_flag(self) -> None:
+        """Test that allow_destination_collisions flag allows collisions with warning."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_path = Path(temp_dir)
+            file1 = temp_path / "file1.txt"
+            file2 = temp_path / "file2.txt"
+            file1.touch()
+            file2.touch()
+
+            # Same destination path but different sources
+            collision_mapping: dict[str, dict[Path, tuple[Path, list[Any] | None, dict[str, Any] | None]]] = {
+                "test": {
+                    file1: (Path("same_destination.txt"), None, None),
+                    file2: (Path("same_destination.txt"), None, None),  # Same destination - collision
+                },
+            }
+
+            # Should fail without the flag
+            with self.assertRaises(DatasetWrapper.InvalidDatasetMappingError):
+                self.dataset_wrapper.check_dataset_mapping(collision_mapping)
+
+            # Should succeed with the flag (no exception raised)
+            self.dataset_wrapper.check_dataset_mapping(collision_mapping, allow_destination_collisions=True)

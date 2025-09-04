@@ -280,6 +280,10 @@ def package_command(
         None,
         help="Chunk size for EXIF metadata processing. If not specified, uses adaptive sizing based on dataset size.",
     ),
+    allow_destination_collisions: bool = typer.Option(
+        False,
+        help="Allow multiple source files to map to the same destination path. Uses the first source file encountered.",
+    ),
 ) -> None:
     """
     Package up a Marimba collection ready for distribution.
@@ -325,6 +329,7 @@ def package_command(
             metadata_saver_overwrite=metadata_saver_overwrite,
             force=force,
             exif_chunk_size=exif_chunk_size,
+            allow_destination_collisions=allow_destination_collisions,
         )
 
         elapsed_time = time.time() - start_time

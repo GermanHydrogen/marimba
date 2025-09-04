@@ -391,6 +391,8 @@ class DatasetWrapper(LogMixin):
         zoom: int | None = None,
         max_workers: int | None = None,
         exif_chunk_size: int | None = None,
+        *,
+        allow_destination_collisions: bool = False,
     ) -> None:
         """
 
@@ -413,6 +415,8 @@ class DatasetWrapper(LogMixin):
             zoom: An optional integer specifying the zoom level for the dataset map generation (default: None).
             max_workers: Maximum number of worker processes to use. If None, uses all available CPU cores.
             exif_chunk_size: Chunk size for EXIF metadata processing. If None, uses adaptive sizing (default: None).
+            allow_destination_collisions: Allow multiple source files to map to the same destination path.
+                Uses the first source file encountered (default: False).
 
 
         Raises:
@@ -426,7 +430,11 @@ class DatasetWrapper(LogMixin):
         )
 
         reduced_dataset_mapping = flatten_middle_mapping(dataset_mapping)
-        self.check_dataset_mapping(reduced_dataset_mapping, max_workers)
+        self.check_dataset_mapping(
+            reduced_dataset_mapping,
+            max_workers,
+            allow_destination_collisions=allow_destination_collisions,
+        )
         mapped_dataset_items = self._populate_files(dataset_mapping, operation, max_workers)
         self._process_files_with_metadata(reduced_dataset_mapping, max_workers, exif_chunk_size)
         self.generate_metadata(dataset_name, mapped_dataset_items, mapping_processor_decorator, max_workers)
@@ -1010,6 +1018,8 @@ class DatasetWrapper(LogMixin):
             dict[Path, tuple[Path, list[Any] | None, dict[str, Any] | None]],
         ],
         max_workers: int | None = None,
+        *,
+        allow_destination_collisions: bool = False,
     ) -> None:
         """
         Verify that the given dataset mapping is valid.
@@ -1017,6 +1027,8 @@ class DatasetWrapper(LogMixin):
         Args:
             dataset_mapping: A mapping from source paths to destination paths and metadata.
             max_workers: Maximum number of worker processes to use. If None, uses all available CPU cores.
+            allow_destination_collisions: Allow multiple source files to map to the same destination path.
+                Uses the first source file encountered.
 
         Raises:
             DatasetWrapper.InvalidDatasetMappingError: If the path mapping is invalid.
@@ -1063,6 +1075,7 @@ class DatasetWrapper(LogMixin):
                     progress,
                     task,
                     max_workers,
+                    allow_destination_collisions=allow_destination_collisions,
                 )
                 validation_errors.extend(errors)
 
@@ -1207,6 +1220,8 @@ class DatasetWrapper(LogMixin):
         progress: Progress,
         task: TaskID,
         max_workers: int | None = None,  # noqa: ARG002
+        *,
+        allow_destination_collisions: bool = False,
     ) -> list[str]:
         """Verify no destination path collisions and return list of error messages."""
         errors = []
@@ -1221,12 +1236,21 @@ class DatasetWrapper(LogMixin):
                     # Found a collision
                     existing_src = destination_mappings[resolved_dst]
                     if src.resolve() != existing_src.resolve():
-                        error_msg = (
-                            f"Resolved destination path {resolved_dst} is the same for "
-                            f"source paths {src} and {existing_src}"
-                        )
-                        self.logger.error(error_msg)
-                        errors.append(error_msg)
+                        if allow_destination_collisions:
+                            # Log as warning but don't add to errors
+                            warning_msg = (
+                                f"Destination path collision detected: {resolved_dst} is the same for "
+                                f"source paths {src} and {existing_src}. Using first source file: {existing_src}"
+                            )
+                            self.logger.warning(warning_msg)
+                        else:
+                            # Add as error
+                            error_msg = (
+                                f"Resolved destination path {resolved_dst} is the same for "
+                                f"source paths {src} and {existing_src}"
+                            )
+                            self.logger.error(error_msg)
+                            errors.append(error_msg)
                 else:
                     destination_mappings[resolved_dst] = src
 
