@@ -1535,7 +1535,7 @@ class ProjectWrapper(LogMixin):
             tasks_by_pipeline_name = {
                 pipeline_name: progress.add_task(
                     f"[green]Importing data for pipeline {pipeline_name}",
-                    total=num_pipelines,
+                    total=num_sources,
                 )
                 for pipeline_name in pipeline_wrappers_to_run
             }

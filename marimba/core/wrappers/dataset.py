@@ -521,30 +521,43 @@ class DatasetWrapper(LogMixin):
             tasks_by_pipeline_name = {
                 pipeline_name: progress.add_task(
                     f"[green]Populating data for {pipeline_name} pipeline (3/12)",
-                    total=len(pipeline_data_mapping),
+                    total=max(1, len(pipeline_data_mapping)),
                 )
                 for pipeline_name, pipeline_data_mapping in dataset_mapping.items()
-                if len(pipeline_data_mapping) > 0
             }
 
             for pipeline_name, pipeline_data_mapping in dataset_mapping.items():
-                for collection_name, collection_data_mapping in pipeline_data_mapping.items():
-                    self.logger.info(
-                        f'Started populating data for pipeline "{pipeline_name}"',
-                    )
-                    process_file(
-                        self,
-                        items=list(collection_data_mapping.items()),
-                        pipeline_name=pipeline_name,
-                        operation=operation,
-                        dataset_items=dataset_items[pipeline_name][collection_name],
-                        logger=self.logger,
-                        progress=progress,
-                        tasks_by_pipeline_name=tasks_by_pipeline_name,
-                    )  # type: ignore[call-arg]
-                    self.logger.info(
-                        f'Completed populating data for pipeline "{pipeline_name}"',
-                    )
+                if len(pipeline_data_mapping) == 0:
+                    # Handle pipelines with no data - advance progress bar to completion
+                    progress.advance(tasks_by_pipeline_name[pipeline_name])
+                else:
+                    for collection_name, collection_data_mapping in pipeline_data_mapping.items():
+                        self.logger.info(
+                            f'Started populating data for pipeline "{pipeline_name}"',
+                        )
+                        items = list(collection_data_mapping.items())
+                        if items:
+                            process_file(
+                                self,
+                                items=items,
+                                pipeline_name=pipeline_name,
+                                operation=operation,
+                                dataset_items=dataset_items[pipeline_name][collection_name],
+                                logger=self.logger,
+                                progress=progress,
+                                tasks_by_pipeline_name=tasks_by_pipeline_name,
+                            )  # type: ignore[call-arg]
+                        else:
+                            # No items to process for this collection, advance progress bar to completion
+                            task = tasks_by_pipeline_name[pipeline_name]
+                            task_info = progress.tasks[task]
+                            if task_info.total is not None and task_info.completed is not None:
+                                remaining = task_info.total - task_info.completed
+                                if remaining > 0:
+                                    progress.advance(task, advance=remaining)
+                        self.logger.info(
+                            f'Completed populating data for pipeline "{pipeline_name}"',
+                        )
 
         return dataset_items
 
