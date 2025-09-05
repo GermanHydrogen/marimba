@@ -28,6 +28,7 @@ class TestDatasetWrapper(TestCase):
 
     def tearDown(self) -> None:
         root_dir = self.dataset_wrapper.root_dir
+        self.dataset_wrapper.close()
         del self.dataset_wrapper
         rmtree(root_dir)
         self.test_dir.cleanup()

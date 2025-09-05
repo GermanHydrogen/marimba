@@ -366,6 +366,12 @@ class DatasetWrapper(LogMixin):
         # Add the file handler to the logger
         self.logger.addHandler(self._file_handler)
 
+    def close(self) -> None:
+        """Close the file handler."""
+        if hasattr(self, "_file_handler"):
+            self.logger.removeHandler(self._file_handler)
+            self._file_handler.close()
+
     def get_pipeline_data_dir(self, pipeline_name: str) -> Path:
         """
         Get the path to the data directory for the given pipeline.

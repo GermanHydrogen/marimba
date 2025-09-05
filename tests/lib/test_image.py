@@ -188,7 +188,8 @@ class TestImageUtilities:
     @pytest.mark.integration
     def test_resize_fit_overwrites_original(self, test_image_large):
         """Test resize_fit overwrites original when no destination specified."""
-        original_size = Image.open(test_image_large).size
+        with Image.open(test_image_large) as img:
+            original_size = img.size
 
         resize_fit(test_image_large, 500, 500)
 
@@ -241,7 +242,8 @@ class TestImageUtilities:
     @pytest.mark.integration
     def test_scale_overwrites_original(self, test_image_rgb):
         """Test scale overwrites original when no destination specified."""
-        original_size = Image.open(test_image_rgb).size
+        with Image.open(test_image_rgb) as img:
+            original_size = img.size
 
         scale(test_image_rgb, 1.5)
 
@@ -279,49 +281,30 @@ class TestImageUtilities:
             assert img.size == (100, 80)
 
     @pytest.mark.integration
-    def test_turn_clockwise_90(self, test_image_rgb, tmp_path):
-        """Test 90-degree clockwise turn."""
-        output_path = tmp_path / "turned.png"
+    @pytest.mark.parametrize(
+        "turns,expected_size,description",
+        [
+            (1, (80, 100), "90-degree turn swaps dimensions"),
+            (2, (100, 80), "180-degree turn keeps same dimensions"),
+            (3, (80, 100), "270-degree turn swaps dimensions"),
+        ],
+    )
+    def test_turn_clockwise(self, test_image_rgb, tmp_path, turns, expected_size, description):
+        """Test clockwise turns with different angles."""
+        output_path = tmp_path / f"turned_{turns * 90}deg.png"
 
-        turn_clockwise(test_image_rgb, 1, output_path)
-
-        assert output_path.exists()
-        with Image.open(output_path) as img:
-            # 90 degree turn swaps dimensions
-            assert img.size == (80, 100)
-
-    @pytest.mark.integration
-    def test_turn_clockwise_180(self, test_image_rgb, tmp_path):
-        """Test 180-degree clockwise turn."""
-        output_path = tmp_path / "turned.png"
-
-        turn_clockwise(test_image_rgb, 2, output_path)
+        turn_clockwise(test_image_rgb, turns, output_path)
 
         assert output_path.exists()
         with Image.open(output_path) as img:
-            # 180 degree turn keeps same dimensions
-            assert img.size == (100, 80)
+            assert img.size == expected_size, description
 
     @pytest.mark.integration
-    def test_turn_clockwise_270(self, test_image_rgb, tmp_path):
-        """Test 270-degree clockwise turn."""
-        output_path = tmp_path / "turned.png"
-
-        turn_clockwise(test_image_rgb, 3, output_path)
-
-        assert output_path.exists()
-        with Image.open(output_path) as img:
-            # 270 degree turn swaps dimensions
-            assert img.size == (80, 100)
-
-    @pytest.mark.integration
-    def test_turn_clockwise_invalid_turns(self, test_image_rgb):
+    @pytest.mark.parametrize("invalid_turns", [0, 4, -1, 5])
+    def test_turn_clockwise_invalid_turns(self, test_image_rgb, invalid_turns):
         """Test invalid turns value raises error."""
         with pytest.raises(ValueError, match="Turns must be an integer between 1 and 3"):
-            turn_clockwise(test_image_rgb, 0)
-
-        with pytest.raises(ValueError, match="Turns must be an integer between 1 and 3"):
-            turn_clockwise(test_image_rgb, 4)
+            turn_clockwise(test_image_rgb, invalid_turns)
 
     @pytest.mark.integration
     def test_flip_vertical(self, test_image_rgb, tmp_path):
@@ -442,13 +425,24 @@ class TestImageUtilities:
         mock_imwrite.assert_called_once()
 
     @pytest.mark.integration
+    @pytest.mark.parametrize(
+        "function_name,error_message",
+        [
+            ("apply_clahe", "Could not read image"),
+            ("gaussian_blur", "Could not read image"),
+            ("sharpen", "Could not read image"),
+        ],
+    )
     @patch("cv2.imread")
-    def test_apply_clahe_invalid_image(self, mock_imread, test_image_rgb):
-        """Test CLAHE with invalid image."""
+    def test_opencv_functions_invalid_image(self, mock_imread, function_name, error_message, test_image_rgb):
+        """Test OpenCV-based functions with invalid image."""
         mock_imread.return_value = None
 
-        with pytest.raises(ValueError, match="Could not read image"):
-            apply_clahe(test_image_rgb)
+        # Get the function from globals using its name
+        func = globals()[function_name]
+
+        with pytest.raises(ValueError, match=error_message):
+            func(test_image_rgb)
 
     @pytest.mark.integration
     @patch("cv2.imread")
@@ -471,15 +465,6 @@ class TestImageUtilities:
 
     @pytest.mark.integration
     @patch("cv2.imread")
-    def test_gaussian_blur_invalid_image(self, mock_imread, test_image_rgb):
-        """Test Gaussian blur with invalid image."""
-        mock_imread.return_value = None
-
-        with pytest.raises(ValueError, match="Could not read image"):
-            gaussian_blur(test_image_rgb)
-
-    @pytest.mark.integration
-    @patch("cv2.imread")
     @patch("cv2.filter2D")
     @patch("cv2.imwrite")
     def test_sharpen(self, mock_imwrite, mock_filter2d, mock_imread, test_image_rgb, tmp_path):
@@ -496,15 +481,6 @@ class TestImageUtilities:
         mock_imread.assert_called_once()
         mock_filter2d.assert_called_once()
         mock_imwrite.assert_called_once()
-
-    @pytest.mark.integration
-    @patch("cv2.imread")
-    def test_sharpen_invalid_image(self, mock_imread, test_image_rgb):
-        """Test sharpening with invalid image."""
-        mock_imread.return_value = None
-
-        with pytest.raises(ValueError, match="Could not read image"):
-            sharpen(test_image_rgb)
 
     @pytest.mark.integration
     def test_get_width_height(self, test_image_rgb):

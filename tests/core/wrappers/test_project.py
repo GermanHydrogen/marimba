@@ -250,6 +250,7 @@ class TestProjectWrapper:
         dataset_dir = mock_project_dir / "datasets" / "new_dataset"
         assert dataset_dir.exists()
         assert hasattr(result, "name")  # DatasetWrapper should have a name property
+        result.close()
 
     @pytest.mark.integration
     def test_delete_project(self, project_wrapper):
@@ -393,17 +394,19 @@ class TestProjectWrapper:
         ProjectWrapper.check_name("valid123")
 
     @pytest.mark.unit
-    def test_check_name_invalid(self):
+    @pytest.mark.parametrize(
+        "invalid_name,reason",
+        [
+            ("invalid name", "spaces"),
+            ("invalid/name", "slash"),
+            ("invalid@name", "special chars"),
+            ("invalid\\name", "backslash"),
+        ],
+    )
+    def test_check_name_invalid(self, invalid_name, reason):
         """Test invalid name checking."""
         with pytest.raises(ProjectWrapper.InvalidNameError):
-            ProjectWrapper.check_name("invalid name")  # spaces
-        with pytest.raises(ProjectWrapper.InvalidNameError):
-            ProjectWrapper.check_name("invalid/name")  # slash
-        with pytest.raises(ProjectWrapper.InvalidNameError):
-            ProjectWrapper.check_name("invalid@name")  # special chars
-        with pytest.raises(ProjectWrapper.InvalidNameError):
-            ProjectWrapper.check_name("invalid\\name")  # backslash
-        # Note: empty string doesn't raise an error based on the actual implementation
+            ProjectWrapper.check_name(invalid_name)
 
     @pytest.mark.integration
     def test_delete_pipeline_nonexistent(self, project_wrapper):
@@ -479,28 +482,20 @@ class TestProjectWrapper:
             ProjectWrapper(tmp_path)
 
     @pytest.mark.unit
-    def test_create_pipeline_invalid_name(self, project_wrapper):
-        """Test creating pipeline with invalid name raises error."""
+    @pytest.mark.parametrize(
+        "method_name,args",
+        [
+            ("create_pipeline", ("invalid name", "https://example.com", {})),
+            ("create_collection", ("invalid name", {})),
+            ("create_target", ("invalid name", "s3", {})),
+            ("create_dataset", ("invalid name", {}, [], [])),
+        ],
+    )
+    def test_create_methods_invalid_name(self, project_wrapper, method_name, args):
+        """Test creating components with invalid name raises error."""
+        method = getattr(project_wrapper, method_name)
         with pytest.raises(ProjectWrapper.InvalidNameError):
-            project_wrapper.create_pipeline("invalid name", "https://example.com", {})
-
-    @pytest.mark.unit
-    def test_create_collection_invalid_name(self, project_wrapper):
-        """Test creating collection with invalid name raises error."""
-        with pytest.raises(ProjectWrapper.InvalidNameError):
-            project_wrapper.create_collection("invalid name", {})
-
-    @pytest.mark.unit
-    def test_create_target_invalid_name(self, project_wrapper):
-        """Test creating target with invalid name raises error."""
-        with pytest.raises(ProjectWrapper.InvalidNameError):
-            project_wrapper.create_target("invalid name", "s3", {})
-
-    @pytest.mark.unit
-    def test_create_dataset_invalid_name(self, project_wrapper):
-        """Test creating dataset with invalid name raises error."""
-        with pytest.raises(ProjectWrapper.InvalidNameError):
-            project_wrapper.create_dataset("invalid name", {}, [], [])
+            method(*args)
 
     @patch("pathlib.Path.exists")
     @pytest.mark.integration
@@ -542,59 +537,23 @@ class TestProjectWrapperExceptions:
     """Test ProjectWrapper exception classes."""
 
     @pytest.mark.unit
-    def test_invalid_name_error(self):
-        """Test InvalidNameError exception."""
-        error = ProjectWrapper.InvalidNameError("Invalid name")
-        assert str(error) == "Invalid name"
-        assert isinstance(error, Exception)
-
-    @pytest.mark.unit
-    def test_invalid_structure_error(self):
-        """Test InvalidStructureError exception."""
-        error = ProjectWrapper.InvalidStructureError("Invalid structure")
-        assert str(error) == "Invalid structure"
-        assert isinstance(error, Exception)
-
-    @pytest.mark.unit
-    def test_no_such_collection_error(self):
-        """Test NoSuchCollectionError exception."""
-        error = ProjectWrapper.NoSuchCollectionError("No such collection")
-        assert str(error) == "No such collection"
-        assert isinstance(error, Exception)
-
-    @pytest.mark.unit
-    def test_no_such_pipeline_error(self):
-        """Test NoSuchPipelineError exception."""
-        error = ProjectWrapper.NoSuchPipelineError("No such pipeline")
-        assert str(error) == "No such pipeline"
-        assert isinstance(error, Exception)
-
-    @pytest.mark.unit
-    def test_no_such_dataset_error(self):
-        """Test NoSuchDatasetError exception."""
-        error = ProjectWrapper.NoSuchDatasetError("No such dataset")
-        assert str(error) == "No such dataset"
-        assert isinstance(error, Exception)
-
-    @pytest.mark.unit
-    def test_no_such_target_error(self):
-        """Test NoSuchTargetError exception."""
-        error = ProjectWrapper.NoSuchTargetError("No such target")
-        assert str(error) == "No such target"
-        assert isinstance(error, Exception)
-
-    @pytest.mark.unit
-    def test_delete_pipeline_error(self):
-        """Test DeletePipelineError exception."""
-        error = ProjectWrapper.DeletePipelineError("Delete pipeline error")
-        assert str(error) == "Delete pipeline error"
-        assert isinstance(error, Exception)
-
-    @pytest.mark.unit
-    def test_create_collection_error(self):
-        """Test CreateCollectionError exception."""
-        error = ProjectWrapper.CreateCollectionError("Create collection error")
-        assert str(error) == "Create collection error"
+    @pytest.mark.parametrize(
+        "exception_class,message",
+        [
+            (ProjectWrapper.InvalidNameError, "Invalid name"),
+            (ProjectWrapper.InvalidStructureError, "Invalid structure"),
+            (ProjectWrapper.NoSuchCollectionError, "No such collection"),
+            (ProjectWrapper.NoSuchPipelineError, "No such pipeline"),
+            (ProjectWrapper.NoSuchDatasetError, "No such dataset"),
+            (ProjectWrapper.NoSuchTargetError, "No such target"),
+            (ProjectWrapper.DeletePipelineError, "Delete pipeline error"),
+            (ProjectWrapper.CreateCollectionError, "Create collection error"),
+        ],
+    )
+    def test_project_wrapper_exceptions(self, exception_class, message):
+        """Test ProjectWrapper exception classes."""
+        error = exception_class(message)
+        assert str(error) == message
         assert isinstance(error, Exception)
 
 

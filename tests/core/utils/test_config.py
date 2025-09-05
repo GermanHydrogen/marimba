@@ -5,7 +5,7 @@ from unittest import TestCase
 import pytest
 import yaml
 
-from marimba.core.utils.config import load_config
+from marimba.core.utils.config import load_config, save_config
 
 
 class TestLoadConfig(TestCase):
@@ -65,3 +65,23 @@ class TestLoadConfig(TestCase):
         nonexistent_path = Path(self.test_dir.name) / "nonexistent_config.yaml"
         with self.assertRaises(FileNotFoundError):
             load_config(nonexistent_path)
+
+    @pytest.mark.unit
+    def test_save_and_load_config(self) -> None:
+        """Test saving and then loading a configuration."""
+        config_data = {"name": "test_config", "version": 1, "settings": {"debug": True, "threshold": 0.5}}
+
+        save_config(self.config_path, config_data)
+        loaded_config = load_config(self.config_path)
+
+        self.assertEqual(loaded_config, config_data)
+        self.assertTrue(self.config_path.exists())
+
+    @pytest.mark.unit
+    def test_load_config_with_non_dict_content(self) -> None:
+        """Test loading configuration with non-dictionary content."""
+        with self.config_path.open("w", encoding="utf-8") as f:
+            f.write("- item1\n- item2")  # This is a list, not dict
+
+        with self.assertRaises(TypeError):
+            load_config(self.config_path)

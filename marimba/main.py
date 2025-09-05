@@ -230,7 +230,7 @@ def import_command(
 
 
 @marimba_cli.command("package")
-def package_command(
+def package_command(  # noqa: PLR0915
     dataset_name: str = typer.Argument(..., help="Marimba dataset name."),
     collection_name: list[str] | None = typer.Option(
         None,
@@ -304,6 +304,7 @@ def package_command(
         MetadataGenerationLevelOptions.project,
     ]
     metadata_mapping_processor_decorator = [get_mapping_processor_decorator(level) for level in metadata_level_option]
+    dataset_wrapper = None
     try:
         # Compose the dataset
         dataset_mapping = project_wrapper.compose(
@@ -370,6 +371,9 @@ def package_command(
         project_wrapper.logger.exception(e)
         rprint(error_panel(f"Could not package collection: {e}"))
         raise typer.Exit from None
+    finally:
+        if dataset_wrapper:
+            dataset_wrapper.close()
 
 
 @marimba_cli.command("process")
