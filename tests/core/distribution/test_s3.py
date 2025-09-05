@@ -45,6 +45,7 @@ class TestS3DistributionTarget:
 
         return mock_wrapper
 
+    @pytest.mark.integration
     @patch("marimba.core.distribution.s3.resource")
     def test_s3_target_init(self, mock_resource, s3_credentials):
         """Test S3DistributionTarget initialization."""
@@ -71,6 +72,7 @@ class TestS3DistributionTarget:
         assert target._base_prefix == s3_credentials["base_prefix"]
         assert target._bucket == mock_bucket
 
+    @pytest.mark.integration
     @patch("marimba.core.distribution.s3.resource")
     def test_s3_target_init_strip_prefix(self, mock_resource, s3_credentials):
         """Test S3DistributionTarget strips trailing slashes from prefix."""
@@ -80,6 +82,7 @@ class TestS3DistributionTarget:
 
         assert target._base_prefix == "datasets"
 
+    @pytest.mark.integration
     @patch("marimba.core.distribution.s3.resource")
     def test_check_bucket_success(self, mock_resource, s3_credentials):
         """Test successful bucket check."""
@@ -95,6 +98,7 @@ class TestS3DistributionTarget:
 
         mock_client.head_bucket.assert_called_once_with(Bucket="test-bucket")
 
+    @pytest.mark.integration
     @patch("marimba.core.distribution.s3.resource")
     def test_check_bucket_error(self, mock_resource, s3_credentials):
         """Test bucket check with ClientError."""
@@ -111,6 +115,7 @@ class TestS3DistributionTarget:
         with pytest.raises(ClientError):
             target._check_bucket()
 
+    @pytest.mark.integration
     @patch("marimba.core.distribution.s3.resource")
     def test_iterate_dataset_wrapper(self, mock_resource, s3_credentials, mock_dataset_wrapper):
         """Test iterating over dataset files."""
@@ -136,6 +141,7 @@ class TestS3DistributionTarget:
         assert paths_and_keys["data.txt"] == "datasets/data.txt"
         assert paths_and_keys["nested.txt"] == "datasets/subdir/nested.txt"
 
+    @pytest.mark.integration
     @patch("marimba.core.distribution.s3.resource")
     def test_iterate_dataset_wrapper_no_prefix(self, mock_resource, s3_credentials, mock_dataset_wrapper):
         """Test iterating over dataset files without prefix."""
@@ -155,6 +161,7 @@ class TestS3DistributionTarget:
         assert paths_and_keys["data.txt"] == "/data.txt"
         assert paths_and_keys["nested.txt"] == "/subdir/nested.txt"
 
+    @pytest.mark.integration
     @patch("marimba.core.distribution.s3.resource")
     def test_upload_success(self, mock_resource, s3_credentials, tmp_path):
         """Test successful file upload."""
@@ -172,6 +179,7 @@ class TestS3DistributionTarget:
 
         mock_bucket.upload_file.assert_called_once_with(str(test_file.absolute()), "test-key", Config=target._config)
 
+    @pytest.mark.integration
     @patch("marimba.core.distribution.s3.resource")
     def test_distribute_success(self, mock_resource, s3_credentials, mock_dataset_wrapper):
         """Test successful dataset distribution."""
@@ -196,6 +204,7 @@ class TestS3DistributionTarget:
             assert "datasets/data.txt" in uploaded_keys
             assert "datasets/subdir/nested.txt" in uploaded_keys
 
+    @pytest.mark.integration
     @patch("marimba.core.distribution.s3.resource")
     def test_distribute_s3_upload_error(self, mock_resource, s3_credentials, mock_dataset_wrapper):
         """Test distribution with S3 upload error."""
@@ -212,6 +221,7 @@ class TestS3DistributionTarget:
             with pytest.raises(DistributionTargetBase.DistributionError, match="S3 upload failed"):
                 target.distribute(mock_dataset_wrapper)
 
+    @pytest.mark.integration
     @patch("marimba.core.distribution.s3.resource")
     def test_distribute_client_error(self, mock_resource, s3_credentials, mock_dataset_wrapper):
         """Test distribution with AWS client error."""
@@ -228,6 +238,7 @@ class TestS3DistributionTarget:
             with pytest.raises(DistributionTargetBase.DistributionError, match="AWS client error"):
                 target.distribute(mock_dataset_wrapper)
 
+    @pytest.mark.integration
     @patch("marimba.core.distribution.s3.resource")
     def test_distribute_generic_error(self, mock_resource, s3_credentials, mock_dataset_wrapper):
         """Test distribution with generic error."""
@@ -244,6 +255,7 @@ class TestS3DistributionTarget:
             with pytest.raises(DistributionTargetBase.DistributionError, match="Failed to upload"):
                 target.distribute(mock_dataset_wrapper)
 
+    @pytest.mark.integration
     @patch("marimba.core.distribution.s3.resource")
     def test_distribute_outer_exception(self, mock_resource, s3_credentials, mock_dataset_wrapper):
         """Test distribution with exception in outer distribute method."""
@@ -260,6 +272,7 @@ class TestS3DistributionTarget:
             with pytest.raises(DistributionTargetBase.DistributionError, match="Distribution error"):
                 target.distribute(mock_dataset_wrapper)
 
+    @pytest.mark.integration
     @patch("marimba.core.distribution.s3.resource")
     def test_transfer_config_setup(self, mock_resource, s3_credentials):
         """Test TransferConfig is set up correctly."""
@@ -270,6 +283,7 @@ class TestS3DistributionTarget:
 
         assert target._config.multipart_threshold == 100 * 1024 * 1024
 
+    @pytest.mark.integration
     @patch("marimba.core.distribution.s3.resource")
     def test_empty_dataset(self, mock_resource, s3_credentials, tmp_path):
         """Test distribution with empty dataset."""
@@ -293,6 +307,7 @@ class TestS3DistributionTarget:
             target.distribute(mock_wrapper)
             mock_upload.assert_not_called()
 
+    @pytest.mark.integration
     @patch("marimba.core.distribution.s3.resource")
     def test_large_file_handling(self, mock_resource, s3_credentials, mock_dataset_wrapper):
         """Test handling of files larger than multipart threshold."""
@@ -318,6 +333,7 @@ class TestS3DistributionTarget:
                     # Should upload files found in the dataset
                     assert mock_upload.call_count >= 1  # At least one file uploaded
 
+    @pytest.mark.integration
     @patch("marimba.core.distribution.s3.resource")
     @patch("marimba.core.distribution.s3.Progress")
     def test_progress_tracking(self, mock_progress, mock_resource, s3_credentials, mock_dataset_wrapper):

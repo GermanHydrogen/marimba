@@ -17,6 +17,7 @@ runner = CliRunner()
 # ---------------------------------------------------------------------------------------------------------------------#
 
 
+@pytest.mark.unit
 @pytest.fixture
 def setup_test_directory_structure(tmp_path: Path) -> Path:
     """
@@ -38,6 +39,7 @@ def setup_test_directory_structure(tmp_path: Path) -> Path:
     return subdir
 
 
+@pytest.mark.integration
 def test_find_project_dir_from_project_root(
     setup_test_directory_structure: Path,
 ) -> None:
@@ -54,6 +56,7 @@ def test_find_project_dir_from_project_root(
     assert find_project_dir(root_dir) == root_dir
 
 
+@pytest.mark.integration
 def test_find_project_dir_from_subdir(setup_test_directory_structure: Path) -> None:
     """
     Test find_project_dir when starting from a subdirectory within the project.
@@ -68,6 +71,7 @@ def test_find_project_dir_from_subdir(setup_test_directory_structure: Path) -> N
     assert find_project_dir(setup_test_directory_structure) == root_dir
 
 
+@pytest.mark.integration
 def test_find_project_dir_no_project_root(tmp_path: Path) -> None:
     """
     Test find_project_dir when there is no project root directory.
@@ -84,6 +88,7 @@ def test_find_project_dir_no_project_root(tmp_path: Path) -> None:
     assert find_project_dir(non_project_dir) is None
 
 
+@pytest.mark.integration
 def test_find_project_dir_from_nested_subdir(
     setup_test_directory_structure: Path,
 ) -> None:
@@ -103,6 +108,7 @@ def test_find_project_dir_from_nested_subdir(
     assert find_project_dir(nested_dir) == root_dir
 
 
+@pytest.mark.integration
 def test_find_project_dir_invalid_path() -> None:
     """
     Test find_project_dir when given an invalid path.
@@ -114,6 +120,7 @@ def test_find_project_dir_invalid_path() -> None:
     assert find_project_dir(invalid_path) is None
 
 
+@pytest.mark.integration
 def test_find_project_dir_non_existent_path() -> None:
     """
     Test find_project_dir when given a non-existent path.
@@ -125,6 +132,7 @@ def test_find_project_dir_non_existent_path() -> None:
     assert find_project_dir(non_existent_path) is None
 
 
+@pytest.mark.integration
 def test_find_project_dir_no_read_access(tmp_path: Path) -> None:
     """
     Test find_project_dir when the starting path has no read access.
@@ -146,6 +154,7 @@ def test_find_project_dir_no_read_access(tmp_path: Path) -> None:
         os.chmod(root_dir, 0o755)  # Restore permissions for cleanup
 
 
+@pytest.mark.integration
 def test_find_project_dir_marimba_is_file(tmp_path: Path) -> None:
     """
     Test find_project_dir when .marimba is a file, not a directory.
@@ -168,6 +177,7 @@ def test_find_project_dir_marimba_is_file(tmp_path: Path) -> None:
 # ---------------------------------------------------------------------------------------------------------------------#
 
 
+@pytest.mark.integration
 def test_find_project_dir_or_exit_with_valid_project_dir(
     setup_test_directory_structure: Path,
 ) -> None:
@@ -185,6 +195,7 @@ def test_find_project_dir_or_exit_with_valid_project_dir(
     assert result == root_dir
 
 
+@pytest.mark.integration
 def test_find_project_dir_or_exit_with_none_project_dir(
     setup_test_directory_structure: Path,
 ) -> None:
@@ -203,6 +214,7 @@ def test_find_project_dir_or_exit_with_none_project_dir(
         assert result == root_dir
 
 
+@pytest.mark.integration
 def test_find_project_dir_or_exit_with_invalid_project_dir(tmp_path: Path) -> None:
     """
     Test find_project_dir_or_exit when given an invalid project directory.
@@ -220,6 +232,7 @@ def test_find_project_dir_or_exit_with_invalid_project_dir(tmp_path: Path) -> No
         find_project_dir_or_exit(non_project_dir)
 
 
+@pytest.mark.integration
 def test_find_project_dir_or_exit_raises_exit(
     setup_test_directory_structure: Path,
 ) -> None:
@@ -258,6 +271,7 @@ def test_find_project_dir_or_exit_raises_exit(
 #         assert result == root_dir
 
 
+@pytest.mark.integration
 def test_find_project_dir_or_exit_with_symlink(tmp_path: Path) -> None:
     """
     Test find_project_dir_or_exit when there are symbolic links in the path.
@@ -283,6 +297,7 @@ def test_find_project_dir_or_exit_with_symlink(tmp_path: Path) -> None:
         assert result == root_dir
 
 
+@pytest.mark.integration
 def test_find_project_dir_or_exit_with_no_read_access(tmp_path: Path) -> None:
     """
     Test find_project_dir_or_exit when the starting path has no read access.
@@ -305,6 +320,7 @@ def test_find_project_dir_or_exit_with_no_read_access(tmp_path: Path) -> None:
         os.chmod(root_dir, 0o755)  # Restore permissions for cleanup
 
 
+@pytest.mark.integration
 def test_find_project_dir_or_exit_with_marimba_as_file(tmp_path: Path) -> None:
     """
     Test find_project_dir_or_exit when .marimba is a file, not a directory.
@@ -328,6 +344,7 @@ def test_find_project_dir_or_exit_with_marimba_as_file(tmp_path: Path) -> None:
 # ---------------------------------------------------------------------------------------------------------------------#
 
 
+@pytest.mark.unit
 @pytest.fixture
 def setup_test_directory(tmp_path: Path) -> Path:
     """
@@ -342,6 +359,7 @@ def setup_test_directory(tmp_path: Path) -> Path:
     return tmp_path
 
 
+@pytest.mark.integration
 def test_project_creates_new_project(setup_test_directory: Path) -> None:
     """
     Test project creates a new Marimba project successfully.
@@ -365,6 +383,7 @@ def test_project_creates_new_project(setup_test_directory: Path) -> None:
         assert "Created new Marimba project at" in result.output
 
 
+@pytest.mark.integration
 def test_project_exits_if_project_exists(setup_test_directory: Path) -> None:
     """
     Test project exits with an error if the project directory already exists.
@@ -388,6 +407,7 @@ def test_project_exits_if_project_exists(setup_test_directory: Path) -> None:
         assert "A Marimba project already exists at:" in result.output
 
 
+@pytest.mark.integration
 def test_project_logs_command_execution(setup_test_directory: Path) -> None:
     """
     Test project logs the command execution.
@@ -423,6 +443,7 @@ def test_project_logs_command_execution(setup_test_directory: Path) -> None:
 #         assert "Invalid path" in result.output
 
 
+@pytest.mark.integration
 def test_project_prints_success_message(setup_test_directory: Path) -> None:
     """
     Test project prints a success message upon creating a new project.
@@ -444,6 +465,7 @@ def test_project_prints_success_message(setup_test_directory: Path) -> None:
         assert "Created new Marimba project at:" in result.output
 
 
+@pytest.mark.integration
 def test_project_exit_code_on_success(setup_test_directory: Path) -> None:
     """
     Test project exit code is zero upon successful project creation.
@@ -464,6 +486,7 @@ def test_project_exit_code_on_success(setup_test_directory: Path) -> None:
         assert result.exit_code == 0
 
 
+@pytest.mark.integration
 def test_project_exit_code_on_failure(setup_test_directory: Path) -> None:
     """
     Test project exit code is non-zero upon project creation failure.
@@ -489,6 +512,7 @@ def test_project_exit_code_on_failure(setup_test_directory: Path) -> None:
 # ---------------------------------------------------------------------------------------------------------------------#
 
 
+@pytest.mark.integration
 def test_pipeline_creates_new_pipeline(setup_test_directory: Path) -> None:
     """
     Test pipeline command creates a new pipeline successfully.
@@ -524,6 +548,7 @@ def test_pipeline_creates_new_pipeline(setup_test_directory: Path) -> None:
         assert "Created new Marimba pipeline" in result.output
 
 
+@pytest.mark.integration
 def test_pipeline_invalid_name_error(setup_test_directory: Path) -> None:
     """
     Test pipeline command exits with an error for an invalid pipeline name.
@@ -554,6 +579,7 @@ def test_pipeline_invalid_name_error(setup_test_directory: Path) -> None:
         assert "Invalid pipeline name:" in result.output
 
 
+@pytest.mark.integration
 def test_pipeline_creation_failure(setup_test_directory: Path) -> None:
     """
     Test pipeline command exits with an error if pipeline creation fails.
@@ -583,6 +609,7 @@ def test_pipeline_creation_failure(setup_test_directory: Path) -> None:
         assert "Could not create pipeline:" in result.output
 
 
+@pytest.mark.integration
 def test_pipeline_logs_command_execution(setup_test_directory: Path) -> None:
     """
     Test pipeline command logs the command execution.
@@ -618,6 +645,7 @@ def test_pipeline_logs_command_execution(setup_test_directory: Path) -> None:
 # ---------------------------------------------------------------------------------------------------------------------#
 
 
+@pytest.mark.integration
 def test_collection_creates_new_collection(setup_test_directory: Path) -> None:
     """
     Test collection command creates a new collection successfully.
@@ -659,6 +687,7 @@ def test_collection_creates_new_collection(setup_test_directory: Path) -> None:
         mock_create_collection.assert_called_once_with(collection_name, ANY)
 
 
+@pytest.mark.integration
 def test_collection_invalid_name_error(setup_test_directory: Path) -> None:
     """
     Test collection command exits with an error for an invalid collection name.
@@ -688,6 +717,7 @@ def test_collection_invalid_name_error(setup_test_directory: Path) -> None:
         assert "Invalid collection name:" in result.output
 
 
+@pytest.mark.integration
 def test_collection_no_such_parent_collection_error(setup_test_directory: Path) -> None:
     """
     Test collection command exits with an error if the specified parent collection does not exist.
@@ -725,6 +755,7 @@ def test_collection_no_such_parent_collection_error(setup_test_directory: Path) 
         assert "No such parent collection:" in result.output
 
 
+@pytest.mark.integration
 def test_collection_creation_failure(setup_test_directory: Path) -> None:
     """
     Test collection command exits with an error if collection creation fails.
@@ -754,6 +785,7 @@ def test_collection_creation_failure(setup_test_directory: Path) -> None:
         assert "Could not create collection:" in result.output
 
 
+@pytest.mark.integration
 def test_collection_creation_other_failure(setup_test_directory: Path) -> None:
     """
     Test collection command exits with an error if collection creation fails.
@@ -783,6 +815,7 @@ def test_collection_creation_other_failure(setup_test_directory: Path) -> None:
         assert "Could not create collection:" in result.output
 
 
+@pytest.mark.integration
 def test_collection_logs_command_execution(setup_test_directory: Path) -> None:
     """
     Test collection command logs the command execution.
@@ -817,6 +850,7 @@ def test_collection_logs_command_execution(setup_test_directory: Path) -> None:
 # ---------------------------------------------------------------------------------------------------------------------
 
 
+@pytest.mark.integration
 def test_target_creates_new_target(setup_test_directory: Path) -> None:
     """
     Test target command creates a new distribution target successfully.
@@ -851,6 +885,7 @@ def test_target_creates_new_target(setup_test_directory: Path) -> None:
         assert "Created new Marimba target" in result.output
 
 
+@pytest.mark.integration
 def test_target_invalid_name_error(setup_test_directory: Path) -> None:
     """
     Test target command exits with an error for an invalid target name.
@@ -884,6 +919,7 @@ def test_target_invalid_name_error(setup_test_directory: Path) -> None:
         assert "Invalid target name:" in result.output
 
 
+@pytest.mark.integration
 def test_target_already_exists_error(setup_test_directory: Path) -> None:
     """
     Test target command exits with an error if the target already exists.
@@ -918,6 +954,7 @@ def test_target_already_exists_error(setup_test_directory: Path) -> None:
         assert "A Marimba target already exists" in result.output
 
 
+@pytest.mark.integration
 def test_target_creation_failure(setup_test_directory: Path) -> None:
     """
     Test target command exits with an error if target creation fails.
@@ -947,6 +984,7 @@ def test_target_creation_failure(setup_test_directory: Path) -> None:
         assert "Could not create target:" in result.output
 
 
+@pytest.mark.integration
 def test_target_logs_command_execution(setup_test_directory: Path) -> None:
     """
     Test target command logs the command execution.

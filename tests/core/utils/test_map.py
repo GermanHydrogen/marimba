@@ -22,6 +22,7 @@ from marimba.core.utils.map import (
 class TestCoordinateConversions:
     """Test coordinate conversion functions."""
 
+    @pytest.mark.unit
     def test_lat_to_y_basic(self):
         """Test latitude to y tile coordinate conversion."""
         # Test equator (0 degrees) at zoom level 1
@@ -36,6 +37,7 @@ class TestCoordinateConversions:
         y = lat_to_y(-85.0, 1)
         assert y > 1.5
 
+    @pytest.mark.unit
     def test_y_to_lat_basic(self):
         """Test y tile coordinate to latitude conversion."""
         # Test center tile at zoom level 1
@@ -48,6 +50,7 @@ class TestCoordinateConversions:
         converted_lat = y_to_lat(y, 10)
         assert abs(original_lat - converted_lat) < 0.0001
 
+    @pytest.mark.unit
     def test_lon_to_x_basic(self):
         """Test longitude to x tile coordinate conversion."""
         # Test 0 degrees longitude at zoom level 1
@@ -62,6 +65,7 @@ class TestCoordinateConversions:
         x = lon_to_x(-180.0, 1)
         assert abs(x) < 0.0001
 
+    @pytest.mark.unit
     def test_x_to_lon_basic(self):
         """Test x tile coordinate to longitude conversion."""
         # Test center tile at zoom level 1
@@ -74,6 +78,7 @@ class TestCoordinateConversions:
         converted_lon = x_to_lon(x, 10)
         assert abs(original_lon - converted_lon) < 0.0001
 
+    @pytest.mark.unit
     def test_coordinate_conversions_different_zoom_levels(self):
         """Test coordinate conversions at different zoom levels."""
         lat, lon = 37.7749, -122.4194  # San Francisco
@@ -89,6 +94,7 @@ class TestCoordinateConversions:
             assert abs(lat - converted_lat) < 0.001
             assert abs(lon - converted_lon) < 0.001
 
+    @pytest.mark.unit
     def test_coordinate_edge_cases(self):
         """Test coordinate conversion edge cases."""
         # Test extreme latitudes
@@ -107,6 +113,7 @@ class TestCoordinateConversions:
 class TestGridCalculations:
     """Test grid interval calculation functions."""
 
+    @pytest.mark.unit
     def test_calculate_grid_intervals_normal_range(self):
         """Test grid interval calculation for normal coordinate range."""
         positions, decimals = calculate_grid_intervals(-1.0, 1.0, 3)
@@ -116,6 +123,7 @@ class TestGridCalculations:
         assert positions[-1] == 1.0
         assert decimals >= 2
 
+    @pytest.mark.unit
     def test_calculate_grid_intervals_small_range(self):
         """Test grid interval calculation for very small coordinate range."""
         # Very small range should be expanded
@@ -127,6 +135,7 @@ class TestGridCalculations:
         total_range = positions[-1] - positions[0]
         assert total_range > 1e-12
 
+    @pytest.mark.unit
     def test_calculate_grid_intervals_decimal_places(self):
         """Test decimal places calculation for different intervals."""
         # Large interval -> fewer decimal places
@@ -145,6 +154,7 @@ class TestGridCalculations:
         positions, decimals = calculate_grid_intervals(0.0, 0.0002, 3)
         assert decimals == 5
 
+    @pytest.mark.unit
     def test_calculate_grid_intervals_different_num_lines(self):
         """Test grid calculation with different number of lines."""
         for num_lines in [1, 3, 5, 10]:
@@ -153,6 +163,7 @@ class TestGridCalculations:
             assert positions[0] == 0.0
             assert positions[-1] == 10.0
 
+    @pytest.mark.unit
     def test_calculate_grid_intervals_negative_range(self):
         """Test grid calculation with negative coordinate range."""
         positions, decimals = calculate_grid_intervals(-5.0, -2.0, 2)
@@ -166,6 +177,7 @@ class TestGridCalculations:
 class TestVisibleBounds:
     """Test visible bounds calculation."""
 
+    @pytest.mark.unit
     def test_calculate_visible_bounds_basic(self):
         """Test basic visible bounds calculation."""
         center_lat, center_lon = 0.0, 0.0
@@ -180,6 +192,7 @@ class TestVisibleBounds:
         assert max_lat - min_lat > 0
         assert max_lon - min_lon > 0
 
+    @pytest.mark.unit
     def test_calculate_visible_bounds_different_sizes(self):
         """Test visible bounds with different map sizes."""
         center_lat, center_lon = 37.7749, -122.4194
@@ -194,6 +207,7 @@ class TestVisibleBounds:
         large_lat_range = bounds_large[1] - bounds_large[0]
         assert large_lat_range > small_lat_range
 
+    @pytest.mark.unit
     def test_calculate_visible_bounds_different_zoom(self):
         """Test visible bounds with different zoom levels."""
         center_lat, center_lon = 37.7749, -122.4194
@@ -207,6 +221,7 @@ class TestVisibleBounds:
         high_lat_range = bounds_high[1] - bounds_high[0]
         assert low_lat_range > high_lat_range
 
+    @pytest.mark.unit
     def test_calculate_visible_bounds_rectangular(self):
         """Test visible bounds with rectangular (non-square) dimensions."""
         center_lat, center_lon = 0.0, 0.0
@@ -231,6 +246,7 @@ class TestVisibleBounds:
 class TestAxesDrawing:
     """Test axes drawing functionality."""
 
+    @pytest.mark.unit
     @patch("marimba.core.utils.map.ImageDraw.ImageDraw")
     def test_add_axes_basic(self, mock_draw):
         """Test basic axes drawing functionality."""
@@ -253,6 +269,7 @@ class TestAxesDrawing:
         assert mock_draw_instance.line.called
         assert mock_draw_instance.text.called
 
+    @pytest.mark.unit
     @patch("marimba.core.utils.map.ImageDraw.ImageDraw")
     def test_add_axes_no_lines(self, mock_draw):
         """Test axes drawing with no grid lines."""
@@ -275,6 +292,7 @@ class TestAxesDrawing:
         # Grid interval calculation should still return valid results
         assert True  # Function should not raise an error
 
+    @pytest.mark.unit
     @patch("marimba.core.utils.map.ImageDraw.ImageDraw")
     def test_add_axes_large_decimal_precision(self, mock_draw):
         """Test axes drawing with high precision coordinates."""
@@ -302,6 +320,7 @@ class TestAxesDrawing:
 class TestZoomCalculation:
     """Test zoom level calculation."""
 
+    @pytest.mark.unit
     def test_calculate_zoom_level_basic(self):
         """Test basic zoom level calculation."""
         # Very large area should use low zoom
@@ -309,6 +328,7 @@ class TestZoomCalculation:
         assert isinstance(zoom, int)
         assert 0 <= zoom <= 19
 
+    @pytest.mark.unit
     def test_calculate_zoom_level_small_area(self):
         """Test zoom calculation for small area."""
         # Small area should use higher zoom
@@ -317,6 +337,7 @@ class TestZoomCalculation:
 
         assert zoom_small >= zoom_large
 
+    @pytest.mark.unit
     def test_calculate_zoom_level_extreme_values(self):
         """Test zoom calculation with extreme coordinate values."""
         # Very small area should get high zoom (clamped to max)
@@ -327,6 +348,7 @@ class TestZoomCalculation:
         zoom_huge = calculate_zoom_level(-85.0, 85.0, -180.0, 180.0, width=512, height=512)
         assert 0 <= zoom_huge <= 5
 
+    @pytest.mark.unit
     def test_calculate_zoom_level_different_dimensions(self):
         """Test zoom calculation with different image dimensions."""
         coords = (37.0, 38.0, -123.0, -122.0)
@@ -341,6 +363,7 @@ class TestZoomCalculation:
 class TestMapGeneration:
     """Test map generation functionality."""
 
+    @pytest.mark.integration
     @patch("marimba.core.utils.map.requests.head")
     @patch("marimba.core.utils.map.StaticMap")
     @patch("marimba.core.utils.map.Image.new")
@@ -370,6 +393,7 @@ class TestMapGeneration:
         mock_static_map.assert_called_once()
         mock_map.render.assert_called_once()
 
+    @pytest.mark.integration
     @patch("marimba.core.utils.map.StaticMap")
     def test_make_summary_map_network_error(self, mock_static_map):
         """Test map generation with network error."""
@@ -383,6 +407,7 @@ class TestMapGeneration:
         with pytest.raises(NetworkConnectionError):
             make_summary_map(coords, width=500, height=500)
 
+    @pytest.mark.unit
     @patch("marimba.core.utils.map.requests.head")
     @patch("marimba.core.utils.map.StaticMap")
     def test_make_summary_map_empty_coords(self, mock_static_map, mock_head):
@@ -397,6 +422,7 @@ class TestMapGeneration:
         # Should not create a map with no coordinates
         mock_static_map.assert_not_called()
 
+    @pytest.mark.unit
     @patch("marimba.core.utils.map.requests.head")
     @patch("marimba.core.utils.map.StaticMap")
     def test_make_summary_map_single_coordinate(self, mock_static_map, mock_head):
@@ -420,16 +446,19 @@ class TestMapGeneration:
 class TestNetworkConnectionError:
     """Test custom exception class."""
 
+    @pytest.mark.unit
     def test_network_connection_error_creation(self):
         """Test NetworkConnectionError can be created and raised."""
         with pytest.raises(NetworkConnectionError):
             raise NetworkConnectionError("Test error message")
 
+    @pytest.mark.unit
     def test_network_connection_error_inheritance(self):
         """Test NetworkConnectionError inherits from Exception."""
         error = NetworkConnectionError("Test")
         assert isinstance(error, Exception)
 
+    @pytest.mark.unit
     def test_network_connection_error_message(self):
         """Test NetworkConnectionError preserves message."""
         message = "Custom error message"

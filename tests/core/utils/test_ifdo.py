@@ -4,6 +4,8 @@ from unittest import TestCase
 from unittest.mock import MagicMock, patch
 from uuid import UUID, uuid4
 
+import pytest
+
 from ifdo import iFDO
 from ifdo.models import ImageSetHeader
 
@@ -37,12 +39,14 @@ class TestIfdo(TestCase):
     def tearDown(self) -> None:
         self.test_dir.cleanup()
 
+    @pytest.mark.integration
     @patch("uuid.uuid4", return_value=UUID("12345678123456781234567812345678"))
     def test_load_ifdo(self, mock_uuid: MagicMock) -> None:
         self.ifdo.save(self.ifdo_path)
         loaded_ifdo = load_ifdo(self.ifdo_path)
         self.assertEqual(self.ifdo, loaded_ifdo)
 
+    @pytest.mark.integration
     def test_save_ifdo(self) -> None:
         save_ifdo(self.ifdo, self.ifdo_path)
         self.assertTrue(self.ifdo_path.exists())

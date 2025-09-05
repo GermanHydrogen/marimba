@@ -3,6 +3,7 @@ import pytest
 from marimba.core.installer.uv_executor import UvExecutor
 
 
+@pytest.mark.integration
 def test_uv_executor_output():
     uv_executor = UvExecutor.create()
     result = uv_executor("list")
@@ -11,6 +12,7 @@ def test_uv_executor_output():
     assert result.error == ""
 
 
+@pytest.mark.integration
 def test_uv_executor_error():
     uv_executor = UvExecutor.create()
 

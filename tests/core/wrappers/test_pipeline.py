@@ -46,6 +46,7 @@ class MockTestPipeline(BasePipeline):
 class TestPipelineWrapperInitialization:
     """Tests for PipelineWrapper initialization and basic properties."""
 
+    @pytest.mark.integration
     def test_init_success(self, tmp_path):
         """Test successful PipelineWrapper initialization."""
         # Create required file structure
@@ -70,6 +71,7 @@ class TestPipelineWrapperInitialization:
             assert wrapper.name == tmp_path.name
             assert not wrapper.dry_run
 
+    @pytest.mark.integration
     def test_init_with_dry_run(self, tmp_path):
         """Test PipelineWrapper initialization with dry_run=True."""
         # Create required file structure
@@ -85,6 +87,7 @@ class TestPipelineWrapperInitialization:
             wrapper = PipelineWrapper(tmp_path, dry_run=True)
             assert wrapper.dry_run
 
+    @pytest.mark.integration
     def test_init_with_string_path(self, tmp_path):
         """Test PipelineWrapper initialization with string path."""
         # Create required file structure
@@ -104,6 +107,7 @@ class TestPipelineWrapperInitialization:
 class TestPipelineWrapperFileStructureValidation:
     """Tests for file structure validation in PipelineWrapper."""
 
+    @pytest.mark.integration
     def test_missing_root_directory(self, tmp_path):
         """Test InvalidStructureError when root directory doesn't exist."""
         missing_dir = tmp_path / "nonexistent"
@@ -117,6 +121,7 @@ class TestPipelineWrapperFileStructureValidation:
             ):
                 PipelineWrapper(missing_dir)
 
+    @pytest.mark.integration
     def test_missing_repo_directory(self, tmp_path):
         """Test InvalidStructureError when repo directory doesn't exist."""
         config_file = tmp_path / "pipeline.yml"
@@ -132,6 +137,7 @@ class TestPipelineWrapperFileStructureValidation:
             ):
                 PipelineWrapper(tmp_path)
 
+    @pytest.mark.integration
     def test_missing_config_file(self, tmp_path):
         """Test InvalidStructureError when config file doesn't exist."""
         repo_dir = tmp_path / "repo"
@@ -147,6 +153,7 @@ class TestPipelineWrapperFileStructureValidation:
             ):
                 PipelineWrapper(tmp_path)
 
+    @pytest.mark.integration
     def test_repo_is_file_not_directory(self, tmp_path):
         """Test InvalidStructureError when repo exists as file instead of directory."""
         repo_file = tmp_path / "repo"
@@ -163,6 +170,7 @@ class TestPipelineWrapperFileStructureValidation:
             ):
                 PipelineWrapper(tmp_path)
 
+    @pytest.mark.integration
     def test_config_is_directory_not_file(self, tmp_path):
         """Test InvalidStructureError when config exists as directory instead of file."""
         repo_dir = tmp_path / "repo"
@@ -185,6 +193,7 @@ class TestPipelineWrapperLogging:
 
     @patch("marimba.core.wrappers.pipeline.get_file_handler")
     @patch("marimba.core.utils.log.get_logger")
+    @pytest.mark.integration
     def test_setup_logging(self, mock_get_logger, mock_get_file_handler, tmp_path):
         """Test logging setup with file handler."""
         # Create required file structure
@@ -207,6 +216,7 @@ class TestPipelineWrapperLogging:
             mock_logger.addHandler.assert_called_with(mock_file_handler)
 
     @patch("marimba.core.wrappers.pipeline.get_file_handler")
+    @pytest.mark.integration
     def test_setup_logging_dry_run(self, mock_get_file_handler, tmp_path):
         """Test logging setup in dry run mode."""
         # Create required file structure
@@ -230,6 +240,7 @@ class TestPipelineWrapperCreate:
 
     @patch("marimba.core.wrappers.pipeline.Repo")
     @patch("marimba.core.wrappers.pipeline.save_config")
+    @pytest.mark.integration
     def test_create_success(self, mock_save_config, mock_repo_class, tmp_path):
         """Test successful pipeline creation from git repository."""
         # Ensure the target directory doesn't exist
@@ -256,6 +267,7 @@ class TestPipelineWrapperCreate:
             # Verify PipelineWrapper constructor was called
             mock_init.assert_called_once_with(pipeline_dir, dry_run=True)
 
+    @pytest.mark.integration
     def test_create_directory_exists_error(self, tmp_path):
         """Test FileExistsError when target directory already exists."""
         existing_dir = tmp_path / "existing"
@@ -265,6 +277,7 @@ class TestPipelineWrapperCreate:
             PipelineWrapper.create(existing_dir, "https://github.com/example/pipeline.git")
 
     @patch("marimba.core.wrappers.pipeline.Repo")
+    @pytest.mark.integration
     def test_create_with_string_path(self, mock_repo_class, tmp_path):
         """Test pipeline creation with string path."""
         pipeline_dir = tmp_path / "string_path_test"
@@ -295,6 +308,7 @@ class TestPipelineWrapperConfiguration:
         shutil.rmtree(self.temp_dir)
 
     @patch("marimba.core.wrappers.pipeline.load_config")
+    @pytest.mark.integration
     def test_load_config(self, mock_load_config):
         """Test configuration loading."""
         mock_load_config.return_value = {"key": "value"}
@@ -311,6 +325,7 @@ class TestPipelineWrapperConfiguration:
             assert result == {"key": "value"}
 
     @patch("marimba.core.wrappers.pipeline.save_config")
+    @pytest.mark.integration
     def test_save_config_with_data(self, mock_save_config):
         """Test configuration saving with data."""
         with (
@@ -325,6 +340,7 @@ class TestPipelineWrapperConfiguration:
             mock_save_config.assert_called_once_with(wrapper.config_path, test_config)
 
     @patch("marimba.core.wrappers.pipeline.save_config")
+    @pytest.mark.integration
     def test_save_config_with_none(self, mock_save_config):
         """Test configuration saving with None (should not call save_config)."""
         with (
@@ -338,6 +354,7 @@ class TestPipelineWrapperConfiguration:
             mock_save_config.assert_not_called()
 
     @patch("marimba.core.wrappers.pipeline.save_config")
+    @pytest.mark.integration
     def test_save_config_with_empty_dict(self, mock_save_config):
         """Test configuration saving with empty dictionary (should not call save_config)."""
         with (
@@ -368,6 +385,7 @@ class TestPipelineWrapperInstanceManagement:
         shutil.rmtree(self.temp_dir)
 
     @patch("marimba.core.wrappers.pipeline.load_pipeline_instance")
+    @pytest.mark.integration
     def test_get_instance_success(self, mock_load_pipeline_instance):
         """Test successful pipeline instance retrieval."""
         mock_pipeline = Mock(spec=BasePipeline)
@@ -393,6 +411,7 @@ class TestPipelineWrapperInstanceManagement:
             assert result == mock_pipeline
 
     @patch("marimba.core.wrappers.pipeline.load_pipeline_instance")
+    @pytest.mark.integration
     def test_get_instance_allow_empty_true(self, mock_load_pipeline_instance):
         """Test pipeline instance retrieval with allow_empty=True."""
         mock_load_pipeline_instance.return_value = None
@@ -432,6 +451,7 @@ class TestPipelineWrapperPipelineClassDiscovery:
         """Clean up test fixtures."""
         shutil.rmtree(self.temp_dir)
 
+    @pytest.mark.integration
     def test_get_pipeline_class_no_files(self):
         """Test FileNotFoundError when no .pipeline.py files exist."""
         with (
@@ -443,6 +463,7 @@ class TestPipelineWrapperPipelineClassDiscovery:
             with pytest.raises(FileNotFoundError, match=f'No pipeline implementation found in "{self.repo_dir}"'):
                 wrapper.get_pipeline_class()
 
+    @pytest.mark.integration
     def test_get_pipeline_class_multiple_files(self):
         """Test FileNotFoundError when multiple .pipeline.py files exist."""
         # Create multiple pipeline files
@@ -463,6 +484,7 @@ class TestPipelineWrapperPipelineClassDiscovery:
                 wrapper.get_pipeline_class()
 
     @patch("marimba.core.wrappers.pipeline.spec_from_file_location")
+    @pytest.mark.integration
     def test_get_pipeline_class_spec_none(self, mock_spec_from_file_location):
         """Test ImportError when spec_from_file_location returns None."""
         pipeline_file = self.repo_dir / "test.pipeline.py"
@@ -481,6 +503,7 @@ class TestPipelineWrapperPipelineClassDiscovery:
 
     @patch("marimba.core.wrappers.pipeline.module_from_spec")
     @patch("marimba.core.wrappers.pipeline.spec_from_file_location")
+    @pytest.mark.integration
     def test_get_pipeline_class_no_loader(self, mock_spec_from_file_location, mock_module_from_spec):
         """Test ImportError when module spec has no loader."""
         pipeline_file = self.repo_dir / "test.pipeline.py"
@@ -501,6 +524,7 @@ class TestPipelineWrapperPipelineClassDiscovery:
 
     @patch("marimba.core.wrappers.pipeline.module_from_spec")
     @patch("marimba.core.wrappers.pipeline.spec_from_file_location")
+    @pytest.mark.integration
     def test_get_pipeline_class_success(self, mock_spec_from_file_location, mock_module_from_spec):
         """Test successful pipeline class discovery and caching."""
         pipeline_file = self.repo_dir / "test.pipeline.py"
@@ -541,6 +565,7 @@ class TestPipelineWrapperPipelineClassDiscovery:
 
     @patch("marimba.core.wrappers.pipeline.module_from_spec")
     @patch("marimba.core.wrappers.pipeline.spec_from_file_location")
+    @pytest.mark.integration
     def test_get_pipeline_class_no_valid_class(self, mock_spec_from_file_location, mock_module_from_spec):
         """Test that None is returned when no valid pipeline class is found."""
         pipeline_file = self.repo_dir / "test.pipeline.py"
@@ -588,6 +613,7 @@ class TestPipelineWrapperPipelineConfigPrompt:
 
     @patch("marimba.core.wrappers.pipeline.prompt_schema")
     @patch("marimba.core.utils.log.get_logger")
+    @pytest.mark.integration
     def test_prompt_pipeline_config_success(self, mock_get_logger, mock_prompt_schema):
         """Test successful pipeline configuration prompting."""
         # Mock the pipeline instance
@@ -621,6 +647,7 @@ class TestPipelineWrapperPipelineConfigPrompt:
 
     @patch("marimba.core.wrappers.pipeline.prompt_schema")
     @patch("marimba.core.utils.log.get_logger")
+    @pytest.mark.integration
     def test_prompt_pipeline_config_with_existing_config(self, mock_get_logger, mock_prompt_schema):
         """Test pipeline configuration prompting with existing config."""
         mock_pipeline = Mock()
@@ -653,6 +680,7 @@ class TestPipelineWrapperPipelineConfigPrompt:
             # Verify result contains both existing and prompted values
             assert result == {"param1": "existing_value", "param2": 100}
 
+    @pytest.mark.integration
     def test_prompt_pipeline_config_empty_pipeline(self):
         """Test pipeline configuration prompting with empty pipeline."""
         with (
@@ -671,6 +699,7 @@ class TestPipelineWrapperPipelineConfigPrompt:
 
     @patch("marimba.core.wrappers.pipeline.prompt_schema")
     @patch("marimba.core.utils.log.get_logger")
+    @pytest.mark.integration
     def test_prompt_pipeline_config_no_additional_prompting(self, mock_get_logger, mock_prompt_schema):
         """Test pipeline configuration when no additional prompting is needed."""
         mock_pipeline = Mock()
@@ -698,6 +727,7 @@ class TestPipelineWrapperPipelineConfigPrompt:
             assert result == {"param1": "existing_value"}
 
     @patch("marimba.core.wrappers.pipeline.prompt_schema")
+    @pytest.mark.integration
     def test_prompt_pipeline_config_with_project_logger(self, mock_prompt_schema):
         """Test pipeline configuration prompting with custom project logger."""
         mock_pipeline = Mock()
@@ -721,6 +751,7 @@ class TestPipelineWrapperPipelineConfigPrompt:
 
     @patch("marimba.core.wrappers.pipeline.prompt_schema")
     @patch("marimba.core.utils.log.get_logger")
+    @pytest.mark.integration
     def test_prompt_pipeline_config_uses_pipeline_logger_by_default(self, mock_get_logger, mock_prompt_schema):
         """Test that pipeline logger is used when no project logger is provided."""
         mock_pipeline = Mock()
@@ -760,6 +791,7 @@ class TestPipelineWrapperRepositoryOperations:
         shutil.rmtree(self.temp_dir)
 
     @patch("marimba.core.wrappers.pipeline.Repo")
+    @pytest.mark.integration
     def test_update_success(self, mock_repo_class):
         """Test successful repository update."""
         mock_repo = Mock()
@@ -778,6 +810,7 @@ class TestPipelineWrapperRepositoryOperations:
             mock_repo_class.assert_called_once_with(self.repo_dir)
             mock_origin.pull.assert_called_once()
 
+    @pytest.mark.integration
     def test_install_success(self):
         """Test successful pipeline dependency installation."""
         mock_installer = Mock()
@@ -810,6 +843,7 @@ class TestPipelineWrapperErrorHandling:
         shutil.rmtree(self.temp_dir)
 
     @patch("marimba.core.wrappers.pipeline.Repo")
+    @pytest.mark.integration
     def test_update_git_error(self, mock_repo_class):
         """Test repository update with git error."""
         from git.exc import GitError
@@ -827,6 +861,7 @@ class TestPipelineWrapperErrorHandling:
 
     @patch("marimba.core.wrappers.pipeline.Repo")
     @patch("marimba.core.wrappers.pipeline.save_config")
+    @pytest.mark.integration
     def test_create_git_clone_error(self, mock_save_config, mock_repo_class):
         """Test pipeline creation with git clone error."""
         from git.exc import GitError

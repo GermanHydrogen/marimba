@@ -18,6 +18,7 @@ from marimba.lib.video import (
 class TestVideoUtilities:
     """Test video utility functions."""
 
+    @pytest.mark.integration
     @pytest.fixture
     def mock_video_stream(self):
         """Create a mock video stream."""
@@ -32,6 +33,7 @@ class TestVideoUtilities:
         """Create a test video path."""
         return tmp_path / "test_video.mp4"
 
+    @pytest.mark.integration
     def test_get_stream_properties(self, mock_video_stream):
         """Test extracting stream properties."""
         frame_rate, time_base, total_frames = get_stream_properties(mock_video_stream)
@@ -40,6 +42,7 @@ class TestVideoUtilities:
         assert time_base == 1 / 30.0
         assert total_frames == 900
 
+    @pytest.mark.integration
     def test_get_stream_properties_none_frame_rate(self):
         """Test get_stream_properties with None frame rate."""
         stream = Mock()
@@ -50,6 +53,7 @@ class TestVideoUtilities:
         with pytest.raises(ValueError, match="Frame rate or time base is None"):
             get_stream_properties(stream)
 
+    @pytest.mark.integration
     def test_get_stream_properties_none_time_base(self):
         """Test get_stream_properties with None time base."""
         stream = Mock()
@@ -60,6 +64,7 @@ class TestVideoUtilities:
         with pytest.raises(ValueError, match="Frame rate or time base is None"):
             get_stream_properties(stream)
 
+    @pytest.mark.integration
     def test_generate_potential_filenames(self, test_video_path, tmp_path):
         """Test generating potential filenames."""
         output_dir = tmp_path / "output"
@@ -74,6 +79,7 @@ class TestVideoUtilities:
         expected_filename = "test_video_000_THUMB.JPG"
         assert filenames[0].name == expected_filename
 
+    @pytest.mark.integration
     def test_generate_potential_filenames_padding(self, test_video_path, tmp_path):
         """Test filename padding with different frame counts."""
         output_dir = tmp_path / "output"
@@ -84,6 +90,7 @@ class TestVideoUtilities:
         expected_filename = "test_video_0000_THUMB.JPG"
         assert filenames[0].name == expected_filename
 
+    @pytest.mark.integration
     def test_filter_existing_thumbnails_no_overwrite(self, tmp_path):
         """Test filtering existing thumbnails without overwrite."""
         # Create some existing files
@@ -110,6 +117,7 @@ class TestVideoUtilities:
         assert len(potential_filenames) == 1
         assert 2 in potential_filenames
 
+    @pytest.mark.integration
     def test_filter_existing_thumbnails_with_overwrite(self, tmp_path):
         """Test filtering existing thumbnails with overwrite enabled."""
         existing_file = tmp_path / "file1.jpg"
@@ -125,6 +133,7 @@ class TestVideoUtilities:
         # Should still have all files when overwrite is True
         assert len(potential_filenames) == 1
 
+    @pytest.mark.integration
     @patch("marimba.lib.video.logger")
     def test_filter_existing_thumbnails_logging(self, mock_logger, tmp_path):
         """Test that filtering logs existing files."""
@@ -138,6 +147,7 @@ class TestVideoUtilities:
         mock_logger.info.assert_called_once()
         assert "Thumbnail already exists" in str(mock_logger.info.call_args)
 
+    @pytest.mark.integration
     def test_save_thumbnail(self, tmp_path):
         """Test saving thumbnail from video frame."""
         output_path = tmp_path / "thumb.jpg"
@@ -154,6 +164,7 @@ class TestVideoUtilities:
         mock_image.thumbnail.assert_called_once()
         mock_image.save.assert_called_once_with(output_path)
 
+    @pytest.mark.integration
     @patch("av.open")
     @patch("marimba.lib.video.get_stream_properties")
     @patch("marimba.lib.video.generate_potential_filenames")
@@ -191,6 +202,7 @@ class TestVideoUtilities:
         assert result_paths == []
         assert output_dir.exists()
 
+    @pytest.mark.integration
     @patch("av.open")
     @patch("marimba.lib.video.get_stream_properties")
     @patch("marimba.lib.video.generate_potential_filenames")
@@ -228,6 +240,7 @@ class TestVideoUtilities:
         assert result_video == test_video_path
         assert result_paths == existing_paths
 
+    @pytest.mark.integration
     @patch("av.open")
     def test_generate_video_thumbnails_av_error(self, mock_av_open, test_video_path, tmp_path):
         """Test video thumbnail generation with AV error."""
@@ -238,6 +251,7 @@ class TestVideoUtilities:
         with pytest.raises(Exception, match="Generic AV error"):
             generate_video_thumbnails(test_video_path, output_dir)
 
+    @pytest.mark.integration
     @patch("av.open")
     @patch("marimba.lib.video.show_dependency_error_and_exit")
     def test_generate_video_thumbnails_ffmpeg_error(self, mock_show_error, mock_av_open, test_video_path, tmp_path):
@@ -253,6 +267,7 @@ class TestVideoUtilities:
 
         mock_show_error.assert_called_once()
 
+    @pytest.mark.integration
     @patch("av.open")
     @patch("marimba.lib.video.get_stream_properties")
     @patch("marimba.lib.video.generate_potential_filenames")

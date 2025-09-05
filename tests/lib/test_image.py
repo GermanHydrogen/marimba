@@ -38,6 +38,7 @@ from marimba.lib.image import (
 class TestImageUtilities:
     """Test image utility functions."""
 
+    @pytest.mark.integration
     @pytest.fixture
     def test_image_rgb(self, tmp_path):
         """Create a test RGB image."""
@@ -46,6 +47,7 @@ class TestImageUtilities:
         img.save(image_path)
         return image_path
 
+    @pytest.mark.integration
     @pytest.fixture
     def test_image_jpeg(self, tmp_path):
         """Create a test JPEG image."""
@@ -54,6 +56,7 @@ class TestImageUtilities:
         img.save(image_path, "JPEG")
         return image_path
 
+    @pytest.mark.integration
     @pytest.fixture
     def test_image_large(self, tmp_path):
         """Create a large test image."""
@@ -62,6 +65,7 @@ class TestImageUtilities:
         img.save(image_path)
         return image_path
 
+    @pytest.mark.integration
     def test_generate_image_thumbnail(self, test_image_rgb, tmp_path):
         """Test thumbnail generation."""
         output_dir = tmp_path / "thumbnails"
@@ -78,6 +82,7 @@ class TestImageUtilities:
             assert width <= 300
             assert height <= 300
 
+    @pytest.mark.integration
     def test_generate_image_thumbnail_custom_suffix(self, test_image_rgb, tmp_path):
         """Test thumbnail generation with custom suffix."""
         output_dir = tmp_path / "thumbnails"
@@ -88,6 +93,7 @@ class TestImageUtilities:
         assert result_path.exists()
         assert "_CUSTOM" in result_path.name
 
+    @pytest.mark.integration
     def test_generate_image_thumbnail_existing(self, test_image_rgb, tmp_path):
         """Test that existing thumbnail is not regenerated."""
         output_dir = tmp_path / "thumbnails"
@@ -103,6 +109,7 @@ class TestImageUtilities:
         assert result_path == result_path2
         assert result_path.stat().st_mtime == original_mtime
 
+    @pytest.mark.integration
     def test_convert_to_jpeg_from_png(self, test_image_rgb, tmp_path):
         """Test converting PNG to JPEG."""
         output_path = tmp_path / "converted.jpg"
@@ -115,6 +122,7 @@ class TestImageUtilities:
         with Image.open(result_path) as img:
             assert img.format == "JPEG"
 
+    @pytest.mark.integration
     def test_convert_to_jpeg_existing_jpeg(self, test_image_jpeg, tmp_path):
         """Test converting existing JPEG (should copy)."""
         output_path = tmp_path / "converted.jpg"
@@ -124,6 +132,7 @@ class TestImageUtilities:
         assert result_path == output_path
         assert result_path.exists()
 
+    @pytest.mark.integration
     def test_convert_to_jpeg_custom_quality(self, test_image_rgb):
         """Test JPEG conversion with custom quality."""
         result_path = convert_to_jpeg(test_image_rgb, quality=50)
@@ -131,6 +140,7 @@ class TestImageUtilities:
         assert result_path.suffix == ".jpg"
         assert result_path.exists()
 
+    @pytest.mark.integration
     def test_convert_to_jpeg_overwrites_original(self, test_image_rgb):
         """Test that conversion overwrites original when no destination specified."""
         original_path = test_image_rgb
@@ -140,6 +150,7 @@ class TestImageUtilities:
         assert result_path.suffix == ".jpg"
         assert result_path.stem == original_path.stem
 
+    @pytest.mark.integration
     def test_resize_fit_no_resize_needed(self, test_image_rgb, tmp_path):
         """Test resize_fit when image is already within bounds."""
         output_path = tmp_path / "resized.png"
@@ -151,6 +162,7 @@ class TestImageUtilities:
             # Original is 100x80, should not be resized
             assert img.size == (100, 80)
 
+    @pytest.mark.integration
     def test_resize_fit_width_constrained(self, test_image_large, tmp_path):
         """Test resize_fit when width is the constraining dimension."""
         output_path = tmp_path / "resized.png"
@@ -163,6 +175,7 @@ class TestImageUtilities:
             assert width == 1000
             assert height == 750  # Maintains aspect ratio
 
+    @pytest.mark.integration
     def test_resize_fit_height_constrained(self, test_image_large, tmp_path):
         """Test resize_fit when height is the constraining dimension."""
         output_path = tmp_path / "resized.png"
@@ -175,6 +188,7 @@ class TestImageUtilities:
             assert width == 1333  # Maintains aspect ratio
             assert height == 1000
 
+    @pytest.mark.integration
     def test_resize_fit_overwrites_original(self, test_image_large):
         """Test resize_fit overwrites original when no destination specified."""
         original_size = Image.open(test_image_large).size
@@ -186,6 +200,7 @@ class TestImageUtilities:
             assert new_size != original_size
             assert max(new_size) <= 500
 
+    @pytest.mark.integration
     def test_resize_exact(self, test_image_rgb, tmp_path):
         """Test exact resizing."""
         output_path = tmp_path / "resized.png"
@@ -196,6 +211,7 @@ class TestImageUtilities:
         with Image.open(output_path) as img:
             assert img.size == (150, 200)
 
+    @pytest.mark.integration
     def test_resize_exact_overwrites_original(self, test_image_rgb):
         """Test resize_exact overwrites original when no destination specified."""
         resize_exact(test_image_rgb, 50, 40)
@@ -203,6 +219,7 @@ class TestImageUtilities:
         with Image.open(test_image_rgb) as img:
             assert img.size == (50, 40)
 
+    @pytest.mark.integration
     def test_scale(self, test_image_rgb, tmp_path):
         """Test scaling by factor."""
         output_path = tmp_path / "scaled.png"
@@ -213,6 +230,7 @@ class TestImageUtilities:
         with Image.open(output_path) as img:
             assert img.size == (50, 40)
 
+    @pytest.mark.integration
     def test_scale_larger(self, test_image_rgb, tmp_path):
         """Test scaling up."""
         output_path = tmp_path / "scaled.png"
@@ -223,6 +241,7 @@ class TestImageUtilities:
         with Image.open(output_path) as img:
             assert img.size == (200, 160)
 
+    @pytest.mark.integration
     def test_scale_overwrites_original(self, test_image_rgb):
         """Test scale overwrites original when no destination specified."""
         original_size = Image.open(test_image_rgb).size
@@ -234,6 +253,7 @@ class TestImageUtilities:
             assert new_size != original_size
             assert new_size == (150, 120)
 
+    @pytest.mark.integration
     def test_rotate_clockwise(self, test_image_rgb, tmp_path):
         """Test clockwise rotation."""
         output_path = tmp_path / "rotated.png"
@@ -243,6 +263,7 @@ class TestImageUtilities:
         assert output_path.exists()
         # Note: Actual rotation testing would require more complex image comparison
 
+    @pytest.mark.integration
     def test_rotate_clockwise_expand(self, test_image_rgb, tmp_path):
         """Test clockwise rotation with expand."""
         output_path = tmp_path / "rotated.png"
@@ -251,6 +272,7 @@ class TestImageUtilities:
 
         assert output_path.exists()
 
+    @pytest.mark.integration
     def test_rotate_clockwise_overwrites_original(self, test_image_rgb):
         """Test rotate_clockwise overwrites original when no destination specified."""
         rotate_clockwise(test_image_rgb, 90)
@@ -259,6 +281,7 @@ class TestImageUtilities:
             # Note: rotation doesn't swap dimensions, just rotates content
             assert img.size == (100, 80)
 
+    @pytest.mark.integration
     def test_turn_clockwise_90(self, test_image_rgb, tmp_path):
         """Test 90-degree clockwise turn."""
         output_path = tmp_path / "turned.png"
@@ -270,6 +293,7 @@ class TestImageUtilities:
             # 90 degree turn swaps dimensions
             assert img.size == (80, 100)
 
+    @pytest.mark.integration
     def test_turn_clockwise_180(self, test_image_rgb, tmp_path):
         """Test 180-degree clockwise turn."""
         output_path = tmp_path / "turned.png"
@@ -281,6 +305,7 @@ class TestImageUtilities:
             # 180 degree turn keeps same dimensions
             assert img.size == (100, 80)
 
+    @pytest.mark.integration
     def test_turn_clockwise_270(self, test_image_rgb, tmp_path):
         """Test 270-degree clockwise turn."""
         output_path = tmp_path / "turned.png"
@@ -292,6 +317,7 @@ class TestImageUtilities:
             # 270 degree turn swaps dimensions
             assert img.size == (80, 100)
 
+    @pytest.mark.integration
     def test_turn_clockwise_invalid_turns(self, test_image_rgb):
         """Test invalid turns value raises error."""
         with pytest.raises(ValueError, match="Turns must be an integer between 1 and 3"):
@@ -300,6 +326,7 @@ class TestImageUtilities:
         with pytest.raises(ValueError, match="Turns must be an integer between 1 and 3"):
             turn_clockwise(test_image_rgb, 4)
 
+    @pytest.mark.integration
     def test_flip_vertical(self, test_image_rgb, tmp_path):
         """Test vertical flip."""
         output_path = tmp_path / "flipped.png"
@@ -310,6 +337,7 @@ class TestImageUtilities:
         with Image.open(output_path) as img:
             assert img.size == (100, 80)
 
+    @pytest.mark.integration
     def test_flip_horizontal(self, test_image_rgb, tmp_path):
         """Test horizontal flip."""
         output_path = tmp_path / "flipped.png"
@@ -320,6 +348,7 @@ class TestImageUtilities:
         with Image.open(output_path) as img:
             assert img.size == (100, 80)
 
+    @pytest.mark.integration
     @patch("cv2.imread")
     @patch("cv2.cvtColor")
     @patch("cv2.Laplacian")
@@ -334,6 +363,7 @@ class TestImageUtilities:
 
         assert result is True
 
+    @pytest.mark.integration
     @patch("cv2.imread")
     @patch("cv2.cvtColor")
     @patch("cv2.Laplacian")
@@ -348,6 +378,7 @@ class TestImageUtilities:
 
         assert result is False
 
+    @pytest.mark.integration
     @patch("cv2.imread")
     def test_is_blurry_invalid_image(self, mock_imread, test_image_rgb):
         """Test blur detection with invalid image."""
@@ -356,6 +387,7 @@ class TestImageUtilities:
         with pytest.raises(ValueError, match="Could not load the image"):
             is_blurry(test_image_rgb)
 
+    @pytest.mark.integration
     @patch("cv2.imread")
     @patch("cv2.cvtColor")
     @patch("cv2.Laplacian")
@@ -371,6 +403,7 @@ class TestImageUtilities:
         assert result_low_threshold is False  # 75 > 50
         assert result_high_threshold is True  # 75 < 100
 
+    @pytest.mark.integration
     def test_crop(self, test_image_rgb, tmp_path):
         """Test image cropping."""
         output_path = tmp_path / "cropped.png"
@@ -381,6 +414,7 @@ class TestImageUtilities:
         with Image.open(output_path) as img:
             assert img.size == (50, 40)
 
+    @pytest.mark.integration
     def test_crop_overwrites_original(self, test_image_rgb):
         """Test crop overwrites original when no destination specified."""
         crop(test_image_rgb, 0, 0, 50, 40)
@@ -388,6 +422,7 @@ class TestImageUtilities:
         with Image.open(test_image_rgb) as img:
             assert img.size == (50, 40)
 
+    @pytest.mark.integration
     @patch("cv2.imread")
     @patch("cv2.createCLAHE")
     @patch("cv2.imwrite")
@@ -409,6 +444,7 @@ class TestImageUtilities:
         mock_clahe_obj.apply.assert_called_once()
         mock_imwrite.assert_called_once()
 
+    @pytest.mark.integration
     @patch("cv2.imread")
     def test_apply_clahe_invalid_image(self, mock_imread, test_image_rgb):
         """Test CLAHE with invalid image."""
@@ -417,6 +453,7 @@ class TestImageUtilities:
         with pytest.raises(ValueError, match="Could not read image"):
             apply_clahe(test_image_rgb)
 
+    @pytest.mark.integration
     @patch("cv2.imread")
     @patch("cv2.GaussianBlur")
     @patch("cv2.imwrite")
@@ -435,6 +472,7 @@ class TestImageUtilities:
         mock_blur.assert_called_once_with(mock_img, (5, 5), 0)
         mock_imwrite.assert_called_once()
 
+    @pytest.mark.integration
     @patch("cv2.imread")
     def test_gaussian_blur_invalid_image(self, mock_imread, test_image_rgb):
         """Test Gaussian blur with invalid image."""
@@ -443,6 +481,7 @@ class TestImageUtilities:
         with pytest.raises(ValueError, match="Could not read image"):
             gaussian_blur(test_image_rgb)
 
+    @pytest.mark.integration
     @patch("cv2.imread")
     @patch("cv2.filter2D")
     @patch("cv2.imwrite")
@@ -461,6 +500,7 @@ class TestImageUtilities:
         mock_filter2d.assert_called_once()
         mock_imwrite.assert_called_once()
 
+    @pytest.mark.integration
     @patch("cv2.imread")
     def test_sharpen_invalid_image(self, mock_imread, test_image_rgb):
         """Test sharpening with invalid image."""
@@ -469,6 +509,7 @@ class TestImageUtilities:
         with pytest.raises(ValueError, match="Could not read image"):
             sharpen(test_image_rgb)
 
+    @pytest.mark.integration
     def test_get_width_height(self, test_image_rgb):
         """Test getting image dimensions."""
         width, height = get_width_height(test_image_rgb)
@@ -476,6 +517,7 @@ class TestImageUtilities:
         assert width == 100
         assert height == 80
 
+    @pytest.mark.integration
     @patch("PIL.Image.open")
     def test_get_width_height_invalid_size(self, mock_open, test_image_rgb):
         """Test get_width_height with invalid size tuple."""
@@ -486,6 +528,7 @@ class TestImageUtilities:
         with pytest.raises(ValueError, match="Size must be a tuple of two integers"):
             get_width_height(test_image_rgb)
 
+    @pytest.mark.integration
     def test_get_shannon_entropy(self):
         """Test Shannon entropy calculation."""
         # Create a simple gradient image
@@ -501,6 +544,7 @@ class TestImageUtilities:
         assert isinstance(entropy, float)
         assert entropy > 0
 
+    @pytest.mark.integration
     def test_get_average_image_color(self):
         """Test average color calculation."""
         # Create a solid color image
@@ -511,6 +555,7 @@ class TestImageUtilities:
         assert len(avg_color) == 3
         assert avg_color == [100, 150, 200]
 
+    @pytest.mark.integration
     def test_get_average_image_color_grayscale(self):
         """Test average color calculation for grayscale image."""
         # Create a grayscale image and convert to RGB for testing
@@ -530,6 +575,7 @@ class TestGridClasses:
         """Create test grid dimensions."""
         return GridDimensions(columns=3, column_width=200, max_height=800)
 
+    @pytest.mark.integration
     @pytest.fixture
     def test_images(self, tmp_path):
         """Create multiple test images."""
@@ -541,12 +587,14 @@ class TestGridClasses:
             images.append(path)
         return images
 
+    @pytest.mark.integration
     def test_grid_dimensions(self, grid_dimensions):
         """Test GridDimensions dataclass."""
         assert grid_dimensions.columns == 3
         assert grid_dimensions.column_width == 200
         assert grid_dimensions.max_height == 800
 
+    @pytest.mark.integration
     def test_grid_row_init(self, grid_dimensions):
         """Test GridRow initialization."""
         row = GridRow(grid_dimensions)
@@ -555,6 +603,7 @@ class TestGridClasses:
         assert row.height == 0
         assert row.dimensions == grid_dimensions
 
+    @pytest.mark.integration
     def test_grid_row_add_image(self, grid_dimensions):
         """Test adding image to GridRow."""
         row = GridRow(grid_dimensions)
@@ -566,6 +615,7 @@ class TestGridClasses:
         assert len(row.images) == 1
         assert row.height == 133  # Scaled to fit column width
 
+    @pytest.mark.integration
     def test_grid_row_add_image_full(self, grid_dimensions):
         """Test adding image to full GridRow."""
         row = GridRow(grid_dimensions)
@@ -582,6 +632,7 @@ class TestGridClasses:
         assert result is False
         assert len(row.images) == 3
 
+    @pytest.mark.integration
     def test_grid_row_cleanup(self, grid_dimensions):
         """Test GridRow cleanup."""
         row = GridRow(grid_dimensions)
@@ -592,12 +643,14 @@ class TestGridClasses:
 
         # Images should be closed (can't easily test this without mock)
 
+    @pytest.mark.integration
     def test_grid_image_processor_init(self, grid_dimensions):
         """Test GridImageProcessor initialization."""
         processor = GridImageProcessor(grid_dimensions)
 
         assert processor.dimensions == grid_dimensions
 
+    @pytest.mark.integration
     def test_grid_image_processor_process_single_image(self, grid_dimensions, test_images):
         """Test processing single image."""
         processor = GridImageProcessor(grid_dimensions)
@@ -608,6 +661,7 @@ class TestGridClasses:
         assert result is True
         assert len(row.images) == 1
 
+    @pytest.mark.integration
     def test_grid_image_processor_process_invalid_image(self, grid_dimensions, tmp_path):
         """Test processing invalid image."""
         processor = GridImageProcessor(grid_dimensions)
@@ -619,6 +673,7 @@ class TestGridClasses:
         assert result is False
         assert len(row.images) == 0
 
+    @pytest.mark.integration
     def test_grid_image_processor_create_grid(self, grid_dimensions, test_images):
         """Test creating grid from images."""
         processor = GridImageProcessor(grid_dimensions)
@@ -629,6 +684,7 @@ class TestGridClasses:
         assert height > 0
         assert processed == 3
 
+    @pytest.mark.integration
     def test_grid_image_processor_create_grid_empty(self, grid_dimensions):
         """Test creating grid with no images."""
         processor = GridImageProcessor(grid_dimensions)
@@ -639,6 +695,7 @@ class TestGridClasses:
         assert height == 0
         assert processed == 0
 
+    @pytest.mark.integration
     def test_grid_image_processor_create_grid_max_height_exceeded(self, test_images):
         """Test creating grid when max height is exceeded by first row."""
         # Very small max height to trigger the height check
@@ -650,6 +707,7 @@ class TestGridClasses:
         # Should still process the first image but might not fit all
         assert processed >= 0
 
+    @pytest.mark.integration
     def test_output_path_manager_init(self, tmp_path):
         """Test OutputPathManager initialization."""
         base_path = tmp_path / "grid.jpg"
@@ -658,6 +716,7 @@ class TestGridClasses:
         assert manager.base_path == base_path
         assert manager.extension == ""
 
+    @pytest.mark.integration
     def test_output_path_manager_init_no_extension(self, tmp_path):
         """Test OutputPathManager initialization without extension."""
         base_path = tmp_path / "grid"
@@ -666,6 +725,7 @@ class TestGridClasses:
         assert manager.base_path == base_path
         assert manager.extension == ".jpg"
 
+    @pytest.mark.integration
     def test_output_path_manager_create_path_single_grid(self, tmp_path):
         """Test creating path for single grid."""
         base_path = tmp_path / "grid.jpg"
@@ -675,6 +735,7 @@ class TestGridClasses:
 
         assert path == base_path
 
+    @pytest.mark.integration
     def test_output_path_manager_create_path_multiple_grids(self, tmp_path):
         """Test creating path for multiple grids."""
         base_path = tmp_path / "grid.jpg"
@@ -685,6 +746,7 @@ class TestGridClasses:
         assert path.name == "grid_01.jpg"
         assert path.parent == base_path.parent
 
+    @pytest.mark.integration
     def test_create_grid_image(self, test_images, tmp_path):
         """Test creating grid image from paths."""
         output_path = tmp_path / "grid.jpg"
@@ -694,6 +756,7 @@ class TestGridClasses:
         assert len(created_files) >= 1
         assert created_files[0].exists()
 
+    @pytest.mark.integration
     def test_create_grid_image_empty(self, tmp_path):
         """Test creating grid image with no paths."""
         output_path = tmp_path / "grid.jpg"
@@ -702,6 +765,7 @@ class TestGridClasses:
 
         assert created_files == []
 
+    @pytest.mark.integration
     def test_create_grid_image_multiple_grids(self, test_images, tmp_path):
         """Test creating grid image with reasonable constraints."""
         output_path = tmp_path / "grid.jpg"

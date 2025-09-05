@@ -38,29 +38,34 @@ class TestCLI:
         project_dir.mkdir()
         return project_dir
 
+    @pytest.mark.unit
     def test_marimba_cli_creation(self):
         """Test that the CLI app is created correctly."""
         assert isinstance(marimba_cli, typer.Typer)
         assert marimba_cli.info.name == "Marimba"
         assert marimba_cli.info.help is not None and "FAIR scientific image datasets" in marimba_cli.info.help
 
+    @pytest.mark.unit
     def test_version_callback_with_version(self):
         """Test version callback when version is available."""
         with patch("importlib.metadata.version", return_value="1.0.0"):
             with pytest.raises(typer.Exit):
                 version_callback(True)
 
+    @pytest.mark.unit
     def test_version_callback_without_flag(self):
         """Test version callback when flag is False."""
         # This should not raise an exception or exit
         version_callback(False)
 
+    @pytest.mark.unit
     def test_version_callback_with_exception(self):
         """Test version callback when metadata is not available."""
         with patch("importlib.metadata.version", side_effect=Exception("No metadata")):
             with pytest.raises(typer.Exit):
                 version_callback(True)
 
+    @pytest.mark.integration
     def test_version_command_with_version(self, runner):
         """Test version command when version is available."""
         with patch("importlib.metadata.version", return_value="1.0.0"):
@@ -68,6 +73,7 @@ class TestCLI:
             assert result.exit_code == 0
             assert "Marimba v1.0.0" in result.stdout
 
+    @pytest.mark.integration
     def test_version_command_with_exception(self, runner):
         """Test version command when metadata is not available."""
         with patch("importlib.metadata.version", side_effect=Exception("No metadata")):
@@ -75,6 +81,7 @@ class TestCLI:
             assert result.exit_code == 0
             assert "unknown (not installed as package)" in result.stdout
 
+    @pytest.mark.unit
     def test_global_options_with_debug(self):
         """Test global options with debug level."""
         mock_ctx = Mock()
@@ -89,6 +96,7 @@ class TestCLI:
             # Should set debug level on the handler
             mock_log_handler.setLevel.assert_called_once_with(10)
 
+    @pytest.mark.unit
     def test_global_options_with_quiet(self):
         """Test global options with error level (quiet)."""
         mock_ctx = Mock()
@@ -103,6 +111,7 @@ class TestCLI:
             # Should set error level on the handler
             mock_log_handler.setLevel.assert_called_once_with(40)
 
+    @pytest.mark.unit
     def test_global_options_normal(self):
         """Test global options with default settings."""
         mock_ctx = Mock()
@@ -120,6 +129,7 @@ class TestCLI:
     @patch("marimba.main.validate_dependencies")
     @patch("marimba.main.find_project_dir_or_exit")
     @patch("marimba.main.ProjectWrapper")
+    @pytest.mark.integration
     def test_import_command_basic(
         self, mock_project_wrapper, mock_find_project, mock_validate_deps, runner, mock_project_dir
     ):
@@ -154,6 +164,7 @@ class TestCLI:
     @patch("marimba.main.validate_dependencies")
     @patch("marimba.main.find_project_dir_or_exit")
     @patch("marimba.main.ProjectWrapper")
+    @pytest.mark.integration
     def test_import_command_with_options(
         self, mock_project_wrapper, mock_find_project, mock_validate_deps, runner, mock_project_dir
     ):
@@ -188,6 +199,7 @@ class TestCLI:
 
     @patch("marimba.main.find_project_dir_or_exit")
     @patch("marimba.main.ProjectWrapper")
+    @pytest.mark.integration
     def test_process_command_basic(self, mock_project_wrapper, mock_find_project, runner, mock_project_dir):
         """Test basic process command functionality."""
         mock_project = Mock()
@@ -216,6 +228,7 @@ class TestCLI:
 
     @patch("marimba.main.find_project_dir_or_exit")
     @patch("marimba.main.ProjectWrapper")
+    @pytest.mark.integration
     def test_process_command_with_options(self, mock_project_wrapper, mock_find_project, runner, mock_project_dir):
         """Test process command with various options."""
         mock_project = Mock()
@@ -244,6 +257,7 @@ class TestCLI:
 
     @patch("marimba.main.find_project_dir_or_exit")
     @patch("marimba.main.ProjectWrapper")
+    @pytest.mark.integration
     def test_package_command_basic(self, mock_project_wrapper, mock_find_project, runner, mock_project_dir):
         """Test basic package command functionality."""
         mock_project = Mock()
@@ -267,6 +281,7 @@ class TestCLI:
 
     @patch("marimba.main.find_project_dir_or_exit")
     @patch("marimba.main.ProjectWrapper")
+    @pytest.mark.integration
     def test_package_command_with_options(self, mock_project_wrapper, mock_find_project, runner, mock_project_dir):
         """Test package command with various options."""
         mock_project = Mock()
@@ -298,6 +313,7 @@ class TestCLI:
 
     @patch("marimba.main.find_project_dir_or_exit")
     @patch("marimba.main.ProjectWrapper")
+    @pytest.mark.integration
     def test_distribute_command_basic(self, mock_project_wrapper, mock_find_project, runner, mock_project_dir):
         """Test basic distribute command functionality."""
         mock_project = Mock()
@@ -315,6 +331,7 @@ class TestCLI:
 
     @patch("marimba.main.find_project_dir_or_exit")
     @patch("marimba.main.ProjectWrapper")
+    @pytest.mark.integration
     def test_update_command_basic(self, mock_project_wrapper, mock_find_project, runner, mock_project_dir):
         """Test basic update command functionality."""
         mock_project = Mock()
@@ -330,6 +347,7 @@ class TestCLI:
 
     @patch("marimba.main.find_project_dir_or_exit")
     @patch("marimba.main.ProjectWrapper")
+    @pytest.mark.integration
     def test_install_command_basic(self, mock_project_wrapper, mock_find_project, runner, mock_project_dir):
         """Test basic install command functionality."""
         mock_project = Mock()
@@ -345,6 +363,7 @@ class TestCLI:
 
     @patch("marimba.main.find_project_dir_or_exit")
     @patch("marimba.main.ProjectWrapper")
+    @pytest.mark.integration
     def test_install_command_with_pipeline(self, mock_project_wrapper, mock_find_project, runner, mock_project_dir):
         """Test install command with specific pipeline."""
         mock_project = Mock()
@@ -357,6 +376,7 @@ class TestCLI:
         assert result.exit_code == 0
         mock_project.install_pipelines.assert_called_once()
 
+    @pytest.mark.integration
     def test_cli_help(self, runner):
         """Test CLI help output."""
         result = runner.invoke(marimba_cli, ["--help"])
@@ -365,6 +385,7 @@ class TestCLI:
         assert "FAIR scientific" in result.stdout
         assert "image datasets" in result.stdout
 
+    @pytest.mark.integration
     def test_cli_no_args(self, runner):
         """Test CLI with no arguments shows help."""
         result = runner.invoke(marimba_cli, [])
@@ -374,35 +395,41 @@ class TestCLI:
         # Should show usage information
         assert "Usage:" in result.stdout
 
+    @pytest.mark.integration
     def test_import_command_help(self, runner):
         """Test import command help."""
         result = runner.invoke(marimba_cli, ["import", "--help"])
         assert result.exit_code == 0
         assert "source-path" in result.stdout or "SOURCE_PATH" in result.stdout
 
+    @pytest.mark.integration
     def test_process_command_help(self, runner):
         """Test process command help."""
         result = runner.invoke(marimba_cli, ["process", "--help"])
         assert result.exit_code == 0
         assert "collection-name" in result.stdout or "COLLECTION_NAME" in result.stdout
 
+    @pytest.mark.integration
     def test_package_command_help(self, runner):
         """Test package command help."""
         result = runner.invoke(marimba_cli, ["package", "--help"])
         assert result.exit_code == 0
         assert "collection-name" in result.stdout or "COLLECTION_NAME" in result.stdout
 
+    @pytest.mark.integration
     def test_distribute_command_help(self, runner):
         """Test distribute command help."""
         result = runner.invoke(marimba_cli, ["distribute", "--help"])
         assert result.exit_code == 0
         assert "dataset-name" in result.stdout or "DATASET_NAME" in result.stdout
 
+    @pytest.mark.integration
     def test_update_command_help(self, runner):
         """Test update command help."""
         result = runner.invoke(marimba_cli, ["update", "--help"])
         assert result.exit_code == 0
 
+    @pytest.mark.integration
     def test_install_command_help(self, runner):
         """Test install command help."""
         result = runner.invoke(marimba_cli, ["install", "--help"])
@@ -425,6 +452,7 @@ class TestCommandErrorHandling:
     @patch("marimba.main.validate_dependencies")
     @patch("marimba.main.find_project_dir_or_exit")
     @patch("marimba.main.ProjectWrapper")
+    @pytest.mark.integration
     def test_import_command_project_error(
         self, mock_project_wrapper, mock_find_project, mock_validate_deps, runner, mock_project_dir
     ):
@@ -443,6 +471,7 @@ class TestCommandErrorHandling:
 
     @patch("marimba.main.find_project_dir_or_exit")
     @patch("marimba.main.ProjectWrapper")
+    @pytest.mark.integration
     def test_process_command_processing_error(self, mock_project_wrapper, mock_find_project, runner, mock_project_dir):
         """Test process command when processing raises error."""
         mock_project = Mock()
@@ -470,6 +499,7 @@ class TestCommandErrorHandling:
 
     @patch("marimba.main.find_project_dir_or_exit")
     @patch("marimba.main.ProjectWrapper")
+    @pytest.mark.integration
     def test_package_command_packaging_error(self, mock_project_wrapper, mock_find_project, runner, mock_project_dir):
         """Test package command when packaging raises error."""
         mock_project = Mock()
@@ -488,6 +518,7 @@ class TestCommandErrorHandling:
 
     @patch("marimba.main.find_project_dir_or_exit")
     @patch("marimba.main.ProjectWrapper")
+    @pytest.mark.integration
     def test_distribute_command_distribution_error(
         self, mock_project_wrapper, mock_find_project, runner, mock_project_dir
     ):
@@ -512,6 +543,7 @@ class TestCLIIntegration:
         """Create a CLI test runner."""
         return CliRunner()
 
+    @pytest.mark.integration
     def test_version_flag_in_global_options(self, runner):
         """Test --version flag in global options."""
         with patch("importlib.metadata.version", return_value="1.0.0"):
@@ -519,6 +551,7 @@ class TestCLIIntegration:
             assert result.exit_code == 0
             assert "Marimba v1.0.0" in result.stdout
 
+    @pytest.mark.integration
     def test_debug_flag(self, runner):
         """Test --debug flag."""
         with patch("marimba.main.get_logger") as mock_logger:
@@ -526,6 +559,7 @@ class TestCLIIntegration:
             result = runner.invoke(marimba_cli, ["--debug", "version"])
             # Should not error with debug flag
 
+    @pytest.mark.integration
     def test_quiet_flag(self, runner):
         """Test --quiet flag."""
         with patch("marimba.main.get_logger") as mock_logger:
@@ -536,6 +570,7 @@ class TestCLIIntegration:
     @patch("marimba.main.validate_dependencies")
     @patch("marimba.main.find_project_dir_or_exit")
     @patch("marimba.main.ProjectWrapper")
+    @pytest.mark.integration
     def test_end_to_end_workflow_simulation(
         self, mock_project_wrapper, mock_find_project, mock_validate_deps, runner, tmp_path
     ):
@@ -598,6 +633,7 @@ class TestCLIIntegration:
         mock_project.compose.assert_called()
         mock_project.create_dataset.assert_called()
 
+    @pytest.mark.unit
     def test_subcommand_structure(self):
         """Test that subcommands are properly registered."""
         # Check that the CLI has the expected structure

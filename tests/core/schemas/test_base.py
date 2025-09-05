@@ -14,11 +14,13 @@ from marimba.core.schemas.base import BaseMetadata
 class TestBaseMetadata:
     """Test BaseMetadata abstract base class."""
 
+    @pytest.mark.unit
     def test_base_metadata_is_abstract(self):
         """Test that BaseMetadata cannot be instantiated directly."""
         with pytest.raises(TypeError):
             BaseMetadata()  # type: ignore[abstract]  # Should raise TypeError for abstract class
 
+    @pytest.mark.unit
     def test_concrete_implementation_required_properties(self):
         """Test that concrete implementations must implement all abstract properties."""
 
@@ -34,6 +36,7 @@ class TestBaseMetadata:
         with pytest.raises(TypeError):
             IncompleteMetadata()  # type: ignore[abstract]  # Should fail due to missing abstract methods
 
+    @pytest.mark.unit
     def test_complete_implementation(self):
         """Test that a complete implementation can be instantiated."""
 
@@ -106,6 +109,7 @@ class TestBaseMetadata:
         metadata.hash_sha256 = "test_hash"
         assert metadata.hash_sha256 == "test_hash"
 
+    @pytest.mark.unit
     def test_abstract_property_requirements(self):
         """Test that all expected abstract properties are defined."""
         expected_properties = {
@@ -130,6 +134,7 @@ class TestBaseMetadata:
         for prop in expected_properties:
             assert prop in abstract_properties, f"Property {prop} should be abstract"
 
+    @pytest.mark.unit
     def test_abstract_method_requirements(self):
         """Test that all expected abstract methods are defined."""
         expected_methods = {"create_dataset_metadata", "process_files"}
@@ -145,6 +150,7 @@ class TestBaseMetadata:
         for method in expected_methods:
             assert method in abstract_methods, f"Method {method} should be abstract"
 
+    @pytest.mark.unit
     def test_create_dataset_metadata_signature(self):
         """Test the signature of create_dataset_metadata abstract method."""
         # This tests that the method signature is as expected
@@ -166,6 +172,7 @@ class TestBaseMetadata:
         assert params["dry_run"].kind == inspect.Parameter.KEYWORD_ONLY
         assert params["saver_overwrite"].kind == inspect.Parameter.KEYWORD_ONLY
 
+    @pytest.mark.unit
     def test_process_files_signature(self):
         """Test the signature of process_files abstract method."""
         import inspect
@@ -186,6 +193,7 @@ class TestBaseMetadata:
         assert params["dry_run"].kind == inspect.Parameter.KEYWORD_ONLY
         assert params["chunk_size"].kind == inspect.Parameter.KEYWORD_ONLY
 
+    @pytest.mark.unit
     def test_base_metadata_inheritance_structure(self):
         """Test that BaseMetadata properly inherits from ABC."""
         from abc import ABC
@@ -194,6 +202,7 @@ class TestBaseMetadata:
         assert hasattr(BaseMetadata, "__abstractmethods__")
         assert len(BaseMetadata.__abstractmethods__) > 0
 
+    @pytest.mark.unit
     def test_property_return_types_validation(self):
         """Test validation of property return types in implementation."""
 

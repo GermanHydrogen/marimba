@@ -14,6 +14,7 @@ from marimba.core.utils.dataset import (
 )
 
 
+@pytest.mark.unit
 def test_get_mapping_processor_decorator():
     assert get_mapping_processor_decorator(MetadataGenerationLevelOptions.project) == _run_mapping_processor
     assert (
@@ -28,16 +29,19 @@ def test_get_mapping_processor_decorator():
         get_mapping_processor_decorator("bla")  # type: ignore
 
 
+@pytest.mark.unit
 def test_flatten_middle_mapping():
     mapping = {"a": {"b": {"c": 1}, "d": {"e": 1}}}
     assert flatten_middle_mapping(mapping) == {"a": {"c": 1, "e": 1}}
 
 
+@pytest.mark.unit
 def test_flatten_mapping():
     mapping = {"a": {"b": 1}, "c": {"d": 1}}
     assert flatten_mapping(mapping) == {"b": 1, "d": 1}
 
 
+@pytest.mark.unit
 def test_run_mapping_processor():
     def dataset_mapping_processor(
         dataset_mapping: dict[type[BaseMetadata], dict[str, list[BaseMetadata]]], _: str | None
@@ -50,6 +54,7 @@ def test_run_mapping_processor():
     _run_mapping_processor(dataset_mapping_processor, dataset_mapping)
 
 
+@pytest.mark.unit
 def test_run_mapping_processor_per_pipeline():
     def dataset_mapping_processor(
         dataset_mapping: dict[type[BaseMetadata], dict[str, list[BaseMetadata]]], collection_name: str | None
@@ -63,6 +68,7 @@ def test_run_mapping_processor_per_pipeline():
     _run_mapping_processor_per_pipeline(dataset_mapping_processor, dataset_mapping)
 
 
+@pytest.mark.unit
 def test_run_mapping_processor_per_pipline_and_collection():
     def dataset_mapping_processor(
         dataset_mapping: dict[type[BaseMetadata], dict[str, list[BaseMetadata]]], collection_name: str | None

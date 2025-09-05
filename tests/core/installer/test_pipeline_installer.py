@@ -25,6 +25,7 @@ def temp_dir_with_requirements(temp_dir: Path) -> Generator[Path, None, None]:
     yield temp_dir
 
 
+@pytest.mark.integration
 def test_installer_valid(caplog: pytest.LogCaptureFixture, temp_dir_with_requirements: Path) -> None:
     logger = logging.Logger("test")
 
@@ -41,6 +42,7 @@ def test_installer_valid(caplog: pytest.LogCaptureFixture, temp_dir_with_require
     installer()
 
 
+@pytest.mark.integration
 def test_installer_missing_requirements_file(caplog: pytest.LogCaptureFixture, temp_dir: Path) -> None:
     logger = logging.Logger("test")
 
@@ -53,6 +55,7 @@ def test_installer_missing_requirements_file(caplog: pytest.LogCaptureFixture, t
         installer()
 
 
+@pytest.mark.integration
 def test_installer_executor_error(caplog: pytest.LogCaptureFixture, temp_dir_with_requirements: Path) -> None:
     logger = logging.Logger("test")
 

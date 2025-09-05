@@ -15,11 +15,13 @@ from marimba.lib.gps import (
 class TestGPSUtilities:
     """Test GPS utility functions."""
 
+    @pytest.mark.unit
     @pytest.fixture
     def test_image_path(self, tmp_path):
         """Create a test image path."""
         return tmp_path / "test_image.jpg"
 
+    @pytest.mark.unit
     def test_convert_gps_coordinate_to_degrees_basic(self):
         """Test converting GPS coordinates to degrees."""
         # 37 degrees, 46 minutes, 30 seconds = 37.775 degrees
@@ -34,6 +36,7 @@ class TestGPSUtilities:
         expected = 37 + 46 / 60 + 30 / 3600
         assert abs(result - expected) < 0.0001
 
+    @pytest.mark.unit
     def test_convert_gps_coordinate_to_degrees_fractions(self):
         """Test converting GPS coordinates with fractional values."""
         # Using fractions like real EXIF data
@@ -48,6 +51,7 @@ class TestGPSUtilities:
         expected = 37.4 + 27.6 / 60 + 0 / 3600
         assert abs(result - expected) < 0.0001
 
+    @pytest.mark.unit
     def test_convert_gps_coordinate_to_degrees_tuple_format(self):
         """Test converting GPS coordinates in tuple format."""
         # Test with tuple of tuples format
@@ -62,6 +66,7 @@ class TestGPSUtilities:
         expected = 37 + 46 / 60 + 30 / 3600
         assert abs(result - expected) < 0.0001
 
+    @pytest.mark.unit
     def test_convert_degrees_to_gps_coordinate_positive(self):
         """Test converting positive decimal degrees to DMS."""
         degrees = 37.775  # 37 degrees, 46 minutes, 30 seconds
@@ -73,6 +78,7 @@ class TestGPSUtilities:
         # Allow for small floating point precision differences
         assert abs(s - 30000) <= 1  # seconds * 1000, with tolerance
 
+    @pytest.mark.unit
     def test_convert_degrees_to_gps_coordinate_negative(self):
         """Test converting negative decimal degrees to DMS."""
         degrees = -122.4194  # Should use absolute value
@@ -83,6 +89,7 @@ class TestGPSUtilities:
         assert m == 25  # (0.4194 * 60) = 25.164, int() = 25
         assert s > 0  # Should have some seconds value
 
+    @pytest.mark.unit
     def test_convert_degrees_to_gps_coordinate_zero(self):
         """Test converting zero degrees to DMS."""
         degrees = 0.0
@@ -93,6 +100,7 @@ class TestGPSUtilities:
         assert m == 0
         assert s == 0
 
+    @pytest.mark.unit
     def test_convert_degrees_to_gps_coordinate_precision(self):
         """Test precision of degrees to DMS conversion."""
         degrees = 1.5  # 1 degree, 30 minutes, 0 seconds
@@ -103,6 +111,7 @@ class TestGPSUtilities:
         assert m == 30
         assert s == 0
 
+    @pytest.mark.integration
     @patch("exiftool.ExifToolHelper")
     def test_read_exif_location_with_coordinates(self, mock_exiftool_helper, test_image_path):
         """Test reading GPS location from EXIF data."""
@@ -121,6 +130,7 @@ class TestGPSUtilities:
         assert lon == -122.4194
         mock_et.get_metadata.assert_called_once_with(str(test_image_path.absolute()))
 
+    @pytest.mark.integration
     @patch("exiftool.ExifToolHelper")
     def test_read_exif_location_exif_fallback(self, mock_exiftool_helper, test_image_path):
         """Test reading GPS location using EXIF fallback when Composite tags missing."""
@@ -138,6 +148,7 @@ class TestGPSUtilities:
         assert lat == 40.7128
         assert lon == -74.0060
 
+    @pytest.mark.integration
     @patch("exiftool.ExifToolHelper")
     def test_read_exif_location_partial_coordinates(self, mock_exiftool_helper, test_image_path):
         """Test reading GPS location with only partial coordinates."""
@@ -155,6 +166,7 @@ class TestGPSUtilities:
         assert lat is None
         assert lon is None
 
+    @pytest.mark.integration
     @patch("exiftool.ExifToolHelper")
     def test_read_exif_location_no_metadata(self, mock_exiftool_helper, test_image_path):
         """Test reading GPS location when no metadata available."""
@@ -168,6 +180,7 @@ class TestGPSUtilities:
         assert lat is None
         assert lon is None
 
+    @pytest.mark.integration
     @patch("exiftool.ExifToolHelper")
     def test_read_exif_location_empty_metadata(self, mock_exiftool_helper, test_image_path):
         """Test reading GPS location when metadata is None."""
@@ -181,6 +194,7 @@ class TestGPSUtilities:
         assert lat is None
         assert lon is None
 
+    @pytest.mark.unit
     @patch("exiftool.ExifToolHelper")
     def test_read_exif_location_no_gps_data(self, mock_exiftool_helper, test_image_path):
         """Test reading GPS location when no GPS data in metadata."""
@@ -199,6 +213,7 @@ class TestGPSUtilities:
         assert lat is None
         assert lon is None
 
+    @pytest.mark.integration
     @patch("exiftool.ExifToolHelper")
     @patch("marimba.lib.gps.show_dependency_error_and_exit")
     def test_read_exif_location_exiftool_not_found(self, mock_show_error, mock_exiftool_helper, test_image_path):
@@ -211,6 +226,7 @@ class TestGPSUtilities:
         assert lon is None
         mock_show_error.assert_called_once()
 
+    @pytest.mark.integration
     @patch("exiftool.ExifToolHelper")
     def test_read_exif_location_file_not_found_other(self, mock_exiftool_helper, test_image_path):
         """Test handling FileNotFoundError not related to exiftool."""
@@ -221,6 +237,7 @@ class TestGPSUtilities:
         assert lat is None
         assert lon is None
 
+    @pytest.mark.integration
     @patch("exiftool.ExifToolHelper")
     def test_read_exif_location_various_exceptions(self, mock_exiftool_helper, test_image_path):
         """Test handling various exceptions during GPS reading."""
@@ -242,6 +259,7 @@ class TestGPSUtilities:
             assert lat is None
             assert lon is None
 
+    @pytest.mark.integration
     @patch("exiftool.ExifToolHelper")
     def test_read_exif_location_string_coordinates(self, mock_exiftool_helper, test_image_path):
         """Test reading GPS location when coordinates are strings."""
@@ -259,6 +277,7 @@ class TestGPSUtilities:
         assert lat == 37.7749
         assert lon == -122.4194
 
+    @pytest.mark.integration
     @patch("exiftool.ExifToolHelper")
     def test_read_exif_location_with_path_object(self, mock_exiftool_helper, tmp_path):
         """Test reading GPS location with Path object."""

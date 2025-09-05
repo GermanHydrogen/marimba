@@ -14,6 +14,7 @@ from marimba.lib.concurrency import (
 class TestConcurrencyUtilities:
     """Test concurrency utility functions."""
 
+    @pytest.mark.integration
     @pytest.fixture
     def mock_pipeline(self):
         """Create a mock BasePipeline instance."""
@@ -30,6 +31,7 @@ class TestConcurrencyUtilities:
             tmp_path / "image3.jpg",
         ]
 
+    @pytest.mark.integration
     @pytest.fixture
     def test_video_paths(self, tmp_path):
         """Create test video paths."""
@@ -38,6 +40,7 @@ class TestConcurrencyUtilities:
             tmp_path / "video2.mp4",
         ]
 
+    @pytest.mark.integration
     @patch("marimba.lib.concurrency.generate_image_thumbnail")
     def test_multithreaded_generate_image_thumbnails(
         self, mock_generate_thumbnail, mock_pipeline, test_image_paths, tmp_path
@@ -59,6 +62,7 @@ class TestConcurrencyUtilities:
         # Should call generate_image_thumbnail for each image
         assert mock_generate_thumbnail.call_count == 3
 
+    @pytest.mark.integration
     @patch("marimba.lib.concurrency.generate_image_thumbnail")
     def test_multithreaded_generate_image_thumbnails_with_logger(
         self, mock_generate_thumbnail, mock_pipeline, test_image_paths, tmp_path
@@ -77,6 +81,7 @@ class TestConcurrencyUtilities:
         # Logger should be called for debug messages
         assert mock_logger.debug.call_count >= 0  # May vary due to threading
 
+    @pytest.mark.integration
     @patch("marimba.lib.concurrency.generate_video_thumbnails")
     def test_multithreaded_generate_video_thumbnails(
         self, mock_generate_thumbnails, mock_pipeline, test_video_paths, tmp_path
@@ -98,6 +103,7 @@ class TestConcurrencyUtilities:
         # Should call generate_video_thumbnails for each video
         assert mock_generate_thumbnails.call_count == 2
 
+    @pytest.mark.integration
     @patch("marimba.lib.concurrency.generate_video_thumbnails")
     def test_multithreaded_generate_video_thumbnails_with_options(
         self, mock_generate_thumbnails, mock_pipeline, test_video_paths, tmp_path
@@ -124,6 +130,7 @@ class TestConcurrencyUtilities:
         video_subdir = output_dir / test_video_paths[0].stem
         assert video_subdir.exists()
 
+    @pytest.mark.integration
     @patch("marimba.lib.concurrency.generate_image_thumbnail")
     def test_multithreaded_generate_image_thumbnails_empty_list(self, mock_generate_thumbnail, mock_pipeline, tmp_path):
         """Test multithreaded image thumbnail generation with empty list."""
@@ -134,6 +141,7 @@ class TestConcurrencyUtilities:
         assert result == []
         assert mock_generate_thumbnail.call_count == 0
 
+    @pytest.mark.integration
     @patch("marimba.lib.concurrency.generate_video_thumbnails")
     def test_multithreaded_generate_video_thumbnails_empty_list(
         self, mock_generate_thumbnails, mock_pipeline, tmp_path

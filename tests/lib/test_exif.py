@@ -12,11 +12,13 @@ from marimba.lib.exif import get_dict
 class TestExifUtilities:
     """Test EXIF utility functions."""
 
+    @pytest.mark.integration
     @pytest.fixture
     def test_image_path(self, tmp_path):
         """Create a test image path."""
         return tmp_path / "test_image.jpg"
 
+    @pytest.mark.integration
     @patch("exiftool.ExifToolHelper")
     def test_get_dict_with_metadata(self, mock_exiftool_helper, test_image_path):
         """Test getting EXIF data from image with metadata."""
@@ -32,6 +34,7 @@ class TestExifUtilities:
         assert result == expected_metadata
         mock_et.get_metadata.assert_called_once_with(str(test_image_path))
 
+    @pytest.mark.integration
     @patch("exiftool.ExifToolHelper")
     def test_get_dict_no_metadata(self, mock_exiftool_helper, test_image_path):
         """Test getting EXIF data from image without metadata."""
@@ -45,6 +48,7 @@ class TestExifUtilities:
         assert result is None
         mock_et.get_metadata.assert_called_once_with(str(test_image_path))
 
+    @pytest.mark.integration
     @patch("exiftool.ExifToolHelper")
     def test_get_dict_empty_metadata(self, mock_exiftool_helper, test_image_path):
         """Test getting EXIF data when metadata is None."""
@@ -58,6 +62,7 @@ class TestExifUtilities:
         assert result is None
         mock_et.get_metadata.assert_called_once_with(str(test_image_path))
 
+    @pytest.mark.integration
     @patch("exiftool.ExifToolHelper")
     def test_get_dict_with_string_path(self, mock_exiftool_helper):
         """Test getting EXIF data using string path."""
@@ -73,6 +78,7 @@ class TestExifUtilities:
         assert result == expected_metadata
         mock_et.get_metadata.assert_called_once_with(string_path)
 
+    @pytest.mark.integration
     @patch("exiftool.ExifToolHelper")
     @patch("marimba.lib.exif.show_dependency_error_and_exit")
     def test_get_dict_exiftool_not_found(self, mock_show_error, mock_exiftool_helper, test_image_path):
@@ -84,6 +90,7 @@ class TestExifUtilities:
         assert result is None
         mock_show_error.assert_called_once()
 
+    @pytest.mark.integration
     @patch("exiftool.ExifToolHelper")
     def test_get_dict_file_not_found_other(self, mock_exiftool_helper, test_image_path):
         """Test handling FileNotFoundError not related to exiftool."""
@@ -93,6 +100,7 @@ class TestExifUtilities:
 
         assert result is None
 
+    @pytest.mark.integration
     @patch("exiftool.ExifToolHelper")
     def test_get_dict_exiftool_exception(self, mock_exiftool_helper, test_image_path):
         """Test handling ExifToolException."""
@@ -102,6 +110,7 @@ class TestExifUtilities:
 
         assert result is None
 
+    @pytest.mark.integration
     @patch("exiftool.ExifToolHelper")
     def test_get_dict_multiple_images(self, mock_exiftool_helper, test_image_path):
         """Test getting EXIF data when multiple items in metadata list."""
@@ -120,6 +129,7 @@ class TestExifUtilities:
         assert result == metadata_list[0]
         mock_et.get_metadata.assert_called_once_with(str(test_image_path))
 
+    @pytest.mark.integration
     @patch("exiftool.ExifToolHelper")
     def test_get_dict_various_metadata_types(self, mock_exiftool_helper, test_image_path):
         """Test getting EXIF data with various metadata field types."""

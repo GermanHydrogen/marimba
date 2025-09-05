@@ -32,6 +32,7 @@ class TestDatasetWrapper(TestCase):
         rmtree(root_dir)
         self.test_dir.cleanup()
 
+    @pytest.mark.integration
     def test_check_dataset_mapping(self) -> None:
         """
         Test that checks the validity of the dataset mapping.
@@ -100,6 +101,7 @@ class TestDatasetWrapper(TestCase):
             with self.assertRaises(DatasetWrapper.InvalidDatasetMappingError):
                 self.dataset_wrapper.check_dataset_mapping(dataset_mapping)
 
+    @pytest.mark.integration
     def test_check_dataset_mapping_comprehensive(self) -> None:
         """
         Additional comprehensive tests for dataset mapping validation edge cases.
@@ -171,6 +173,7 @@ class TestDatasetWrapper(TestCase):
             error_message = str(context.exception)
             self.assertIn("both resolve to", error_message)
 
+    @pytest.mark.integration
     def test_allow_destination_collisions_flag(self) -> None:
         """Test that allow_destination_collisions flag allows collisions with warning."""
         with tempfile.TemporaryDirectory() as temp_dir:

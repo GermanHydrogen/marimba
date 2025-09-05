@@ -1,8 +1,11 @@
 from pathlib import Path
 
+import pytest
+
 from marimba.core.utils.manifest import Manifest
 
 
+@pytest.mark.unit
 def test_get_subdirectories() -> None:
     base_dir = Path("tmp")
     files = {base_dir / "data" / "event" / "image.jpg", base_dir / "data" / "event" / "another.jpg"}

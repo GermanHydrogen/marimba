@@ -68,6 +68,7 @@ class AbstractOnlyPipeline(BasePipeline):
 class TestBasePipelineInitialization(TestCase):
     """Test cases for BasePipeline initialization."""
 
+    @pytest.mark.unit
     def test_init_with_string_path(self):
         """Test initialization with string root path."""
         root_path = "/test/path"
@@ -80,6 +81,7 @@ class TestBasePipelineInitialization(TestCase):
         self.assertEqual(pipeline._metadata_class, BaseMetadata)
         self.assertTrue(pipeline._dry_run)
 
+    @pytest.mark.unit
     def test_init_with_path_object(self):
         """Test initialization with Path object."""
         root_path = Path("/test/path")
@@ -91,6 +93,7 @@ class TestBasePipelineInitialization(TestCase):
         self.assertEqual(pipeline._metadata_class, BaseMetadata)
         self.assertFalse(pipeline._dry_run)
 
+    @pytest.mark.unit
     def test_init_with_custom_metadata_class(self):
         """Test initialization with custom metadata class."""
 
@@ -101,6 +104,7 @@ class TestBasePipelineInitialization(TestCase):
 
         self.assertEqual(pipeline._metadata_class, CustomMetadata)
 
+    @pytest.mark.unit
     def test_default_values(self):
         """Test that default values are set correctly."""
         pipeline = ConcretePipeline("/test")
@@ -113,6 +117,7 @@ class TestBasePipelineInitialization(TestCase):
 class TestBasePipelineProperties(TestCase):
     """Test cases for BasePipeline properties."""
 
+    @pytest.mark.unit
     def test_config_property(self):
         """Test the config property."""
         config = {"test": "value", "number": 42}
@@ -120,24 +125,28 @@ class TestBasePipelineProperties(TestCase):
 
         self.assertEqual(pipeline.config, config)
 
+    @pytest.mark.unit
     def test_config_property_none(self):
         """Test the config property when None."""
         pipeline = ConcretePipeline("/test")
 
         self.assertIsNone(pipeline.config)
 
+    @pytest.mark.unit
     def test_dry_run_property(self):
         """Test the dry_run property."""
         pipeline = ConcretePipeline("/test", dry_run=True)
 
         self.assertTrue(pipeline.dry_run)
 
+    @pytest.mark.unit
     def test_dry_run_property_false(self):
         """Test the dry_run property when False."""
         pipeline = ConcretePipeline("/test")
 
         self.assertFalse(pipeline.dry_run)
 
+    @pytest.mark.unit
     def test_class_name_property(self):
         """Test the class_name property."""
         pipeline = ConcretePipeline("/test")
@@ -148,6 +157,7 @@ class TestBasePipelineProperties(TestCase):
 class TestBasePipelineStaticMethods(TestCase):
     """Test cases for BasePipeline static methods."""
 
+    @pytest.mark.unit
     def test_get_pipeline_config_schema_default(self):
         """Test the default pipeline config schema."""
         schema = BasePipeline.get_pipeline_config_schema()
@@ -155,6 +165,7 @@ class TestBasePipelineStaticMethods(TestCase):
         self.assertEqual(schema, {})
         self.assertIsInstance(schema, dict)
 
+    @pytest.mark.unit
     def test_get_collection_config_schema_default(self):
         """Test the default collection config schema."""
         schema = BasePipeline.get_collection_config_schema()
@@ -162,6 +173,7 @@ class TestBasePipelineStaticMethods(TestCase):
         self.assertEqual(schema, {})
         self.assertIsInstance(schema, dict)
 
+    @pytest.mark.unit
     def test_static_methods_can_be_overridden(self):
         """Test that static methods can be overridden in subclasses."""
 
@@ -184,6 +196,7 @@ class TestBasePipelineStaticMethods(TestCase):
 class TestBasePipelineAbstractMethods(TestCase):
     """Test cases for abstract method enforcement."""
 
+    @pytest.mark.unit
     def test_abstract_pipeline_cannot_be_instantiated(self):
         """Test that BasePipeline cannot be instantiated directly."""
         with self.assertRaises(TypeError) as context:
@@ -191,6 +204,7 @@ class TestBasePipelineAbstractMethods(TestCase):
 
         self.assertIn("abstract", str(context.exception).lower())
 
+    @pytest.mark.unit
     def test_incomplete_implementation_cannot_be_instantiated(self):
         """Test that incomplete implementations cannot be instantiated."""
         with self.assertRaises(TypeError) as context:
@@ -198,6 +212,7 @@ class TestBasePipelineAbstractMethods(TestCase):
 
         self.assertIn("abstract", str(context.exception).lower())
 
+    @pytest.mark.unit
     def test_concrete_implementation_can_be_instantiated(self):
         """Test that complete implementations can be instantiated."""
         # This should not raise an exception
@@ -226,6 +241,7 @@ class TestRunImportCommand(TestCase):
         self.temp_dir.cleanup()
 
     @patch("marimba.core.pipeline.format_path_for_logging")
+    @pytest.mark.integration
     def test_run_import_success(self, mock_format_path):
         """Test successful import command execution."""
         mock_format_path.return_value = "formatted/path"
@@ -252,6 +268,7 @@ class TestRunImportCommand(TestCase):
                 "Completed [steel_blue3]import[/steel_blue3] command for pipeline [light_pink3]ConcretePipeline[/light_pink3]"
             )
 
+    @pytest.mark.integration
     def test_run_import_invalid_source_path(self):
         """Test import command with invalid source path."""
         invalid_source = Path(self.temp_dir.name) / "nonexistent"
@@ -268,6 +285,7 @@ class TestRunImportCommand(TestCase):
             # Verify error was logged
             mock_logger.exception.assert_called_once_with(f"Source path {invalid_source} is not a directory")
 
+    @pytest.mark.integration
     def test_run_import_source_path_is_file(self):
         """Test import command when source path is a file, not directory."""
         source_file = Path(self.temp_dir.name) / "source.txt"
@@ -305,6 +323,7 @@ class TestRunProcessCommand(TestCase):
         self.temp_dir.cleanup()
 
     @patch("marimba.core.pipeline.format_path_for_logging")
+    @pytest.mark.integration
     def test_run_process_success(self, mock_format_path):
         """Test successful process command execution."""
         mock_format_path.return_value = "formatted/path"
@@ -350,6 +369,7 @@ class TestRunPackageCommand(TestCase):
         self.temp_dir.cleanup()
 
     @patch("marimba.core.pipeline.format_path_for_logging")
+    @pytest.mark.integration
     def test_run_package_success(self, mock_format_path):
         """Test successful package command execution."""
         mock_format_path.return_value = "formatted/path"
@@ -402,6 +422,7 @@ class TestRunPostPackageCommand(TestCase):
         self.temp_dir.cleanup()
 
     @patch("marimba.core.pipeline.format_path_for_logging")
+    @pytest.mark.integration
     def test_run_post_package_success(self, mock_format_path):
         """Test successful post package command execution."""
         mock_format_path.return_value = "formatted/path"
@@ -437,6 +458,7 @@ class TestDefaultImplementations(TestCase):
         """Set up test fixtures."""
         self.pipeline = ConcretePipeline("/test")
 
+    @pytest.mark.unit
     def test_import_default_warning(self):
         """Test that default _import implementation logs a warning."""
 
@@ -458,6 +480,7 @@ class TestDefaultImplementations(TestCase):
                 "There is no Marimba [steel_blue3]import[/steel_blue3] command implemented for pipeline [light_pink3]DefaultImportPipeline[/light_pink3]"
             )
 
+    @pytest.mark.unit
     def test_process_default_warning(self):
         """Test that default _process implementation logs a warning."""
 
@@ -479,6 +502,7 @@ class TestDefaultImplementations(TestCase):
                 "There is no Marimba [steel_blue3]process[/steel_blue3] command implemented for pipeline [light_pink3]DefaultProcessPipeline[/light_pink3]"
             )
 
+    @pytest.mark.unit
     def test_post_package_default_returns_empty_set(self):
         """Test that default _post_package implementation returns empty set."""
         # Call the default implementation directly
@@ -491,6 +515,7 @@ class TestDefaultImplementations(TestCase):
 class TestErrorHandlingAndEdgeCases(TestCase):
     """Test cases for error handling and edge cases."""
 
+    @pytest.mark.unit
     def test_pipeline_with_empty_config(self):
         """Test pipeline behavior with empty configuration."""
         pipeline = ConcretePipeline("/test", config={})
@@ -498,6 +523,7 @@ class TestErrorHandlingAndEdgeCases(TestCase):
         self.assertEqual(pipeline.config, {})
         self.assertIsNotNone(pipeline.config)
 
+    @pytest.mark.unit
     def test_pipeline_with_complex_config(self):
         """Test pipeline with complex configuration data."""
         config = {
@@ -514,6 +540,7 @@ class TestErrorHandlingAndEdgeCases(TestCase):
         self.assertEqual(pipeline.config, config)
 
     @patch("marimba.core.pipeline.format_path_for_logging")
+    @pytest.mark.unit
     def test_logging_with_none_kwargs(self, mock_format_path):
         """Test that logging works correctly with None or empty kwargs."""
         mock_format_path.return_value = "formatted/path"
@@ -530,6 +557,7 @@ class TestErrorHandlingAndEdgeCases(TestCase):
                 "data_dir=formatted/path, config={}, kwargs={}"
             )
 
+    @pytest.mark.integration
     def test_path_formatting_in_logs(self):
         """Test that path formatting is called correctly in logging."""
         with tempfile.TemporaryDirectory() as temp_dir:

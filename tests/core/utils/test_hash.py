@@ -12,6 +12,7 @@ from marimba.core.utils.hash import compute_hash
 class TestHashUtilities:
     """Test hash utility functions."""
 
+    @pytest.mark.integration
     @pytest.fixture
     def test_file(self, tmp_path):
         """Create a test file with known content."""
@@ -20,6 +21,7 @@ class TestHashUtilities:
         test_file.write_bytes(test_content)
         return test_file, test_content
 
+    @pytest.mark.integration
     @pytest.fixture
     def test_directory(self, tmp_path):
         """Create a test directory."""
@@ -27,6 +29,7 @@ class TestHashUtilities:
         test_dir.mkdir()
         return test_dir
 
+    @pytest.mark.integration
     @pytest.fixture
     def test_root_dir(self, tmp_path):
         """Create a root directory for relative path testing."""
@@ -34,6 +37,7 @@ class TestHashUtilities:
         root_dir.mkdir()
         return root_dir
 
+    @pytest.mark.integration
     def test_compute_hash_file_contents(self, test_file):
         """Test computing hash of file contents."""
         file_path, content = test_file
@@ -45,6 +49,7 @@ class TestHashUtilities:
 
         assert result == expected_hash
 
+    @pytest.mark.integration
     def test_compute_hash_large_file(self, tmp_path):
         """Test computing hash of large file (multiple chunks)."""
         large_file = tmp_path / "large_file.txt"
@@ -60,6 +65,7 @@ class TestHashUtilities:
 
         assert result == expected_hash
 
+    @pytest.mark.integration
     def test_compute_hash_empty_file(self, tmp_path):
         """Test computing hash of empty file."""
         empty_file = tmp_path / "empty_file.txt"
@@ -71,6 +77,7 @@ class TestHashUtilities:
 
         assert result == expected_hash
 
+    @pytest.mark.integration
     def test_compute_hash_directory_absolute_path(self, test_directory):
         """Test computing hash of directory using absolute path."""
         expected_hash = hashlib.sha256(str(test_directory.as_posix()).encode()).hexdigest()
@@ -79,6 +86,7 @@ class TestHashUtilities:
 
         assert result == expected_hash
 
+    @pytest.mark.integration
     def test_compute_hash_directory_with_root_dir(self, test_root_dir):
         """Test computing hash of directory with root directory."""
         test_dir = test_root_dir / "subdir"
@@ -92,6 +100,7 @@ class TestHashUtilities:
 
         assert result == expected_hash
 
+    @pytest.mark.integration
     def test_compute_hash_file_with_root_dir_ignored(self, test_root_dir):
         """Test that root_dir is ignored for files."""
         test_file = test_root_dir / "test.txt"
@@ -104,6 +113,7 @@ class TestHashUtilities:
 
         assert result == expected_hash
 
+    @pytest.mark.integration
     def test_compute_hash_directory_outside_root(self, tmp_path, test_root_dir):
         """Test error when directory is outside root directory."""
         outside_dir = tmp_path / "outside"
@@ -112,6 +122,7 @@ class TestHashUtilities:
         with pytest.raises(ValueError, match="is not within root directory"):
             compute_hash(outside_dir, root_dir=test_root_dir)
 
+    @pytest.mark.integration
     def test_compute_hash_nested_directory_with_root(self, test_root_dir):
         """Test computing hash of deeply nested directory with root."""
         nested_dir = test_root_dir / "level1" / "level2" / "level3"
@@ -124,6 +135,7 @@ class TestHashUtilities:
 
         assert result == expected_hash
 
+    @pytest.mark.integration
     def test_compute_hash_symlink_as_directory(self, tmp_path):
         """Test computing hash of symlink to directory."""
         target_dir = tmp_path / "target"
@@ -139,6 +151,7 @@ class TestHashUtilities:
 
         assert result == expected_hash
 
+    @pytest.mark.integration
     def test_compute_hash_nonexistent_path_as_directory(self, tmp_path):
         """Test computing hash of non-existent path (treated as directory)."""
         nonexistent = tmp_path / "nonexistent"
@@ -149,6 +162,7 @@ class TestHashUtilities:
 
         assert result == expected_hash
 
+    @pytest.mark.integration
     @patch("pathlib.Path.open")
     def test_compute_hash_file_read_error(self, mock_open_method, tmp_path):
         """Test handling of file read error."""
@@ -161,6 +175,7 @@ class TestHashUtilities:
         with pytest.raises(OSError, match="Failed to read file"):
             compute_hash(test_file)
 
+    @pytest.mark.integration
     def test_compute_hash_different_files_different_hashes(self, tmp_path):
         """Test that different files produce different hashes."""
         file1 = tmp_path / "file1.txt"
@@ -174,6 +189,7 @@ class TestHashUtilities:
 
         assert hash1 != hash2
 
+    @pytest.mark.integration
     def test_compute_hash_same_content_same_hash(self, tmp_path):
         """Test that files with same content produce same hash."""
         file1 = tmp_path / "file1.txt"
@@ -188,6 +204,7 @@ class TestHashUtilities:
 
         assert hash1 == hash2
 
+    @pytest.mark.integration
     def test_compute_hash_directory_different_paths_different_hashes(self, tmp_path):
         """Test that different directory paths produce different hashes."""
         dir1 = tmp_path / "dir1"
@@ -201,6 +218,7 @@ class TestHashUtilities:
 
         assert hash1 != hash2
 
+    @pytest.mark.integration
     def test_compute_hash_relative_vs_absolute_paths_with_root(self, test_root_dir):
         """Test that relative path calculation handles absolute vs relative inputs."""
         subdir = test_root_dir / "subdir"
@@ -215,6 +233,7 @@ class TestHashUtilities:
         # Both should produce the same hash
         assert absolute_result == absolute_result2
 
+    @pytest.mark.integration
     def test_compute_hash_special_characters_in_path(self, tmp_path):
         """Test computing hash of path with special characters."""
         special_dir = tmp_path / "special-dir_with@symbols"
@@ -226,6 +245,7 @@ class TestHashUtilities:
 
         assert result == expected_hash
 
+    @pytest.mark.integration
     def test_compute_hash_unicode_path(self, tmp_path):
         """Test computing hash of path with Unicode characters."""
         unicode_dir = tmp_path / "测试目录"
@@ -237,6 +257,7 @@ class TestHashUtilities:
 
         assert result == expected_hash
 
+    @pytest.mark.integration
     def test_compute_hash_returns_lowercase_hex(self, test_file):
         """Test that hash is returned as lowercase hexadecimal."""
         file_path, _ = test_file
@@ -248,6 +269,7 @@ class TestHashUtilities:
         assert all(c in "0123456789abcdef" for c in result)
         assert result.islower()
 
+    @pytest.mark.integration
     def test_compute_hash_consistency(self, test_file):
         """Test that computing hash multiple times gives same result."""
         file_path, _ = test_file
@@ -258,6 +280,7 @@ class TestHashUtilities:
 
         assert hash1 == hash2 == hash3
 
+    @pytest.mark.integration
     @patch("pathlib.Path.resolve")
     def test_compute_hash_directory_resolve_error_with_root(self, mock_resolve, tmp_path, test_root_dir):
         """Test error handling when path.resolve() fails during relative path calculation."""

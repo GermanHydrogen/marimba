@@ -56,18 +56,21 @@ class TestiFDOMetadataProperties:
         """Test latitude property returns correct value."""
         assert ifdo_metadata.latitude == 45.0
 
+    @pytest.mark.unit
     def test_latitude_property_none(self):
         """Test latitude property when None."""
         image_data = ImageData(image_latitude=None)
         metadata = iFDOMetadata(image_data)
         assert metadata.latitude is None
 
+    @pytest.mark.unit
     def test_latitude_property_int(self):
         """Test latitude property accepts integer values."""
         image_data = ImageData(image_latitude=45)
         metadata = iFDOMetadata(image_data)
         assert metadata.latitude == 45.0
 
+    @pytest.mark.unit
     def test_latitude_property_wrong_type(self):
         """Test latitude property raises TypeError for wrong type."""
         image_data = ImageData()
@@ -77,22 +80,26 @@ class TestiFDOMetadataProperties:
         with pytest.raises(TypeError, match="Expected float or None"):
             _ = metadata.latitude
 
+    @pytest.mark.unit
     def test_longitude_property(self, ifdo_metadata: iFDOMetadata) -> None:
         """Test longitude property returns correct value."""
         assert ifdo_metadata.longitude == -123.0
 
+    @pytest.mark.unit
     def test_longitude_property_none(self):
         """Test longitude property when None."""
         image_data = ImageData(image_longitude=None)
         metadata = iFDOMetadata(image_data)
         assert metadata.longitude is None
 
+    @pytest.mark.unit
     def test_longitude_property_int(self):
         """Test longitude property accepts integer values."""
         image_data = ImageData(image_longitude=-123)
         metadata = iFDOMetadata(image_data)
         assert metadata.longitude == -123.0
 
+    @pytest.mark.unit
     def test_longitude_property_wrong_type(self):
         """Test longitude property raises TypeError for wrong type."""
         image_data = ImageData()
@@ -102,22 +109,26 @@ class TestiFDOMetadataProperties:
         with pytest.raises(TypeError, match="Expected float or None"):
             _ = metadata.longitude
 
+    @pytest.mark.unit
     def test_altitude_property(self, ifdo_metadata: iFDOMetadata) -> None:
         """Test altitude property returns correct value."""
         assert ifdo_metadata.altitude == 100.0
 
+    @pytest.mark.unit
     def test_altitude_property_none(self):
         """Test altitude property when None."""
         image_data = ImageData(image_altitude_meters=None)
         metadata = iFDOMetadata(image_data)
         assert metadata.altitude is None
 
+    @pytest.mark.unit
     def test_altitude_property_int(self):
         """Test altitude property accepts integer values."""
         image_data = ImageData(image_altitude_meters=100)
         metadata = iFDOMetadata(image_data)
         assert metadata.altitude == 100.0
 
+    @pytest.mark.unit
     def test_altitude_property_wrong_type(self):
         """Test altitude property raises TypeError for wrong type."""
         image_data = ImageData()
@@ -127,6 +138,7 @@ class TestiFDOMetadataProperties:
         with pytest.raises(TypeError, match="Expected float or None"):
             _ = metadata.altitude
 
+    @pytest.mark.unit
     def test_context_property(self):
         """Test context property returns correct value."""
         mock_context = Mock()
@@ -137,12 +149,14 @@ class TestiFDOMetadataProperties:
 
         assert metadata.context == "test context"
 
+    @pytest.mark.unit
     def test_context_property_none(self):
         """Test context property when None."""
         image_data = ImageData(image_context=None)
         metadata = iFDOMetadata(image_data)
         assert metadata.context is None
 
+    @pytest.mark.unit
     def test_license_property(self):
         """Test license property returns correct value."""
         mock_license = Mock()
@@ -153,12 +167,14 @@ class TestiFDOMetadataProperties:
 
         assert metadata.license == "MIT License"
 
+    @pytest.mark.unit
     def test_license_property_none(self):
         """Test license property when None."""
         image_data = ImageData(image_license=None)
         metadata = iFDOMetadata(image_data)
         assert metadata.license is None
 
+    @pytest.mark.unit
     def test_creators_property(self):
         """Test creators property returns correct list."""
         mock_creator1 = Mock()
@@ -172,28 +188,33 @@ class TestiFDOMetadataProperties:
 
         assert metadata.creators == ["Creator One", "Creator Two"]
 
+    @pytest.mark.unit
     def test_creators_property_empty(self):
         """Test creators property when empty."""
         image_data = ImageData(image_creators=[])
         metadata = iFDOMetadata(image_data)
         assert metadata.creators == []
 
+    @pytest.mark.unit
     def test_creators_property_none(self):
         """Test creators property when None."""
         image_data = ImageData(image_creators=None)
         metadata = iFDOMetadata(image_data)
         assert metadata.creators == []
 
+    @pytest.mark.unit
     def test_hash_sha256_property(self, ifdo_metadata: iFDOMetadata) -> None:
         """Test hash_sha256 property returns correct value."""
         assert ifdo_metadata.hash_sha256 == "abc123"
 
+    @pytest.mark.unit
     def test_hash_sha256_property_none(self):
         """Test hash_sha256 property when None."""
         image_data = ImageData(image_hash_sha256=None)
         metadata = iFDOMetadata(image_data)
         assert metadata.hash_sha256 is None
 
+    @pytest.mark.unit
     def test_hash_sha256_property_wrong_type(self):
         """Test hash_sha256 property raises TypeError for wrong type."""
         image_data = ImageData()
@@ -203,26 +224,31 @@ class TestiFDOMetadataProperties:
         with pytest.raises(TypeError, match="Expected str or None"):
             _ = metadata.hash_sha256
 
+    @pytest.mark.unit
     def test_hash_sha256_setter(self, ifdo_metadata: iFDOMetadata) -> None:
         """Test hash_sha256 setter works correctly."""
         ifdo_metadata.hash_sha256 = "new_hash"
         assert ifdo_metadata.hash_sha256 == "new_hash"
 
+    @pytest.mark.unit
     def test_is_video_property_false(self, ifdo_metadata: iFDOMetadata) -> None:
         """Test is_video property returns False for single ImageData."""
         assert ifdo_metadata.is_video is False
 
+    @pytest.mark.unit
     def test_is_video_property_true(self):
         """Test is_video property returns True for list of ImageData."""
         image_data_list = [ImageData(), ImageData()]
         metadata = iFDOMetadata(image_data_list)
         assert metadata.is_video is True
 
+    @pytest.mark.unit
     def test_primary_image_data_single(self, sample_image_data: ImageData) -> None:
         """Test primary_image_data for single ImageData."""
         metadata = iFDOMetadata(sample_image_data)
         assert metadata.primary_image_data is sample_image_data
 
+    @pytest.mark.unit
     def test_primary_image_data_list(self):
         """Test primary_image_data for list of ImageData."""
         image_data1 = ImageData(image_altitude_meters=100.0)
@@ -253,6 +279,7 @@ class TestiFDOMetadataStaticMethods:
         for filename in video_files:
             assert iFDOMetadata._is_video_file(filename) is True
 
+    @pytest.mark.unit
     def test_is_video_file_image_extensions(self):
         """Test _is_video_file returns False for image extensions."""
         image_files = ["photo.jpg", "image.png", "graphic.bmp", "picture.tiff", "icon.gif"]
@@ -260,6 +287,7 @@ class TestiFDOMetadataStaticMethods:
         for filename in image_files:
             assert iFDOMetadata._is_video_file(filename) is False
 
+    @pytest.mark.unit
     def test_is_video_file_case_insensitive(self):
         """Test _is_video_file is case insensitive."""
         assert iFDOMetadata._is_video_file("VIDEO.MP4") is True
@@ -294,6 +322,7 @@ class TestiFDOMetadataProcessMethods:
         for img_data in result:
             assert img_data.image_set_local_path == "subdir"
 
+    @pytest.mark.unit
     def test_process_image_metadata(self):
         """Test _process_image_metadata method."""
         image_data = ImageData(image_altitude_meters=100.0)
@@ -305,6 +334,7 @@ class TestiFDOMetadataProcessMethods:
         assert result.image_altitude_meters == 100.0
         assert result.image_set_local_path == "subdir"
 
+    @pytest.mark.unit
     def test_process_image_metadata_root_path(self):
         """Test _process_image_metadata with root path doesn't set local_path."""
         image_data = ImageData(image_altitude_meters=100.0)

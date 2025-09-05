@@ -33,7 +33,7 @@ class TestProjectWrapper:
         """Create a ProjectWrapper instance."""
         return ProjectWrapper(mock_project_dir)
 
-    @pytest.mark.unit
+    @pytest.mark.integration
     def test_project_wrapper_init(self, mock_project_dir):
         """Test ProjectWrapper initialization."""
         wrapper = ProjectWrapper(mock_project_dir)
@@ -58,7 +58,7 @@ class TestProjectWrapper:
         assert isinstance(project, ProjectWrapper)
         assert project.root_dir == project_path
 
-    @pytest.mark.unit
+    @pytest.mark.integration
     def test_pipeline_wrappers_property(self, project_wrapper, mock_project_dir):
         """Test pipeline wrappers property."""
         # Mock pipeline directories
@@ -72,6 +72,7 @@ class TestProjectWrapper:
         assert isinstance(wrappers, dict)
         # Empty since no valid pipeline config exists
 
+    @pytest.mark.integration
     def test_collection_wrappers_property(self, project_wrapper, mock_project_dir):
         """Test collection wrappers property."""
         # Mock collection directories
@@ -82,6 +83,7 @@ class TestProjectWrapper:
         assert isinstance(wrappers, dict)
         # Empty since no valid collection config exists
 
+    @pytest.mark.integration
     def test_dataset_wrappers_property(self, project_wrapper, mock_project_dir):
         """Test dataset wrappers property."""
         # Mock dataset directories
@@ -93,6 +95,7 @@ class TestProjectWrapper:
         # Empty since no valid dataset config exists
 
     @patch("marimba.core.wrappers.project.ProjectWrapper._get_pipeline")
+    @pytest.mark.integration
     def test_get_pipeline_existing(self, mock_get_pipeline, project_wrapper, mock_project_dir):
         """Test getting existing pipeline."""
         pipeline_dir = mock_project_dir / "pipelines" / "test_pipeline"
@@ -105,11 +108,13 @@ class TestProjectWrapper:
         pipeline = project_wrapper._get_pipeline("test_pipeline")
         assert pipeline is not None
 
+    @pytest.mark.integration
     def test_get_pipeline_nonexistent(self, project_wrapper):
         """Test getting non-existent pipeline raises exception."""
         with pytest.raises(Exception):
             project_wrapper._get_pipeline("nonexistent_pipeline")
 
+    @pytest.mark.integration
     def test_get_collection_existing(self, project_wrapper, mock_project_dir):
         """Test getting existing collection from wrapper."""
         collection_dir = mock_project_dir / "collections" / "test_collection"
@@ -122,11 +127,13 @@ class TestProjectWrapper:
         wrappers = project_wrapper.collection_wrappers
         assert isinstance(wrappers, dict)
 
+    @pytest.mark.integration
     def test_get_collection_nonexistent(self, project_wrapper):
         """Test getting non-existent collection returns empty dict."""
         wrappers = project_wrapper.collection_wrappers
         assert "nonexistent_collection" not in wrappers
 
+    @pytest.mark.integration
     def test_get_dataset_existing(self, project_wrapper, mock_project_dir):
         """Test getting existing dataset from wrapper."""
         dataset_dir = mock_project_dir / "datasets" / "test_dataset"
@@ -139,6 +146,7 @@ class TestProjectWrapper:
         wrappers = project_wrapper.dataset_wrappers
         assert isinstance(wrappers, dict)
 
+    @pytest.mark.integration
     def test_get_dataset_nonexistent(self, project_wrapper):
         """Test getting non-existent dataset returns empty dict."""
         wrappers = project_wrapper.dataset_wrappers
@@ -157,6 +165,7 @@ class TestProjectWrapper:
         assert result == mock_pipeline
 
     @patch("marimba.core.wrappers.collection.CollectionWrapper.create")
+    @pytest.mark.integration
     def test_create_collection(self, mock_create, project_wrapper):
         """Test creating a new collection."""
         mock_collection = Mock()
@@ -167,6 +176,7 @@ class TestProjectWrapper:
         mock_create.assert_called_once()
         assert result == mock_collection
 
+    @pytest.mark.integration
     def test_create_dataset(self, project_wrapper, mock_project_dir):
         """Test creating a new dataset."""
         # Call with required parameters
@@ -190,6 +200,7 @@ class TestProjectWrapper:
             mock_rmtree.assert_called_once()
             assert isinstance(result, Path)
 
+    @pytest.mark.integration
     def test_delete_pipeline(self, project_wrapper, mock_project_dir):
         """Test pipeline deletion."""
         pipeline_dir = mock_project_dir / "pipelines" / "test_pipeline"
@@ -204,6 +215,7 @@ class TestProjectWrapper:
         assert not pipeline_dir.exists()
         assert result == pipeline_dir
 
+    @pytest.mark.integration
     def test_delete_collection(self, project_wrapper, mock_project_dir):
         """Test collection deletion."""
         collection_dir = mock_project_dir / "collections" / "test_collection"
@@ -218,6 +230,7 @@ class TestProjectWrapper:
         assert not collection_dir.exists()
         assert result == collection_dir
 
+    @pytest.mark.integration
     def test_delete_dataset(self, project_wrapper, mock_project_dir):
         """Test dataset deletion."""
         dataset_dir = mock_project_dir / "datasets" / "test_dataset"
@@ -232,6 +245,7 @@ class TestProjectWrapper:
         assert not dataset_dir.exists()
         assert result == dataset_dir
 
+    @pytest.mark.integration
     def test_install_pipelines(self, project_wrapper):
         """Test pipeline installation."""
         # Mock the pipeline wrapper installation
@@ -249,6 +263,7 @@ class TestProjectWrapper:
                 mock_wrapper.install.assert_called_once()
 
     @patch("git.Repo")
+    @pytest.mark.integration
     def test_update_pipelines(self, mock_repo, project_wrapper, mock_project_dir):
         """Test pipeline updates."""
         pipeline_dir = mock_project_dir / "pipelines" / "test_pipeline"
@@ -261,16 +276,19 @@ class TestProjectWrapper:
 
         # Should attempt to update git repositories
 
+    @pytest.mark.integration
     def test_error_handling_invalid_project_dir(self):
         """Test error handling for invalid project directory."""
         with pytest.raises(Exception):
             ProjectWrapper("/nonexistent/path")
 
+    @pytest.mark.integration
     def test_dry_run_functionality(self, mock_project_dir):
         """Test dry run functionality."""
         wrapper = ProjectWrapper(mock_project_dir, dry_run=True)
         assert wrapper.dry_run is True
 
+    @pytest.mark.integration
     def test_project_properties(self, project_wrapper, mock_project_dir):
         """Test project properties."""
         assert project_wrapper.root_dir == mock_project_dir
@@ -282,6 +300,7 @@ class TestProjectWrapper:
         assert isinstance(project_wrapper.log_path, Path)
         assert project_wrapper.name == mock_project_dir.name
 
+    @pytest.mark.integration
     def test_create_target(self, project_wrapper):
         """Test creating a distribution target."""
         config = {"bucket": "test-bucket"}
@@ -306,6 +325,7 @@ class TestProjectWrapper:
         ProjectWrapper.check_name("valid-name")
         ProjectWrapper.check_name("valid123")
 
+    @pytest.mark.unit
     def test_check_name_invalid(self):
         """Test invalid name checking."""
         with pytest.raises(ProjectWrapper.InvalidNameError):
@@ -318,26 +338,31 @@ class TestProjectWrapper:
             ProjectWrapper.check_name("invalid\\name")  # backslash
         # Note: empty string doesn't raise an error based on the actual implementation
 
+    @pytest.mark.integration
     def test_delete_pipeline_nonexistent(self, project_wrapper):
         """Test deleting non-existent pipeline raises exception."""
         with pytest.raises(ProjectWrapper.DeletePipelineError):
             project_wrapper.delete_pipeline("nonexistent", dry_run=False)
 
+    @pytest.mark.integration
     def test_delete_collection_nonexistent(self, project_wrapper):
         """Test deleting non-existent collection raises exception."""
         with pytest.raises(ProjectWrapper.NoSuchCollectionError):
             project_wrapper.delete_collection("nonexistent", dry_run=False)
 
+    @pytest.mark.integration
     def test_delete_dataset_nonexistent(self, project_wrapper):
         """Test deleting non-existent dataset raises exception."""
         with pytest.raises(FileExistsError):
             project_wrapper.delete_dataset("nonexistent", dry_run=False)
 
+    @pytest.mark.integration
     def test_delete_target_nonexistent(self, project_wrapper):
         """Test deleting non-existent target raises exception."""
         with pytest.raises(FileExistsError):
             project_wrapper.delete_target("nonexistent", dry_run=False)
 
+    @pytest.mark.integration
     def test_delete_target(self, project_wrapper, mock_project_dir):
         """Test target deletion."""
         target_file = mock_project_dir / "targets" / "test_target.yml"
@@ -353,6 +378,7 @@ class TestProjectWrapper:
         assert not target_file.exists()
         assert result == target_file
 
+    @pytest.mark.integration
     def test_dry_run_delete_operations(self, project_wrapper, mock_project_dir):
         """Test dry run mode for delete operations."""
         # Create directories
@@ -377,6 +403,7 @@ class TestProjectWrapper:
         assert result == dataset_dir
 
     @patch("marimba.core.wrappers.project.ProjectWrapper._check_file_structure")
+    @pytest.mark.integration
     def test_invalid_structure_error(self, mock_check_structure, tmp_path):
         """Test InvalidStructureError is raised for invalid project structure."""
         mock_check_structure.side_effect = ProjectWrapper.InvalidStructureError("Invalid structure")
@@ -384,27 +411,32 @@ class TestProjectWrapper:
         with pytest.raises(ProjectWrapper.InvalidStructureError):
             ProjectWrapper(tmp_path)
 
+    @pytest.mark.unit
     def test_create_pipeline_invalid_name(self, project_wrapper):
         """Test creating pipeline with invalid name raises error."""
         with pytest.raises(ProjectWrapper.InvalidNameError):
             project_wrapper.create_pipeline("invalid name", "https://example.com", {})
 
+    @pytest.mark.unit
     def test_create_collection_invalid_name(self, project_wrapper):
         """Test creating collection with invalid name raises error."""
         with pytest.raises(ProjectWrapper.InvalidNameError):
             project_wrapper.create_collection("invalid name", {})
 
+    @pytest.mark.unit
     def test_create_target_invalid_name(self, project_wrapper):
         """Test creating target with invalid name raises error."""
         with pytest.raises(ProjectWrapper.InvalidNameError):
             project_wrapper.create_target("invalid name", "s3", {})
 
+    @pytest.mark.unit
     def test_create_dataset_invalid_name(self, project_wrapper):
         """Test creating dataset with invalid name raises error."""
         with pytest.raises(ProjectWrapper.InvalidNameError):
             project_wrapper.create_dataset("invalid name", {}, [], [])
 
     @patch("pathlib.Path.exists")
+    @pytest.mark.integration
     def test_create_project_already_exists(self, mock_exists, tmp_path):
         """Test creating project when directory already exists raises FileExistsError."""
         mock_exists.return_value = True
@@ -412,6 +444,7 @@ class TestProjectWrapper:
         with pytest.raises(FileExistsError):
             ProjectWrapper.create(tmp_path / "existing_project")
 
+    @pytest.mark.integration
     def test_target_wrappers_property(self, project_wrapper, mock_project_dir):
         """Test target wrappers property."""
         # Mock target directories
@@ -423,6 +456,7 @@ class TestProjectWrapper:
         # Empty since no valid target config exists
 
     @patch("marimba.core.wrappers.project.remove_directory_tree")
+    @pytest.mark.integration
     def test_delete_with_readonly_files(self, mock_remove_tree, project_wrapper, mock_project_dir):
         """Test deletion handles readonly files properly."""
         pipeline_dir = mock_project_dir / "pipelines" / "test_pipeline"
@@ -447,42 +481,49 @@ class TestProjectWrapperExceptions:
         assert str(error) == "Invalid name"
         assert isinstance(error, Exception)
 
+    @pytest.mark.unit
     def test_invalid_structure_error(self):
         """Test InvalidStructureError exception."""
         error = ProjectWrapper.InvalidStructureError("Invalid structure")
         assert str(error) == "Invalid structure"
         assert isinstance(error, Exception)
 
+    @pytest.mark.unit
     def test_no_such_collection_error(self):
         """Test NoSuchCollectionError exception."""
         error = ProjectWrapper.NoSuchCollectionError("No such collection")
         assert str(error) == "No such collection"
         assert isinstance(error, Exception)
 
+    @pytest.mark.unit
     def test_no_such_pipeline_error(self):
         """Test NoSuchPipelineError exception."""
         error = ProjectWrapper.NoSuchPipelineError("No such pipeline")
         assert str(error) == "No such pipeline"
         assert isinstance(error, Exception)
 
+    @pytest.mark.unit
     def test_no_such_dataset_error(self):
         """Test NoSuchDatasetError exception."""
         error = ProjectWrapper.NoSuchDatasetError("No such dataset")
         assert str(error) == "No such dataset"
         assert isinstance(error, Exception)
 
+    @pytest.mark.unit
     def test_no_such_target_error(self):
         """Test NoSuchTargetError exception."""
         error = ProjectWrapper.NoSuchTargetError("No such target")
         assert str(error) == "No such target"
         assert isinstance(error, Exception)
 
+    @pytest.mark.unit
     def test_delete_pipeline_error(self):
         """Test DeletePipelineError exception."""
         error = ProjectWrapper.DeletePipelineError("Delete pipeline error")
         assert str(error) == "Delete pipeline error"
         assert isinstance(error, Exception)
 
+    @pytest.mark.unit
     def test_create_collection_error(self):
         """Test CreateCollectionError exception."""
         error = ProjectWrapper.CreateCollectionError("Create collection error")
@@ -508,6 +549,7 @@ class TestUtilityFunctions:
         result = get_merged_keyword_args(kwargs, None, logger)
         assert result == kwargs
 
+    @pytest.mark.unit
     def test_get_merged_keyword_args_with_extra(self):
         """Test merging with extra keyword arguments."""
         logger = Mock()
@@ -519,6 +561,7 @@ class TestUtilityFunctions:
         expected = {"key1": "value1", "key2": "value2", "key3": "value3"}
         assert result == expected
 
+    @pytest.mark.unit
     def test_get_merged_keyword_args_override(self):
         """Test that extra args can override existing ones."""
         logger = Mock()
@@ -530,6 +573,7 @@ class TestUtilityFunctions:
         expected = {"key1": "override", "key2": "new"}
         assert result == expected
 
+    @pytest.mark.unit
     def test_get_merged_keyword_args_invalid_format(self):
         """Test handling of invalid argument format."""
         logger = Mock()
@@ -543,6 +587,7 @@ class TestUtilityFunctions:
         # Check that warning was called for the invalid argument format
         logger.warning.assert_any_call('Invalid extra argument provided: "invalidarg"')
 
+    @pytest.mark.unit
     def test_get_merged_keyword_args_evaluation_error(self):
         """Test handling of evaluation errors."""
         logger = Mock()
@@ -555,6 +600,7 @@ class TestUtilityFunctions:
         assert result == expected
         logger.warning.assert_called_with('Could not evaluate extra argument value: "not_valid_literal"')
 
+    @pytest.mark.unit
     def test_get_merged_keyword_args_numeric_values(self):
         """Test handling of numeric values in extra args."""
         logger = Mock()
@@ -566,6 +612,7 @@ class TestUtilityFunctions:
         expected = {"int_val": 42, "float_val": 3.14, "bool_val": True, "list_val": [1, 2, 3]}
         assert result == expected
 
+    @pytest.mark.unit
     def test_get_merged_keyword_args_none_extra(self):
         """Test merging when extra_args is None."""
         logger = Mock()
@@ -573,6 +620,7 @@ class TestUtilityFunctions:
         result = get_merged_keyword_args(kwargs, None, logger)
         assert result == kwargs
 
+    @pytest.mark.unit
     def test_get_merged_keyword_args_complex_types(self):
         """Test merging with complex data types."""
         logger = Mock()
@@ -584,6 +632,7 @@ class TestUtilityFunctions:
         expected = {"key1": "value1", "key2": 123, "key3": [1, 2, 3], "key4": {"nested": "dict"}}
         assert result == expected
 
+    @pytest.mark.unit
     def test_get_merged_keyword_args_skip_invalid_format(self):
         """Test handling of invalid argument format."""
         logger = Mock()
@@ -598,6 +647,7 @@ class TestUtilityFunctions:
         # Check that warning was called for the invalid argument format
         logger.warning.assert_any_call('Invalid extra argument provided: "invalid_format"')
 
+    @pytest.mark.unit
     def test_get_merged_keyword_args_invalid_value(self):
         """Test handling of invalid value format."""
         logger = Mock()

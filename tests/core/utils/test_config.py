@@ -2,6 +2,7 @@ import tempfile
 from pathlib import Path
 from unittest import TestCase
 
+import pytest
 import yaml
 
 from marimba.core.utils.config import load_config
@@ -43,6 +44,7 @@ class TestLoadConfig(TestCase):
     def tearDown(self) -> None:
         self.test_dir.cleanup()
 
+    @pytest.mark.integration
     def test_load_config_with_valid_yaml(self) -> None:
         with self.config_path.open("w", encoding="utf-8") as f:
             f.write("key: value")
@@ -50,6 +52,7 @@ class TestLoadConfig(TestCase):
         config_data = load_config(self.config_path)
         self.assertEqual(config_data, self.config_data)
 
+    @pytest.mark.integration
     def test_load_config_with_invalid_yaml(self) -> None:
         with self.config_path.open("w", encoding="utf-8") as f:
             f.write("key: value\ninvalid")
@@ -57,6 +60,7 @@ class TestLoadConfig(TestCase):
         with self.assertRaises(yaml.scanner.ScannerError):
             load_config(self.config_path)
 
+    @pytest.mark.integration
     def test_load_config_with_nonexistent_file(self) -> None:
         nonexistent_path = Path(self.test_dir.name) / "nonexistent_config.yaml"
         with self.assertRaises(FileNotFoundError):

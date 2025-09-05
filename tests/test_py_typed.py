@@ -10,10 +10,13 @@ import importlib.metadata
 import importlib.resources
 import unittest
 
+import pytest
+
 
 class TestPyTypedMarker(unittest.TestCase):
     """Test the presence of the py.typed marker file."""
 
+    @pytest.mark.unit
     def test_py_typed_exists(self):
         """Verify that the py.typed marker file exists in the package."""
         # First check in the source directory directly
@@ -37,6 +40,7 @@ class TestPyTypedMarker(unittest.TestCase):
             # This is fine - we've already checked the file exists in source
             print(f"Note: Could not check distribution files due to: {e}")
 
+    @pytest.mark.unit
     def test_importable_with_types(self):
         """Verify that modules can be imported with type information."""
         # Import a few key modules that should have type information
