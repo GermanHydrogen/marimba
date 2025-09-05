@@ -12,7 +12,6 @@ from marimba.lib.exif import get_dict
 class TestExifUtilities:
     """Test EXIF utility functions."""
 
-    @pytest.mark.integration
     @pytest.fixture
     def test_image_path(self, tmp_path):
         """Create a test image path."""

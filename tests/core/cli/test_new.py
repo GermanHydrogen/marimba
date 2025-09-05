@@ -17,7 +17,6 @@ runner = CliRunner()
 # ---------------------------------------------------------------------------------------------------------------------#
 
 
-@pytest.mark.unit
 @pytest.fixture
 def setup_test_directory_structure(tmp_path: Path) -> Path:
     """
@@ -344,7 +343,6 @@ def test_find_project_dir_or_exit_with_marimba_as_file(tmp_path: Path) -> None:
 # ---------------------------------------------------------------------------------------------------------------------#
 
 
-@pytest.mark.unit
 @pytest.fixture
 def setup_test_directory(tmp_path: Path) -> Path:
     """

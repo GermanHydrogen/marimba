@@ -38,7 +38,6 @@ from marimba.lib.image import (
 class TestImageUtilities:
     """Test image utility functions."""
 
-    @pytest.mark.integration
     @pytest.fixture
     def test_image_rgb(self, tmp_path):
         """Create a test RGB image."""
@@ -47,7 +46,6 @@ class TestImageUtilities:
         img.save(image_path)
         return image_path
 
-    @pytest.mark.integration
     @pytest.fixture
     def test_image_jpeg(self, tmp_path):
         """Create a test JPEG image."""
@@ -56,7 +54,6 @@ class TestImageUtilities:
         img.save(image_path, "JPEG")
         return image_path
 
-    @pytest.mark.integration
     @pytest.fixture
     def test_image_large(self, tmp_path):
         """Create a large test image."""
@@ -575,7 +572,6 @@ class TestGridClasses:
         """Create test grid dimensions."""
         return GridDimensions(columns=3, column_width=200, max_height=800)
 
-    @pytest.mark.integration
     @pytest.fixture
     def test_images(self, tmp_path):
         """Create multiple test images."""

@@ -12,7 +12,6 @@ from marimba.core.utils.hash import compute_hash
 class TestHashUtilities:
     """Test hash utility functions."""
 
-    @pytest.mark.integration
     @pytest.fixture
     def test_file(self, tmp_path):
         """Create a test file with known content."""
@@ -21,7 +20,6 @@ class TestHashUtilities:
         test_file.write_bytes(test_content)
         return test_file, test_content
 
-    @pytest.mark.integration
     @pytest.fixture
     def test_directory(self, tmp_path):
         """Create a test directory."""
@@ -29,7 +27,6 @@ class TestHashUtilities:
         test_dir.mkdir()
         return test_dir
 
-    @pytest.mark.integration
     @pytest.fixture
     def test_root_dir(self, tmp_path):
         """Create a root directory for relative path testing."""

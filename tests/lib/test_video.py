@@ -18,7 +18,6 @@ from marimba.lib.video import (
 class TestVideoUtilities:
     """Test video utility functions."""
 
-    @pytest.mark.integration
     @pytest.fixture
     def mock_video_stream(self):
         """Create a mock video stream."""

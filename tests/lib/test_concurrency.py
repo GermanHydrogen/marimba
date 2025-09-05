@@ -14,7 +14,6 @@ from marimba.lib.concurrency import (
 class TestConcurrencyUtilities:
     """Test concurrency utility functions."""
 
-    @pytest.mark.integration
     @pytest.fixture
     def mock_pipeline(self):
         """Create a mock BasePipeline instance."""
@@ -31,7 +30,6 @@ class TestConcurrencyUtilities:
             tmp_path / "image3.jpg",
         ]
 
-    @pytest.mark.integration
     @pytest.fixture
     def test_video_paths(self, tmp_path):
         """Create test video paths."""

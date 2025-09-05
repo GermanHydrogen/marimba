@@ -15,7 +15,6 @@ from marimba.lib.gps import (
 class TestGPSUtilities:
     """Test GPS utility functions."""
 
-    @pytest.mark.unit
     @pytest.fixture
     def test_image_path(self, tmp_path):
         """Create a test image path."""
