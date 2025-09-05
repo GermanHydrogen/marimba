@@ -309,3 +309,123 @@ class TestVideoUtilities:
         mock_filter.assert_called_once_with({}, True)  # overwrite=True
 
         assert result_video == test_video_path
+
+    @pytest.mark.integration
+    @patch("av.open")
+    @patch("marimba.lib.video.get_stream_properties")
+    @patch("marimba.lib.video.generate_potential_filenames")
+    @patch("marimba.lib.video.filter_existing_thumbnails")
+    @patch("marimba.lib.video.save_thumbnail")
+    @patch("marimba.lib.video.logger")
+    def test_generate_video_thumbnails_with_frame_processing(
+        self,
+        mock_logger,
+        mock_save_thumbnail,
+        mock_filter,
+        mock_generate_filenames,
+        mock_get_properties,
+        mock_av_open,
+        test_video_path,
+        tmp_path,
+    ):
+        """Test video thumbnail generation with actual frame processing."""
+        output_dir = tmp_path / "output"
+
+        # Create mock video frame with proper type
+        import av
+
+        mock_frame = Mock(spec=av.video.frame.VideoFrame)
+        mock_frame.pts = 10
+
+        # Create mock packet that yields frames
+        mock_packet = Mock()
+        mock_packet.decode.return_value = [mock_frame]
+
+        # Create mock container with demux that yields packets
+        mock_container = Mock()
+        mock_stream = Mock()
+        mock_container.streams.video = [mock_stream]
+        mock_container.demux.return_value = [mock_packet]
+        mock_av_open.return_value = mock_container
+
+        # Mock the stream properties
+        mock_get_properties.return_value = (30.0, 1 / 30.0, 900)  # 30fps, time_base, 900 frames
+
+        # Mock potential filenames to match calculated frame number
+        # frame_number = int(frame.pts * time_base * frame_rate) = int(10 * (1/30) * 30) = 10
+        expected_frame_number = 10
+        output_path = output_dir / "test_video_000010_THUMB.JPG"
+        mock_generate_filenames.return_value = {expected_frame_number: output_path}
+
+        # Mock existing thumbnails (empty)
+        mock_filter.return_value = []
+
+        result_video, result_paths = generate_video_thumbnails(test_video_path, output_dir)
+
+        # Verify frame processing happened
+        mock_container.demux.assert_called_once_with(mock_stream)
+        mock_packet.decode.assert_called_once()
+
+        # Verify thumbnail generation
+        mock_save_thumbnail.assert_called_once_with(mock_frame, output_path)
+        mock_logger.info.assert_called_once()
+
+        assert result_video == test_video_path
+        assert len(result_paths) == 1
+        assert output_path in result_paths
+
+    @pytest.mark.integration
+    @patch("av.open")
+    @patch("marimba.lib.video.get_stream_properties")
+    @patch("marimba.lib.video.generate_potential_filenames")
+    @patch("marimba.lib.video.filter_existing_thumbnails")
+    @patch("marimba.lib.video.save_thumbnail")
+    def test_generate_video_thumbnails_early_exit_no_overwrite(
+        self,
+        mock_save_thumbnail,
+        mock_filter,
+        mock_generate_filenames,
+        mock_get_properties,
+        mock_av_open,
+        test_video_path,
+        tmp_path,
+    ):
+        """Test early exit when not overwriting and no potential filenames left."""
+        output_dir = tmp_path / "output"
+
+        # Create mock video frame with proper type
+        import av
+
+        mock_frame = Mock(spec=av.video.frame.VideoFrame)
+        mock_frame.pts = 10
+
+        # Create mock packet that yields frames
+        mock_packet = Mock()
+        mock_packet.decode.return_value = [mock_frame]
+
+        # Create mock container
+        mock_container = Mock()
+        mock_stream = Mock()
+        mock_container.streams.video = [mock_stream]
+        mock_container.demux.return_value = [mock_packet]
+        mock_av_open.return_value = mock_container
+
+        # Mock the stream properties
+        mock_get_properties.return_value = (30.0, 1 / 30.0, 900)
+
+        # Mock potential filenames - will be consumed during processing
+        expected_frame_number = 10
+        output_path = output_dir / "test_video_000010_THUMB.JPG"
+        mock_generate_filenames.return_value = {expected_frame_number: output_path}
+
+        # Mock existing thumbnails
+        mock_filter.return_value = []
+
+        # Call with overwrite=False (default)
+        result_video, result_paths = generate_video_thumbnails(test_video_path, output_dir, overwrite=False)
+
+        # Should process one frame and then exit early because potential_filenames becomes empty
+        mock_save_thumbnail.assert_called_once_with(mock_frame, output_path)
+
+        assert result_video == test_video_path
+        assert len(result_paths) == 1
