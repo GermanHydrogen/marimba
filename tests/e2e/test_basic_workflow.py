@@ -76,7 +76,7 @@ def runner() -> CliRunner:
     return CliRunner()
 
 
-@pytest.mark.integration
+@pytest.mark.e2e
 class TestBasicWorkflow:
     """Test basic Marimba workflow: new project -> new pipeline -> import -> package."""
 
@@ -229,7 +229,7 @@ class TestBasicWorkflow:
         assert result.exit_code in [0, 1], f"Package command crashed unexpectedly: {result.stdout}"
 
 
-@pytest.mark.integration
+@pytest.mark.e2e
 class TestComplexWorkflow:
     """Test more complex multi-step workflows."""
 
@@ -404,7 +404,7 @@ class TestComplexWorkflow:
         assert result.exit_code in [0, 1]
 
 
-@pytest.mark.integration
+@pytest.mark.e2e
 class TestAdvancedWorkflows:
     """Test advanced workflows including process and batch operations."""
 
@@ -606,7 +606,7 @@ class TestAdvancedWorkflows:
         assert result.exit_code != 0  # Should fail gracefully
 
 
-@pytest.mark.integration
+@pytest.mark.e2e
 class TestDistributionWorkflows:
     """Test distribution workflows for various target types."""
 
