@@ -173,47 +173,53 @@ class TestHashUtilities:
             compute_hash(test_file)
 
     @pytest.mark.integration
-    def test_compute_hash_different_files_different_hashes(self, tmp_path):
-        """Test that different files produce different hashes."""
+    @pytest.mark.parametrize(
+        "content1,content2,should_be_equal,description",
+        [
+            ("Content 1", "Content 2", False, "different content produces different hashes"),
+            ("Same content", "Same content", True, "same content produces same hash"),
+            ("", "", True, "empty files produce same hash"),
+            ("A" * 1000, "B" * 1000, False, "different large content produces different hashes"),
+        ],
+    )
+    def test_compute_hash_file_content_comparison(self, tmp_path, content1, content2, should_be_equal, description):
+        """Test file hash comparison with various content scenarios."""
         file1 = tmp_path / "file1.txt"
         file2 = tmp_path / "file2.txt"
 
-        file1.write_text("Content 1")
-        file2.write_text("Content 2")
+        file1.write_text(content1)
+        file2.write_text(content2)
 
         hash1 = compute_hash(file1)
         hash2 = compute_hash(file2)
 
-        assert hash1 != hash2
+        if should_be_equal:
+            assert hash1 == hash2, f"Hashes should be equal for {description}"
+        else:
+            assert hash1 != hash2, f"Hashes should be different for {description}"
 
     @pytest.mark.integration
-    def test_compute_hash_same_content_same_hash(self, tmp_path):
-        """Test that files with same content produce same hash."""
-        file1 = tmp_path / "file1.txt"
-        file2 = tmp_path / "file2.txt"
-
-        content = "Same content"
-        file1.write_text(content)
-        file2.write_text(content)
-
-        hash1 = compute_hash(file1)
-        hash2 = compute_hash(file2)
-
-        assert hash1 == hash2
-
-    @pytest.mark.integration
-    def test_compute_hash_directory_different_paths_different_hashes(self, tmp_path):
+    @pytest.mark.parametrize(
+        "dir1_name,dir2_name,description",
+        [
+            ("dir1", "dir2", "different simple directory names"),
+            ("special-dir_with@symbols", "another-special#dir", "special characters in names"),
+            ("nested/path/dir1", "nested/path/dir2", "nested directory paths"),
+            ("测试目录1", "测试目录2", "unicode directory names"),
+        ],
+    )
+    def test_compute_hash_directory_different_paths_different_hashes(self, tmp_path, dir1_name, dir2_name, description):
         """Test that different directory paths produce different hashes."""
-        dir1 = tmp_path / "dir1"
-        dir2 = tmp_path / "dir2"
+        dir1 = tmp_path / dir1_name
+        dir2 = tmp_path / dir2_name
 
-        dir1.mkdir()
-        dir2.mkdir()
+        dir1.mkdir(parents=True)
+        dir2.mkdir(parents=True)
 
         hash1 = compute_hash(dir1)
         hash2 = compute_hash(dir2)
 
-        assert hash1 != hash2
+        assert hash1 != hash2, f"Different hashes expected for {description}"
 
     @pytest.mark.integration
     def test_compute_hash_relative_vs_absolute_paths_with_root(self, test_root_dir):

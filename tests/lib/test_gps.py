@@ -21,94 +21,56 @@ class TestGPSUtilities:
         return tmp_path / "test_image.jpg"
 
     @pytest.mark.unit
-    def test_convert_gps_coordinate_to_degrees_basic(self):
-        """Test converting GPS coordinates to degrees."""
-        # 37 degrees, 46 minutes, 30 seconds = 37.775 degrees
-        gps_coordinate = [
-            (37, 1),  # degrees
-            (46, 1),  # minutes
-            (30, 1),  # seconds
-        ]
-
+    @pytest.mark.parametrize(
+        "gps_coordinate,expected,description",
+        [
+            (
+                [(37, 1), (46, 1), (30, 1)],  # Basic format: 37°46'30" = 37.775°
+                37 + 46 / 60 + 30 / 3600,
+                "basic integer coordinates",
+            ),
+            (
+                [(374, 10), (2760, 100), (0, 1)],  # Fractions: 37.4° + 27.6' = 37.86°
+                37.4 + 27.6 / 60 + 0 / 3600,
+                "fractional coordinates like real EXIF data",
+            ),
+            (
+                ((37, 1), (46, 1), (30, 1)),  # Tuple format: same as first
+                37 + 46 / 60 + 30 / 3600,
+                "tuple of tuples format",
+            ),
+        ],
+    )
+    def test_convert_gps_coordinate_to_degrees(self, gps_coordinate, expected, description):
+        """Test converting GPS coordinates to degrees with various input formats."""
         result = convert_gps_coordinate_to_degrees(gps_coordinate)
-
-        expected = 37 + 46 / 60 + 30 / 3600
-        assert abs(result - expected) < 0.0001
+        assert abs(result - expected) < 0.0001, f"Failed for {description}"
 
     @pytest.mark.unit
-    def test_convert_gps_coordinate_to_degrees_fractions(self):
-        """Test converting GPS coordinates with fractional values."""
-        # Using fractions like real EXIF data
-        gps_coordinate = [
-            (374, 10),  # 37.4 degrees
-            (2760, 100),  # 27.6 minutes
-            (0, 1),  # 0 seconds
-        ]
-
-        result = convert_gps_coordinate_to_degrees(gps_coordinate)
-
-        expected = 37.4 + 27.6 / 60 + 0 / 3600
-        assert abs(result - expected) < 0.0001
-
-    @pytest.mark.unit
-    def test_convert_gps_coordinate_to_degrees_tuple_format(self):
-        """Test converting GPS coordinates in tuple format."""
-        # Test with tuple of tuples format
-        gps_coordinate = (
-            (37, 1),  # degrees
-            (46, 1),  # minutes
-            (30, 1),  # seconds
-        )
-
-        result = convert_gps_coordinate_to_degrees(gps_coordinate)
-
-        expected = 37 + 46 / 60 + 30 / 3600
-        assert abs(result - expected) < 0.0001
-
-    @pytest.mark.unit
-    def test_convert_degrees_to_gps_coordinate_positive(self):
-        """Test converting positive decimal degrees to DMS."""
-        degrees = 37.775  # 37 degrees, 46 minutes, 30 seconds
-
+    @pytest.mark.parametrize(
+        "degrees,expected_d,expected_m,expected_s_approx,description",
+        [
+            (37.775, 37, 46, 30000, "positive decimal with seconds"),  # 37°46'30"
+            (-122.4194, 122, 25, None, "negative decimal (uses absolute value)"),  # Should use abs
+            (0.0, 0, 0, 0, "zero degrees"),
+            (1.5, 1, 30, 0, "precise half degree (30 minutes)"),
+        ],
+    )
+    def test_convert_degrees_to_gps_coordinate(self, degrees, expected_d, expected_m, expected_s_approx, description):
+        """Test converting decimal degrees to DMS format."""
         d, m, s = convert_degrees_to_gps_coordinate(degrees)
 
-        assert d == 37
-        assert m == 46
-        # Allow for small floating point precision differences
-        assert abs(s - 30000) <= 1  # seconds * 1000, with tolerance
+        assert d == expected_d, f"Degrees mismatch for {description}"
+        assert m == expected_m, f"Minutes mismatch for {description}"
 
-    @pytest.mark.unit
-    def test_convert_degrees_to_gps_coordinate_negative(self):
-        """Test converting negative decimal degrees to DMS."""
-        degrees = -122.4194  # Should use absolute value
-
-        d, m, s = convert_degrees_to_gps_coordinate(degrees)
-
-        assert d == 122
-        assert m == 25  # (0.4194 * 60) = 25.164, int() = 25
-        assert s > 0  # Should have some seconds value
-
-    @pytest.mark.unit
-    def test_convert_degrees_to_gps_coordinate_zero(self):
-        """Test converting zero degrees to DMS."""
-        degrees = 0.0
-
-        d, m, s = convert_degrees_to_gps_coordinate(degrees)
-
-        assert d == 0
-        assert m == 0
-        assert s == 0
-
-    @pytest.mark.unit
-    def test_convert_degrees_to_gps_coordinate_precision(self):
-        """Test precision of degrees to DMS conversion."""
-        degrees = 1.5  # 1 degree, 30 minutes, 0 seconds
-
-        d, m, s = convert_degrees_to_gps_coordinate(degrees)
-
-        assert d == 1
-        assert m == 30
-        assert s == 0
+        if expected_s_approx is None:
+            assert s > 0, f"Expected positive seconds for {description}"
+        else:
+            if expected_s_approx == 0:
+                assert s == 0, f"Expected zero seconds for {description}"
+            else:
+                # Allow for small floating point precision differences
+                assert abs(s - expected_s_approx) <= 1, f"Seconds precision issue for {description}"
 
     @pytest.mark.integration
     @patch("exiftool.ExifToolHelper")
@@ -237,26 +199,27 @@ class TestGPSUtilities:
         assert lon is None
 
     @pytest.mark.integration
+    @pytest.mark.parametrize(
+        "exception,description",
+        [
+            (KeyError("Missing GPS data"), "missing GPS key"),
+            (ValueError("Invalid coordinate format"), "invalid coordinate format"),
+            (TypeError("Unexpected data type"), "unexpected data type"),
+            (AttributeError("Missing attribute"), "missing attribute"),
+            (IndexError("Index out of range"), "index out of range"),
+        ],
+    )
     @patch("exiftool.ExifToolHelper")
-    def test_read_exif_location_various_exceptions(self, mock_exiftool_helper, test_image_path):
+    def test_read_exif_location_various_exceptions(self, mock_exiftool_helper, test_image_path, exception, description):
         """Test handling various exceptions during GPS reading."""
-        exception_types = [
-            KeyError("Missing GPS data"),
-            ValueError("Invalid coordinate format"),
-            TypeError("Unexpected data type"),
-            AttributeError("Missing attribute"),
-            IndexError("Index out of range"),
-        ]
+        mock_et = Mock()
+        mock_exiftool_helper.return_value.__enter__.return_value = mock_et
+        mock_et.get_metadata.side_effect = exception
 
-        for exception in exception_types:
-            mock_et = Mock()
-            mock_exiftool_helper.return_value.__enter__.return_value = mock_et
-            mock_et.get_metadata.side_effect = exception
+        lat, lon = read_exif_location(test_image_path)
 
-            lat, lon = read_exif_location(test_image_path)
-
-            assert lat is None
-            assert lon is None
+        assert lat is None, f"Expected None latitude for {description}"
+        assert lon is None, f"Expected None longitude for {description}"
 
     @pytest.mark.integration
     @patch("exiftool.ExifToolHelper")
