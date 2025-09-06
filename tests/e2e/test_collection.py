@@ -10,6 +10,7 @@ import pytest
 from typer.testing import CliRunner
 
 from marimba.main import marimba_cli as app
+from tests.conftest import TestDataFactory
 
 
 @pytest.mark.e2e
@@ -41,11 +42,21 @@ class TestCollectionImport:
         # The import command creates the collection structure but may not copy files
         # without proper pipeline configuration, so we just verify the basic structure
 
-    def test_import_with_config_options(self, runner: CliRunner, temp_project_dir: Path, temp_data_dir: Path) -> None:
+    def test_import_with_config_options(
+        self, runner: CliRunner, temp_project_dir: Path, temp_data_dir: Path, test_data_factory: TestDataFactory
+    ) -> None:
         """Test import with configuration options (should succeed and properly parse config)."""
         # Create project first
         result = runner.invoke(app, ["new", "project", str(temp_project_dir)])
         assert result.exit_code == 0
+
+        # Use factory to generate test config instead of hard-coded values
+        collection_config_data = test_data_factory.create_collection_config(
+            site_id="FACTORY_SITE_01", field_of_view="1500"
+        )
+        config_json = str(
+            {"site_id": collection_config_data["site_id"], "field_of_view": collection_config_data["field_of_view"]}
+        ).replace("'", '"')
 
         # Test import with config options
         result = runner.invoke(
@@ -57,7 +68,7 @@ class TestCollectionImport:
                 "--project-dir",
                 str(temp_project_dir),
                 "--config",
-                '{"site_id": "TEST01", "field_of_view": "1000"}',
+                config_json,
             ],
         )
 
@@ -72,10 +83,10 @@ class TestCollectionImport:
         collection_config = collection_dir / "collection.yml"
         assert collection_config.exists(), "Collection config should be created"
 
-        # Read and verify config contains the provided values
+        # Read and verify config contains the factory-generated values
         config_content = collection_config.read_text()
-        assert "TEST01" in config_content, "Config should contain site_id value"
-        assert "1000" in config_content, "Config should contain field_of_view value"
+        assert "FACTORY_SITE_01" in config_content, "Config should contain factory-generated site_id value"
+        assert "1500" in config_content, "Config should contain factory-generated field_of_view value"
 
     def test_import_with_overwrite_and_operations(
         self, runner: CliRunner, temp_project_dir: Path, temp_data_dir: Path

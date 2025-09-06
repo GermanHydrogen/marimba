@@ -9,6 +9,7 @@ from typer.testing import CliRunner
 from marimba.core.utils.paths import find_project_dir, find_project_dir_or_exit
 from marimba.core.wrappers.project import ProjectWrapper
 from marimba.main import marimba_cli
+from tests.conftest import TestDataFactory, assert_project_structure_exists
 
 runner = CliRunner()
 
@@ -360,27 +361,27 @@ def setup_test_directory(tmp_path: Path) -> Path:
 
 
 @pytest.mark.integration
-def test_project_creates_new_project(mocker: pytest_mock.MockerFixture, setup_test_directory: Path) -> None:
+def test_project_creates_new_project(setup_test_directory: Path, test_data_factory: TestDataFactory) -> None:
     """
-    Test project creates a new Marimba project successfully.
+    Test project creates a new Marimba project successfully with real functionality.
 
     Args:
         setup_test_directory: Path to the temporary directory.
+        test_data_factory: Factory for creating test data.
 
     Returns:
         None
     """
     project_dir = setup_test_directory / "new_project"
 
-    mock_create = mocker.patch(
-        "marimba.core.wrappers.project.ProjectWrapper.create",
-        return_value=mocker.MagicMock(root_dir=project_dir),
-    )
+    # Test real project creation without excessive mocking
     result = runner.invoke(marimba_cli, ["new", "project", str(project_dir)])
     print(result.output)
     assert result.exit_code == 0
-    mock_create.assert_called_once_with(project_dir)
     assert "Created new Marimba project at" in result.output
+
+    # Verify real project structure was created using helper function
+    assert_project_structure_exists(project_dir, "New project")
 
 
 @pytest.mark.integration
@@ -444,9 +445,9 @@ def test_project_logs_command_execution(setup_test_directory: Path) -> None:
 
 
 @pytest.mark.integration
-def test_project_prints_success_message(mocker: pytest_mock.MockerFixture, setup_test_directory: Path) -> None:
+def test_project_prints_success_message(setup_test_directory: Path) -> None:
     """
-    Test project prints a success message upon creating a new project.
+    Test project prints a success message upon creating a new project with real functionality.
 
     Args:
         setup_test_directory: Path to the temporary directory.
@@ -456,19 +457,19 @@ def test_project_prints_success_message(mocker: pytest_mock.MockerFixture, setup
     """
     project_dir = setup_test_directory / "success_message_project"
 
-    mocker.patch(
-        "marimba.core.wrappers.project.ProjectWrapper.create",
-        return_value=mocker.MagicMock(root_dir=project_dir),
-    )
+    # Test real project creation and verify success message
     result = runner.invoke(marimba_cli, ["new", "project", str(project_dir)])
     assert result.exit_code == 0
     assert "Created new Marimba project at:" in result.output
 
+    # Also verify the project was actually created
+    assert project_dir.exists(), "Project should actually be created"
+
 
 @pytest.mark.integration
-def test_project_exit_code_on_success(mocker: pytest_mock.MockerFixture, setup_test_directory: Path) -> None:
+def test_project_exit_code_on_success(setup_test_directory: Path) -> None:
     """
-    Test project exit code is zero upon successful project creation.
+    Test project exit code is zero upon successful project creation with real functionality.
 
     Args:
         setup_test_directory: Path to the temporary directory.
@@ -478,12 +479,12 @@ def test_project_exit_code_on_success(mocker: pytest_mock.MockerFixture, setup_t
     """
     project_dir = setup_test_directory / "exit_code_success_project"
 
-    mocker.patch(
-        "marimba.core.wrappers.project.ProjectWrapper.create",
-        return_value=mocker.MagicMock(root_dir=project_dir),
-    )
+    # Test real project creation and verify exit code
     result = runner.invoke(marimba_cli, ["new", "project", str(project_dir)])
     assert result.exit_code == 0
+
+    # Verify the project was actually created (not just mocked)
+    assert project_dir.exists() and (project_dir / ".marimba").exists()
 
 
 @pytest.mark.integration
