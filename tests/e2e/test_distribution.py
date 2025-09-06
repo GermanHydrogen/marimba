@@ -226,6 +226,7 @@ class TestDistributionWorkflows:
         # Should parse negation flag correctly
         assert result.exit_code in [0, 1]
 
+    @pytest.mark.slow
     def test_comprehensive_distribute_workflow(
         self,
         runner: CliRunner,

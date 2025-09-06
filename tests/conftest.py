@@ -216,25 +216,41 @@ class TestDataFactory:
         return metadata
 
     @staticmethod
-    def create_test_files(base_dir: Path, file_count: int = 3) -> List[Path]:
-        """Create test files in a directory."""
+    def create_test_files(base_dir: Path, file_count: int = 3, file_size: str = "small") -> List[Path]:
+        """Create test files in a directory with configurable size for performance."""
         base_dir.mkdir(parents=True, exist_ok=True)
         files = []
+
+        # Optimize content size based on test needs
+        if file_size == "small":
+            content_template = "Test file content {}"
+        elif file_size == "medium":
+            content_template = "Test file content {} " + "x" * 100
+        else:  # large
+            content_template = "Test file content {} " + "x" * 1000
+
         for i in range(file_count):
             file_path = base_dir / f"test_file_{i:03d}.txt"
-            file_path.write_text(f"Test file content {i}")
+            file_path.write_text(content_template.format(i))
             files.append(file_path)
         return files
 
     @staticmethod
-    def create_test_images(base_dir: Path, image_count: int = 3) -> List[Path]:
-        """Create fake test image files."""
+    def create_test_images(base_dir: Path, image_count: int = 3, image_size: str = "minimal") -> List[Path]:
+        """Create fake test image files with configurable size for performance."""
         base_dir.mkdir(parents=True, exist_ok=True)
         images = []
+
+        # Optimize image data size based on test needs
+        if image_size == "minimal":
+            # Minimal valid JPEG header (19 bytes)
+            jpeg_data = b"\xff\xd8\xff\xe0\x00\x10JFIF\x00\x01\x01\x01\x00H\x00H\x00\x00\xff\xd9"
+        else:  # realistic
+            # Larger but still fake JPEG data (for tests that need more realistic file sizes)
+            jpeg_data = b"\xff\xd8\xff\xe0\x00\x10JFIF\x00\x01\x01\x01\x00H\x00H\x00\x00" + b"x" * 1000 + b"\xff\xd9"
+
         for i in range(image_count):
             image_path = base_dir / f"image_{i:03d}.jpg"
-            # Create fake JPEG data (minimal valid JPEG header)
-            jpeg_data = b"\xff\xd8\xff\xe0\x00\x10JFIF\x00\x01\x01\x01\x00H\x00H\x00\x00\xff\xd9"
             image_path.write_bytes(jpeg_data)
             images.append(image_path)
         return images

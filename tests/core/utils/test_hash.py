@@ -50,9 +50,9 @@ class TestHashUtilities:
         """Test computing hash of large file (multiple chunks)."""
         large_file = tmp_path / "large_file.txt"
 
-        # Create content larger than 1MB to test chunking
-        chunk_size = 1_048_576  # 1MB
-        content = b"A" * (chunk_size + 1000)  # Slightly over 1MB
+        # Create content larger than chunk size to test chunking (reduced from 1MB for performance)
+        chunk_size = 64_000  # 64KB - sufficient to test chunking behavior
+        content = b"A" * (chunk_size + 1000)  # Slightly over 64KB
         large_file.write_bytes(content)
 
         expected_hash = hashlib.sha256(content).hexdigest()

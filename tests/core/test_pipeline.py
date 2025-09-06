@@ -222,43 +222,41 @@ class TestRunImportCommand:
     """Test cases for the run_import command."""
 
     @pytest.mark.integration
-    def test_run_import_success(self, mocker):
+    def test_run_import_success(self, tmp_path, mocker):
         """Test successful import command execution."""
-        with tempfile.TemporaryDirectory() as temp_dir:
-            root_path = Path(temp_dir) / "project" / "pipelines" / "test_pipeline"
-            data_dir = Path(temp_dir) / "data"
-            source_dir = Path(temp_dir) / "source"
+        root_path = tmp_path / "project" / "pipelines" / "test_pipeline"
+        data_dir = tmp_path / "data"
+        source_dir = tmp_path / "source"
 
-            root_path.mkdir(parents=True)
-            data_dir.mkdir()
-            source_dir.mkdir()
+        root_path.mkdir(parents=True)
+        data_dir.mkdir()
+        source_dir.mkdir()
 
-            pipeline = ConcretePipeline(str(root_path))
+        pipeline = ConcretePipeline(str(root_path))
 
-            mock_format_path = mocker.patch("marimba.core.pipeline.format_path_for_logging")
-            mock_format_path.return_value = "formatted/path"
-            config = {"test": "config"}
-            kwargs: dict[str, Any] = {"extra": "args"}
+        mock_format_path = mocker.patch("marimba.core.pipeline.format_path_for_logging")
+        mock_format_path.return_value = "formatted/path"
+        config = {"test": "config"}
+        kwargs: dict[str, Any] = {"extra": "args"}
 
-            mock_get_logger = mocker.patch("marimba.core.utils.log.get_logger")
-            mock_logger = mocker.Mock()
-            mock_get_logger.return_value = mock_logger
-            pipeline.run_import(data_dir, source_dir, config, **kwargs)
+        mock_get_logger = mocker.patch("marimba.core.utils.log.get_logger")
+        mock_logger = mocker.Mock()
+        mock_get_logger.return_value = mock_logger
+        pipeline.run_import(data_dir, source_dir, config, **kwargs)
 
-            # Verify the _import method was called with correct arguments
-            assert pipeline.import_called
-            assert pipeline.last_import_args == (data_dir, source_dir, config, kwargs)
+        # Verify the _import method was called with correct arguments
+        assert pipeline.import_called
+        assert pipeline.last_import_args == (data_dir, source_dir, config, kwargs)
 
-            # Verify logging calls
-            assert mock_logger.info.call_count == 2
-            mock_logger.info.assert_any_call(
-                "Started [steel_blue3]import[/steel_blue3] command for pipeline [light_pink3]ConcretePipeline[/light_pink3] with args "
-                "data_dir=formatted/path, source_path=%s, config={'test': 'config'}, kwargs={'extra': 'args'}"
-                % source_dir
-            )
-            mock_logger.info.assert_any_call(
-                "Completed [steel_blue3]import[/steel_blue3] command for pipeline [light_pink3]ConcretePipeline[/light_pink3]"
-            )
+        # Verify logging calls
+        assert mock_logger.info.call_count == 2
+        mock_logger.info.assert_any_call(
+            "Started [steel_blue3]import[/steel_blue3] command for pipeline [light_pink3]ConcretePipeline[/light_pink3] with args "
+            "data_dir=formatted/path, source_path=%s, config={'test': 'config'}, kwargs={'extra': 'args'}" % source_dir
+        )
+        mock_logger.info.assert_any_call(
+            "Completed [steel_blue3]import[/steel_blue3] command for pipeline [light_pink3]ConcretePipeline[/light_pink3]"
+        )
 
     @pytest.mark.integration
     def test_run_import_invalid_source_path(self, mocker):

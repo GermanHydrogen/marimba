@@ -66,6 +66,7 @@ class TestPipelineManagement:
         assert (pipeline_dir / "repo").exists()
         assert (pipeline_dir / "repo" / "pipeline.yml").exists()
 
+    @pytest.mark.slow
     def test_new_pipeline_workflow_error_handling(self, runner: CliRunner, temp_project_dir: Path) -> None:
         """Test pipeline creation error handling with real network calls."""
         # First create the project
@@ -91,6 +92,7 @@ class TestPipelineManagement:
         error_output = result.stdout.lower()
         assert any(word in error_output for word in ["repository", "clone", "git", "not found", "error"])
 
+    @pytest.mark.slow
     def test_comprehensive_pipeline_workflow(self, runner: CliRunner, temp_project_dir: Path) -> None:
         """Test comprehensive workflow that would work with a pipeline."""
         # Create project
@@ -121,6 +123,7 @@ class TestPipelineManagement:
         # Should either succeed or fail gracefully with network/git error
         assert has_acceptable_error or "error" not in error_output.lower()
 
+    @pytest.mark.slow
     def test_delete_pipeline_workflow(self, runner: CliRunner, temp_project_dir: Path) -> None:
         """Test pipeline deletion workflow using actual marimba commands."""
         # Create project
