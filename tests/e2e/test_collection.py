@@ -17,7 +17,7 @@ class TestCollectionImport:
     """Test data import and collection creation workflows."""
 
     def test_collection_import_workflow(self, runner: CliRunner, temp_project_dir: Path, temp_data_dir: Path) -> None:
-        """Test importing data into a collection."""
+        """Test importing data into a collection (import succeeds without pipeline, but no processing occurs)."""
         # Create project first
         result = runner.invoke(app, ["new", "project", str(temp_project_dir)])
         assert result.exit_code == 0
@@ -27,18 +27,22 @@ class TestCollectionImport:
             app, ["import", "test_collection", str(temp_data_dir), "--project-dir", str(temp_project_dir)]
         )
 
-        # Import might fail without a pipeline, which is acceptable for this test
-        # We're mainly testing that the command parses correctly and doesn't crash
-        assert result.exit_code in [0, 1], f"Import command crashed unexpectedly: {result.stdout}"
+        # Import should succeed (copies files but doesn't process them without pipelines)
+        assert result.exit_code == 0, f"Import should succeed: {result.stdout}"
 
-        # If import was processed, verify basic collection structure expectations
-        if result.exit_code == 0:
-            collection_dir = temp_project_dir / "collections" / "test_collection"
-            # Collection directory should exist if import succeeded
-            assert collection_dir.exists()
+        # Verify collection directory was created
+        collection_dir = temp_project_dir / "collections" / "test_collection"
+        assert collection_dir.exists(), "Collection directory should be created"
+
+        # Verify collection config was created (this is what actually gets created)
+        collection_config = collection_dir / "collection.yml"
+        assert collection_config.exists(), "Collection config should be created"
+
+        # The import command creates the collection structure but may not copy files
+        # without proper pipeline configuration, so we just verify the basic structure
 
     def test_import_with_config_options(self, runner: CliRunner, temp_project_dir: Path, temp_data_dir: Path) -> None:
-        """Test import with configuration options."""
+        """Test import with configuration options (should succeed and properly parse config)."""
         # Create project first
         result = runner.invoke(app, ["new", "project", str(temp_project_dir)])
         assert result.exit_code == 0
@@ -56,8 +60,22 @@ class TestCollectionImport:
                 '{"site_id": "TEST01", "field_of_view": "1000"}',
             ],
         )
-        # Import might fail without pipeline, but should parse config correctly
-        assert result.exit_code in [0, 1]
+
+        # Should succeed and parse config correctly
+        assert result.exit_code == 0, f"Import with config should succeed: {result.stdout}"
+
+        # Verify collection was created with config
+        collection_dir = temp_project_dir / "collections" / "test_collection"
+        assert collection_dir.exists(), "Collection directory should be created"
+
+        # Verify config was saved
+        collection_config = collection_dir / "collection.yml"
+        assert collection_config.exists(), "Collection config should be created"
+
+        # Read and verify config contains the provided values
+        config_content = collection_config.read_text()
+        assert "TEST01" in config_content, "Config should contain site_id value"
+        assert "1000" in config_content, "Config should contain field_of_view value"
 
     def test_import_with_overwrite_and_operations(
         self, runner: CliRunner, temp_project_dir: Path, temp_data_dir: Path
@@ -72,15 +90,15 @@ class TestCollectionImport:
             app, ["import", "test_collection", str(temp_data_dir), "--project-dir", str(temp_project_dir)]
         )
 
-        # Second import with overwrite flag
+        # Second import with overwrite flag (should succeed)
         result = runner.invoke(
             app,
             ["import", "test_collection", str(temp_data_dir), "--project-dir", str(temp_project_dir), "--overwrite"],
         )
-        # Should handle overwrite gracefully
-        assert result.exit_code in [0, 1]
+        # Should succeed and overwrite existing collection
+        assert result.exit_code == 0, f"Import with overwrite should succeed: {result.stdout}"
 
-        # Test import with copy operation
+        # Test import with copy operation (should succeed)
         result = runner.invoke(
             app,
             [
@@ -93,9 +111,13 @@ class TestCollectionImport:
                 "copy",
             ],
         )
-        assert result.exit_code in [0, 1]
+        assert result.exit_code == 0, f"Import with copy operation should succeed: {result.stdout}"
 
-        # Test import with link operation
+        # Verify copy collection was created
+        copy_collection_dir = temp_project_dir / "collections" / "test_collection_copy"
+        assert copy_collection_dir.exists(), "Copy collection directory should be created"
+
+        # Test import with link operation (should succeed)
         result = runner.invoke(
             app,
             [
@@ -108,26 +130,32 @@ class TestCollectionImport:
                 "link",
             ],
         )
-        assert result.exit_code in [0, 1]
+        assert result.exit_code == 0, f"Import with link operation should succeed: {result.stdout}"
+
+        # Verify link collection was created
+        link_collection_dir = temp_project_dir / "collections" / "test_collection_link"
+        assert link_collection_dir.exists(), "Link collection directory should be created"
 
     def test_import_with_complex_config(self, runner: CliRunner, temp_project_dir: Path, temp_data_dir: Path) -> None:
-        """Test import with complex configuration including paths and metadata."""
+        """Test import with complex configuration parsing."""
         # Create project
         result = runner.invoke(app, ["new", "project", str(temp_project_dir)])
         assert result.exit_code == 0
 
-        # Test import with complex config
+        # Test import with complex config - this test focuses on JSON parsing
         complex_config = {
-            "batch_data_path": "/tmp/batch_data.csv",
-            "inventory_data_path": "/tmp/inventory.xlsx",
-            "import_path": str(temp_data_dir),
+            "site_id": "COMPLEX_SITE_01",
+            "field_of_view": "2000",
+            "instrument_type": "flowcam",
+            "depth_range": {"min": 5.0, "max": 25.0},
+            "metadata": {"operator": "test_user", "mission": "test_mission_2024"},
         }
 
         result = runner.invoke(
             app,
             [
                 "import",
-                "batch1a",
+                "batch_complex",
                 str(temp_data_dir),
                 "--project-dir",
                 str(temp_project_dir),
@@ -137,24 +165,20 @@ class TestCollectionImport:
                 str(complex_config).replace("'", '"'),
             ],
         )
-        # Should handle config parsing without external files
-        assert result.exit_code in [0, 1]
+        # Should succeed - complex config should parse correctly
+        assert result.exit_code == 0, f"Import with complex config should succeed: {result.stdout}"
 
-        # Test multiple import operations
-        for batch_name in ["batch1b", "batch1c"]:
-            result = runner.invoke(
-                app,
-                [
-                    "import",
-                    batch_name,
-                    str(temp_data_dir),
-                    "--project-dir",
-                    str(temp_project_dir),
-                    "--operation",
-                    "link",
-                ],
-            )
-            assert result.exit_code in [0, 1]
+        # Verify the collection was created
+        collection_dir = temp_project_dir / "collections" / "batch_complex"
+        assert collection_dir.exists(), "Collection directory should be created"
+
+        # Verify complex config was saved
+        collection_config = collection_dir / "collection.yml"
+        assert collection_config.exists(), "Collection config should be created"
+        config_content = collection_config.read_text()
+        assert "COMPLEX_SITE_01" in config_content, "Config should contain complex site_id"
+        assert "2000" in config_content, "Config should contain field_of_view"
+        assert "test_user" in config_content, "Config should contain nested metadata"
 
 
 @pytest.mark.e2e
@@ -236,25 +260,25 @@ class TestCollectionDeletion:
                     '{"test": "data"}',
                 ],
             )
-            assert result.exit_code == 0
+            assert result.exit_code == 0, f"Failed to create collection {collection_name}: {result.stdout}"
 
-        # Step 3: Test batch delete multiple collections (only delete those that exist)
-        existing_collections = []
+        # Step 3: Verify collections were created
         for collection_name in collection_names:
-            if (temp_project_dir / "collections" / collection_name).exists():
-                existing_collections.append(collection_name)
+            collection_dir = temp_project_dir / "collections" / collection_name
+            assert collection_dir.exists(), f"Collection {collection_name} directory should exist"
 
-        if existing_collections:
-            result = runner.invoke(
-                app, ["delete", "collection"] + existing_collections + ["--project-dir", str(temp_project_dir)]
-            )
-            assert result.exit_code == 0
+        # Step 4: Test batch delete multiple collections
+        result = runner.invoke(
+            app, ["delete", "collection"] + collection_names + ["--project-dir", str(temp_project_dir)]
+        )
+        assert result.exit_code == 0, f"Batch collection deletion failed: {result.stdout}"
 
-            # Verify deleted collections no longer exist
-            for collection_name in existing_collections:
-                assert not (temp_project_dir / "collections" / collection_name).exists()
+        # Verify deleted collections no longer exist
+        for collection_name in collection_names:
+            collection_dir = temp_project_dir / "collections" / collection_name
+            assert not collection_dir.exists(), f"Collection {collection_name} should be deleted"
 
-        # Step 4: Test import with config options
+        # Step 5: Test import with config options (should succeed)
         result = runner.invoke(
             app,
             [
@@ -267,8 +291,12 @@ class TestCollectionDeletion:
                 '{"site_id": "TEST01", "field_of_view": "1000"}',
             ],
         )
-        # Import might fail without pipeline, but should parse config correctly
-        assert result.exit_code in [0, 1]
+        # Import should succeed - config parsing works without pipelines
+        assert result.exit_code == 0, f"Import with config should succeed: {result.stdout}"
+
+        # Verify collection was created
+        test_collection_dir = temp_project_dir / "collections" / "test_collection"
+        assert test_collection_dir.exists(), "Test collection should be created"
 
 
 @pytest.mark.e2e
@@ -283,17 +311,29 @@ class TestCollectionWorkflows:
         result = runner.invoke(app, ["new", "project", str(temp_project_dir)])
         assert result.exit_code == 0
 
-        # Step 2: Test import commands (may fail without pipeline)
+        # Step 2: Test import commands (should all succeed)
+        imported_collections = []
         for collection_name in ["test_025", "test_026", "test_045"]:
             result = runner.invoke(
                 app, ["import", collection_name, str(temp_data_dir), "--project-dir", str(temp_project_dir)]
             )
-            # Import may fail without pipeline, which is expected
+            # All imports should succeed
+            assert result.exit_code == 0, f"Import {collection_name} should succeed: {result.stdout}"
+            imported_collections.append(collection_name)
 
-        # Step 3: Test batch delete collections (test error handling for non-existent)
+            # Verify collection was created
+            collection_dir = temp_project_dir / "collections" / collection_name
+            assert collection_dir.exists(), f"Collection {collection_name} should be created"
+
+        # Step 3: Test batch delete collections (should succeed now that collections exist)
         collection_names = ["test_025", "test_026", "test_045"]
         result = runner.invoke(
             app, ["delete", "collection"] + collection_names + ["--project-dir", str(temp_project_dir)]
         )
-        # May fail if collections don't exist, which tests error handling
-        # This is acceptable for this workflow test
+        # Should succeed because collections now exist
+        assert result.exit_code == 0, f"Delete should succeed for existing collections: {result.stdout}"
+
+        # Verify collections were deleted
+        for collection_name in collection_names:
+            collection_dir = temp_project_dir / "collections" / collection_name
+            assert not collection_dir.exists(), f"Collection {collection_name} should be deleted"
