@@ -1,9 +1,10 @@
 """Tests for marimba.core.wrappers.project module."""
 
 from pathlib import Path
-from typing import Any
+from typing import Any, Generator
 
 import pytest
+import pytest_mock
 
 from marimba.core.wrappers.project import ProjectWrapper, get_merged_keyword_args
 from marimba.core.wrappers.target import DistributionTargetWrapper
@@ -13,7 +14,7 @@ class TestProjectWrapper:
     """Test ProjectWrapper functionality."""
 
     @pytest.fixture
-    def mock_project_dir(self, tmp_path):
+    def mock_project_dir(self, tmp_path: Path) -> Path:
         """Create a mock project directory structure."""
         project_dir = tmp_path / "test_project"
         project_dir.mkdir()
@@ -28,12 +29,12 @@ class TestProjectWrapper:
         return project_dir
 
     @pytest.fixture
-    def project_wrapper(self, mock_project_dir):
+    def project_wrapper(self, mock_project_dir: Path) -> ProjectWrapper:
         """Create a ProjectWrapper instance."""
         return ProjectWrapper(mock_project_dir)
 
     @pytest.fixture
-    def mock_pipeline_wrapper(self, mock_project_dir, mocker):
+    def mock_pipeline_wrapper(self, mock_project_dir: Path, mocker: pytest_mock.MockerFixture) -> Any:
         """Create a real PipelineWrapper instance for testing integration."""
         # Create a minimal pipeline directory structure
         pipeline_dir = mock_project_dir / "pipelines" / "test_pipeline"
@@ -552,14 +553,14 @@ class TestUtilityFunctions:
     """Test utility functions."""
 
     @pytest.mark.unit
-    def test_get_merged_keyword_args_empty(self, mocker):
+    def test_get_merged_keyword_args_empty(self, mocker: pytest_mock.MockerFixture) -> None:
         """Test merging with empty arguments."""
         logger = mocker.Mock()
         result = get_merged_keyword_args({}, None, logger)
         assert result == {}
 
     @pytest.mark.unit
-    def test_get_merged_keyword_args_basic(self, mocker):
+    def test_get_merged_keyword_args_basic(self, mocker: pytest_mock.MockerFixture) -> None:
         """Test basic keyword argument merging."""
         logger = mocker.Mock()
         kwargs = {"key1": "value1", "key2": "value2"}
@@ -567,7 +568,7 @@ class TestUtilityFunctions:
         assert result == kwargs
 
     @pytest.mark.unit
-    def test_get_merged_keyword_args_with_extra(self, mocker):
+    def test_get_merged_keyword_args_with_extra(self, mocker: pytest_mock.MockerFixture) -> None:
         """Test merging with extra keyword arguments."""
         logger = mocker.Mock()
         kwargs = {"key1": "value1"}
@@ -579,7 +580,7 @@ class TestUtilityFunctions:
         assert result == expected
 
     @pytest.mark.unit
-    def test_get_merged_keyword_args_override(self, mocker):
+    def test_get_merged_keyword_args_override(self, mocker: pytest_mock.MockerFixture) -> None:
         """Test that extra args can override existing ones."""
         logger = mocker.Mock()
         kwargs = {"key1": "original"}
@@ -591,7 +592,7 @@ class TestUtilityFunctions:
         assert result == expected
 
     @pytest.mark.unit
-    def test_get_merged_keyword_args_invalid_format(self, mocker):
+    def test_get_merged_keyword_args_invalid_format(self, mocker: pytest_mock.MockerFixture) -> None:
         """Test handling of invalid argument format."""
         logger = mocker.Mock()
         kwargs = {"key1": "value1"}
@@ -605,7 +606,7 @@ class TestUtilityFunctions:
         logger.warning.assert_any_call('Invalid extra argument provided: "invalidarg"')
 
     @pytest.mark.unit
-    def test_get_merged_keyword_args_evaluation_error(self, mocker):
+    def test_get_merged_keyword_args_evaluation_error(self, mocker: pytest_mock.MockerFixture) -> None:
         """Test handling of evaluation errors."""
         logger = mocker.Mock()
         kwargs: dict[str, Any] = {}
@@ -618,7 +619,7 @@ class TestUtilityFunctions:
         logger.warning.assert_called_with('Could not evaluate extra argument value: "not_valid_literal"')
 
     @pytest.mark.unit
-    def test_get_merged_keyword_args_numeric_values(self, mocker):
+    def test_get_merged_keyword_args_numeric_values(self, mocker: pytest_mock.MockerFixture) -> None:
         """Test handling of numeric values in extra args."""
         logger = mocker.Mock()
         kwargs: dict[str, Any] = {}
@@ -630,7 +631,7 @@ class TestUtilityFunctions:
         assert result == expected
 
     @pytest.mark.unit
-    def test_get_merged_keyword_args_none_extra(self, mocker):
+    def test_get_merged_keyword_args_none_extra(self, mocker: pytest_mock.MockerFixture) -> None:
         """Test merging when extra_args is None."""
         logger = mocker.Mock()
         kwargs = {"key1": "value1"}
@@ -638,7 +639,7 @@ class TestUtilityFunctions:
         assert result == kwargs
 
     @pytest.mark.unit
-    def test_get_merged_keyword_args_complex_types(self, mocker):
+    def test_get_merged_keyword_args_complex_types(self, mocker: pytest_mock.MockerFixture) -> None:
         """Test merging with complex data types."""
         logger = mocker.Mock()
         kwargs = {"key1": "value1"}
@@ -650,7 +651,7 @@ class TestUtilityFunctions:
         assert result == expected
 
     @pytest.mark.unit
-    def test_get_merged_keyword_args_skip_invalid_format(self, mocker):
+    def test_get_merged_keyword_args_skip_invalid_format(self, mocker: pytest_mock.MockerFixture) -> None:
         """Test handling of invalid argument format."""
         logger = mocker.Mock()
         kwargs = {"key1": "value1"}
@@ -665,7 +666,7 @@ class TestUtilityFunctions:
         logger.warning.assert_any_call('Invalid extra argument provided: "invalid_format"')
 
     @pytest.mark.unit
-    def test_get_merged_keyword_args_invalid_value(self, mocker):
+    def test_get_merged_keyword_args_invalid_value(self, mocker: pytest_mock.MockerFixture) -> None:
         """Test handling of invalid value format."""
         logger = mocker.Mock()
         kwargs = {"key1": "value1"}

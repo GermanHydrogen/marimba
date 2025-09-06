@@ -1,37 +1,24 @@
+"""Tests for marimba.core.wrappers.dataset module."""
+
 import tempfile
 from pathlib import Path
-from shutil import rmtree
 from typing import Any
-from unittest import TestCase, mock
 
 import pytest
 
 from marimba.core.wrappers.dataset import DatasetWrapper
 
 
-class TestDatasetWrapper(TestCase):
-    """
-    Class representing a unit test case for the TestDatasetWrapper class.
+class TestDatasetWrapper:
+    """Test DatasetWrapper functionality."""
 
-    Attributes:
-        dataset_wrapper (DatasetWrapper): An instance of the DatasetWrapper class.
-
-    Methods:
-        setUp: Set up the test case by creating a DatasetWrapper object.
-        tearDown: Clean up the test case by deleting the DatasetWrapper object.
-        test_check_dataset_mapping: Test the validity of the dataset mapping.
-    """
-
-    def setUp(self) -> None:
-        self.test_dir = tempfile.TemporaryDirectory()
-        self.dataset_wrapper = DatasetWrapper.create(Path(self.test_dir.name) / "test_dataset")
-
-    def tearDown(self) -> None:
-        root_dir = self.dataset_wrapper.root_dir
+    @pytest.fixture(autouse=True)
+    def setup_dataset_wrapper(self, tmp_path):
+        """Set up a DatasetWrapper instance for testing."""
+        self.dataset_wrapper = DatasetWrapper.create(tmp_path / "test_dataset")
+        yield
+        # Cleanup
         self.dataset_wrapper.close()
-        del self.dataset_wrapper
-        rmtree(root_dir)
-        self.test_dir.cleanup()
 
     @pytest.mark.integration
     def test_check_dataset_mapping(self) -> None:
@@ -45,7 +32,7 @@ class TestDatasetWrapper(TestCase):
         dataset_mapping: dict[Any, Any] = {
             "test": {Path("nonexistent_file.txt"): (Path("destination.txt"), None, None)},
         }
-        with self.assertRaises(DatasetWrapper.InvalidDatasetMappingError):
+        with pytest.raises(DatasetWrapper.InvalidDatasetMappingError):
             self.dataset_wrapper.check_dataset_mapping(dataset_mapping)
 
         # Test that a valid path mapping does not raise an error
@@ -73,7 +60,7 @@ class TestDatasetWrapper(TestCase):
                     link_file: (Path("destination3.txt"), None, None),  # This should conflict with file1
                 },
             }
-            with self.assertRaises(DatasetWrapper.InvalidDatasetMappingError):
+            with pytest.raises(DatasetWrapper.InvalidDatasetMappingError):
                 self.dataset_wrapper.check_dataset_mapping(dataset_mapping)
 
         # Test that a path mapping with absolute destination paths raises an error
@@ -82,7 +69,7 @@ class TestDatasetWrapper(TestCase):
             temp_file.touch()
 
             dataset_mapping = {"test": {temp_file: (Path("/tmp/absolute_destination.txt"), None, None)}}
-            with self.assertRaises(DatasetWrapper.InvalidDatasetMappingError):
+            with pytest.raises(DatasetWrapper.InvalidDatasetMappingError):
                 self.dataset_wrapper.check_dataset_mapping(dataset_mapping)
 
         # Test that a path mapping with colliding destination paths raises an error
@@ -99,7 +86,7 @@ class TestDatasetWrapper(TestCase):
                     file2: (Path("destination.txt"), None, None),  # Same destination - should conflict
                 },
             }
-            with self.assertRaises(DatasetWrapper.InvalidDatasetMappingError):
+            with pytest.raises(DatasetWrapper.InvalidDatasetMappingError):
                 self.dataset_wrapper.check_dataset_mapping(dataset_mapping)
 
     @pytest.mark.integration
@@ -123,14 +110,14 @@ class TestDatasetWrapper(TestCase):
                 },
             }
 
-            with self.assertRaises(DatasetWrapper.InvalidDatasetMappingError) as context:
+            with pytest.raises(DatasetWrapper.InvalidDatasetMappingError) as exc_info:
                 self.dataset_wrapper.check_dataset_mapping(dataset_mapping)
 
             # Should contain multiple error messages
-            error_message = str(context.exception)
-            self.assertIn("nonexistent1.txt does not exist", error_message)
-            self.assertIn("nonexistent2.txt does not exist", error_message)
-            self.assertIn("must be relative", error_message)
+            error_message = str(exc_info.value)
+            assert "nonexistent1.txt does not exist" in error_message
+            assert "nonexistent2.txt does not exist" in error_message
+            assert "must be relative" in error_message
 
         # Test empty dataset mapping - should be valid
         empty_mapping: dict[str, dict[Path, tuple[Path, list[Any] | None, dict[str, Any] | None]]] = {}
@@ -168,11 +155,11 @@ class TestDatasetWrapper(TestCase):
                     link_file: (Path("dest2.txt"), None, None),  # Same resolved source
                 },
             }
-            with self.assertRaises(DatasetWrapper.InvalidDatasetMappingError) as context:
+            with pytest.raises(DatasetWrapper.InvalidDatasetMappingError) as exc_info:
                 self.dataset_wrapper.check_dataset_mapping(symlink_mapping)
 
-            error_message = str(context.exception)
-            self.assertIn("both resolve to", error_message)
+            error_message = str(exc_info.value)
+            assert "both resolve to" in error_message
 
     @pytest.mark.integration
     def test_allow_destination_collisions_flag(self) -> None:
@@ -193,7 +180,7 @@ class TestDatasetWrapper(TestCase):
             }
 
             # Should fail without the flag
-            with self.assertRaises(DatasetWrapper.InvalidDatasetMappingError):
+            with pytest.raises(DatasetWrapper.InvalidDatasetMappingError):
                 self.dataset_wrapper.check_dataset_mapping(collision_mapping)
 
             # Should succeed with the flag (no exception raised)
