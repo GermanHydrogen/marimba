@@ -1,0 +1,75 @@
+"""
+Shared fixtures for End-to-End tests.
+
+This module provides common fixtures used across all e2e test modules,
+including temporary directories, CLI runner, and cleanup functionality.
+"""
+
+import tempfile
+import weakref
+from pathlib import Path
+from typing import Generator
+
+import pytest
+from typer.testing import CliRunner
+
+from marimba.core.wrappers.dataset import DatasetWrapper
+
+
+@pytest.fixture(autouse=True)
+def cleanup_dataset_wrappers():
+    """Automatically clean up any DatasetWrapper instances created during tests."""
+    # Track all DatasetWrapper instances using weak references
+    original_init = DatasetWrapper.__init__
+    dataset_instances = []
+
+    def tracked_init(self, *args, **kwargs):
+        original_init(self, *args, **kwargs)
+        dataset_instances.append(weakref.ref(self))
+
+    # Use setattr to avoid mypy method assignment error
+    setattr(DatasetWrapper, "__init__", tracked_init)
+
+    try:
+        yield
+    finally:
+        # Clean up all tracked instances
+        for dataset_ref in dataset_instances:
+            dataset_instance = dataset_ref()
+            if dataset_instance is not None:
+                try:
+                    dataset_instance.close()
+                except Exception:
+                    # Ignore cleanup errors
+                    pass
+
+        # Restore original __init__ method
+        setattr(DatasetWrapper, "__init__", original_init)
+
+
+@pytest.fixture
+def temp_project_dir() -> Generator[Path, None, None]:
+    """Create a temporary directory for E2E test projects."""
+    with tempfile.TemporaryDirectory() as temp_dir:
+        yield Path(temp_dir) / "test_project"
+
+
+@pytest.fixture
+def temp_data_dir() -> Generator[Path, None, None]:
+    """Create a temporary directory with sample data for testing."""
+    with tempfile.TemporaryDirectory() as temp_dir:
+        data_dir = Path(temp_dir) / "sample_data"
+        data_dir.mkdir()
+
+        # Create some sample files to import
+        (data_dir / "image1.jpg").write_text("fake image data")
+        (data_dir / "image2.jpg").write_text("fake image data 2")
+        (data_dir / "metadata.txt").write_text("sample metadata")
+
+        yield data_dir
+
+
+@pytest.fixture
+def runner() -> CliRunner:
+    """CLI runner for testing typer commands."""
+    return CliRunner()
