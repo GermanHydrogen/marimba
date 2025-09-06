@@ -1,7 +1,6 @@
 """Tests for marimba.lib.gps module."""
 
 from pathlib import Path
-from unittest.mock import Mock, patch
 
 import pytest
 
@@ -73,10 +72,10 @@ class TestGPSUtilities:
                 assert abs(s - expected_s_approx) <= 1, f"Seconds precision issue for {description}"
 
     @pytest.mark.integration
-    @patch("exiftool.ExifToolHelper")
-    def test_read_exif_location_with_coordinates(self, mock_exiftool_helper, test_image_path):
+    def test_read_exif_location_with_coordinates(self, mocker, test_image_path):
         """Test reading GPS location from EXIF data."""
-        mock_et = Mock()
+        mock_exiftool_helper = mocker.patch("exiftool.ExifToolHelper")
+        mock_et = mocker.Mock()
         mock_exiftool_helper.return_value.__enter__.return_value = mock_et
 
         metadata = {
@@ -92,10 +91,10 @@ class TestGPSUtilities:
         mock_et.get_metadata.assert_called_once_with(str(test_image_path.absolute()))
 
     @pytest.mark.integration
-    @patch("exiftool.ExifToolHelper")
-    def test_read_exif_location_exif_fallback(self, mock_exiftool_helper, test_image_path):
+    def test_read_exif_location_exif_fallback(self, mocker, test_image_path):
         """Test reading GPS location using EXIF fallback when Composite tags missing."""
-        mock_et = Mock()
+        mock_exiftool_helper = mocker.patch("exiftool.ExifToolHelper")
+        mock_et = mocker.Mock()
         mock_exiftool_helper.return_value.__enter__.return_value = mock_et
 
         metadata = {
@@ -110,10 +109,10 @@ class TestGPSUtilities:
         assert lon == -74.0060
 
     @pytest.mark.integration
-    @patch("exiftool.ExifToolHelper")
-    def test_read_exif_location_partial_coordinates(self, mock_exiftool_helper, test_image_path):
+    def test_read_exif_location_partial_coordinates(self, mocker, test_image_path):
         """Test reading GPS location with only partial coordinates."""
-        mock_et = Mock()
+        mock_exiftool_helper = mocker.patch("exiftool.ExifToolHelper")
+        mock_et = mocker.Mock()
         mock_exiftool_helper.return_value.__enter__.return_value = mock_et
 
         # Only latitude, no longitude
@@ -128,10 +127,10 @@ class TestGPSUtilities:
         assert lon is None
 
     @pytest.mark.integration
-    @patch("exiftool.ExifToolHelper")
-    def test_read_exif_location_no_metadata(self, mock_exiftool_helper, test_image_path):
+    def test_read_exif_location_no_metadata(self, mocker, test_image_path):
         """Test reading GPS location when no metadata available."""
-        mock_et = Mock()
+        mock_exiftool_helper = mocker.patch("exiftool.ExifToolHelper")
+        mock_et = mocker.Mock()
         mock_exiftool_helper.return_value.__enter__.return_value = mock_et
 
         mock_et.get_metadata.return_value = []  # No metadata
@@ -142,10 +141,10 @@ class TestGPSUtilities:
         assert lon is None
 
     @pytest.mark.integration
-    @patch("exiftool.ExifToolHelper")
-    def test_read_exif_location_empty_metadata(self, mock_exiftool_helper, test_image_path):
+    def test_read_exif_location_empty_metadata(self, mocker, test_image_path):
         """Test reading GPS location when metadata is None."""
-        mock_et = Mock()
+        mock_exiftool_helper = mocker.patch("exiftool.ExifToolHelper")
+        mock_et = mocker.Mock()
         mock_exiftool_helper.return_value.__enter__.return_value = mock_et
 
         mock_et.get_metadata.return_value = None  # None metadata
@@ -156,10 +155,10 @@ class TestGPSUtilities:
         assert lon is None
 
     @pytest.mark.unit
-    @patch("exiftool.ExifToolHelper")
-    def test_read_exif_location_no_gps_data(self, mock_exiftool_helper, test_image_path):
+    def test_read_exif_location_no_gps_data(self, mocker, test_image_path):
         """Test reading GPS location when no GPS data in metadata."""
-        mock_et = Mock()
+        mock_exiftool_helper = mocker.patch("exiftool.ExifToolHelper")
+        mock_et = mocker.Mock()
         mock_exiftool_helper.return_value.__enter__.return_value = mock_et
 
         metadata = {
@@ -175,10 +174,10 @@ class TestGPSUtilities:
         assert lon is None
 
     @pytest.mark.integration
-    @patch("exiftool.ExifToolHelper")
-    @patch("marimba.lib.gps.show_dependency_error_and_exit")
-    def test_read_exif_location_exiftool_not_found(self, mock_show_error, mock_exiftool_helper, test_image_path):
+    def test_read_exif_location_exiftool_not_found(self, mocker, test_image_path):
         """Test handling when exiftool is not found."""
+        mock_exiftool_helper = mocker.patch("exiftool.ExifToolHelper")
+        mock_show_error = mocker.patch("marimba.lib.gps.show_dependency_error_and_exit")
         mock_exiftool_helper.side_effect = FileNotFoundError("exiftool not found")
 
         lat, lon = read_exif_location(test_image_path)
@@ -188,9 +187,9 @@ class TestGPSUtilities:
         mock_show_error.assert_called_once()
 
     @pytest.mark.integration
-    @patch("exiftool.ExifToolHelper")
-    def test_read_exif_location_file_not_found_other(self, mock_exiftool_helper, test_image_path):
+    def test_read_exif_location_file_not_found_other(self, mocker, test_image_path):
         """Test handling FileNotFoundError not related to exiftool."""
+        mock_exiftool_helper = mocker.patch("exiftool.ExifToolHelper")
         mock_exiftool_helper.side_effect = FileNotFoundError("Image file not found")
 
         lat, lon = read_exif_location(test_image_path)
@@ -209,10 +208,10 @@ class TestGPSUtilities:
             (IndexError("Index out of range"), "index out of range"),
         ],
     )
-    @patch("exiftool.ExifToolHelper")
-    def test_read_exif_location_various_exceptions(self, mock_exiftool_helper, test_image_path, exception, description):
+    def test_read_exif_location_various_exceptions(self, mocker, test_image_path, exception, description):
         """Test handling various exceptions during GPS reading."""
-        mock_et = Mock()
+        mock_exiftool_helper = mocker.patch("exiftool.ExifToolHelper")
+        mock_et = mocker.Mock()
         mock_exiftool_helper.return_value.__enter__.return_value = mock_et
         mock_et.get_metadata.side_effect = exception
 
@@ -222,10 +221,10 @@ class TestGPSUtilities:
         assert lon is None, f"Expected None longitude for {description}"
 
     @pytest.mark.integration
-    @patch("exiftool.ExifToolHelper")
-    def test_read_exif_location_string_coordinates(self, mock_exiftool_helper, test_image_path):
+    def test_read_exif_location_string_coordinates(self, mocker, test_image_path):
         """Test reading GPS location when coordinates are strings."""
-        mock_et = Mock()
+        mock_exiftool_helper = mocker.patch("exiftool.ExifToolHelper")
+        mock_et = mocker.Mock()
         mock_exiftool_helper.return_value.__enter__.return_value = mock_et
 
         metadata = {
@@ -240,12 +239,12 @@ class TestGPSUtilities:
         assert lon == -122.4194
 
     @pytest.mark.integration
-    @patch("exiftool.ExifToolHelper")
-    def test_read_exif_location_with_path_object(self, mock_exiftool_helper, tmp_path):
+    def test_read_exif_location_with_path_object(self, mocker, tmp_path):
         """Test reading GPS location with Path object."""
         test_path = tmp_path / "subfolder" / "test.jpg"
 
-        mock_et = Mock()
+        mock_exiftool_helper = mocker.patch("exiftool.ExifToolHelper")
+        mock_et = mocker.Mock()
         mock_exiftool_helper.return_value.__enter__.return_value = mock_et
 
         metadata = {

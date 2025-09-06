@@ -201,7 +201,7 @@ standards before it's committed.
 We use the following pre-commit hooks:
 
 1. **Ruff** - For fast, comprehensive linting
-   - Configuration: `config/.ruff.toml`
+   - Configuration: `config/ruff.toml`
    - Auto-fixes issues when possible
    - Excludes test and documentation files
 
@@ -252,7 +252,7 @@ project. Key points:
 - Follows the Google docstring convention
 - Excludes certain directories (tests, docs, etc.)
 - Ignores specific rules that don't align with our workflow (detailed in
-  `config/.ruff.toml`)
+  `config/ruff.toml`)
 
 #### Mypy Configuration
 

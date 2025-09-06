@@ -10,7 +10,6 @@ Tests the functionality of the DistributionTargetWrapper class including:
 
 import tempfile
 from pathlib import Path
-from unittest.mock import Mock, patch
 
 import pytest
 
@@ -215,9 +214,9 @@ class TestDistributionTargetWrapper:
         instance = wrapper.get_instance()
         assert instance is None
 
-    @patch("rich.prompt.Prompt.ask")
-    def test_prompt_target_s3(self, mock_ask):
+    def test_prompt_target_s3(self, mocker):
         """Test interactive prompting for S3 target creation."""
+        mock_ask = mocker.patch("rich.prompt.Prompt.ask")
         # Mock the user inputs
         mock_ask.side_effect = [
             "s3",  # target type
@@ -234,9 +233,9 @@ class TestDistributionTargetWrapper:
         assert "bucket_name" in target_args
         assert target_args["bucket_name"] == "test-bucket"
 
-    @patch("rich.prompt.Prompt.ask")
-    def test_prompt_target_dap(self, mock_ask):
+    def test_prompt_target_dap(self, mocker):
         """Test interactive prompting for DAP target creation."""
+        mock_ask = mocker.patch("rich.prompt.Prompt.ask")
         # Mock the user inputs
         mock_ask.side_effect = [
             "dap",  # target type
@@ -286,7 +285,7 @@ class TestDistributionTargetWrapper:
         wrapper = DistributionTargetWrapper(config_path)
         assert wrapper.config == valid_s3_config
 
-    def test_load_config_called_during_init(self, temp_dir, valid_s3_config):
+    def test_load_config_called_during_init(self, mocker, temp_dir, valid_s3_config):
         """Test that _load_config is called during initialization."""
         config_path = temp_dir / "target.yml"
 
@@ -294,16 +293,16 @@ class TestDistributionTargetWrapper:
 
         config_path.write_text(yaml.dump(valid_s3_config))
 
-        with patch.object(DistributionTargetWrapper, "_load_config") as mock_load:
-            mock_load.return_value = None
-            wrapper = DistributionTargetWrapper.__new__(DistributionTargetWrapper)
-            wrapper._config_path = config_path
-            wrapper._config = {}
-            wrapper._load_config()
+        mock_load = mocker.patch.object(DistributionTargetWrapper, "_load_config")
+        mock_load.return_value = None
+        wrapper = DistributionTargetWrapper.__new__(DistributionTargetWrapper)
+        wrapper._config_path = config_path
+        wrapper._config = {}
+        wrapper._load_config()
 
-            mock_load.assert_called_once()
+        mock_load.assert_called_once()
 
-    def test_check_config_called_during_init(self, temp_dir, valid_s3_config):
+    def test_check_config_called_during_init(self, mocker, temp_dir, valid_s3_config):
         """Test that _check_config is called during initialization."""
         config_path = temp_dir / "target.yml"
 
@@ -311,36 +310,36 @@ class TestDistributionTargetWrapper:
 
         config_path.write_text(yaml.dump(valid_s3_config))
 
-        with patch.object(DistributionTargetWrapper, "_check_config") as mock_check:
-            mock_check.return_value = None
-            wrapper = DistributionTargetWrapper.__new__(DistributionTargetWrapper)
-            wrapper._config_path = config_path
-            wrapper._config = valid_s3_config
-            wrapper._check_config()
+        mock_check = mocker.patch.object(DistributionTargetWrapper, "_check_config")
+        mock_check.return_value = None
+        wrapper = DistributionTargetWrapper.__new__(DistributionTargetWrapper)
+        wrapper._config_path = config_path
+        wrapper._config = valid_s3_config
+        wrapper._check_config()
 
-            mock_check.assert_called_once()
+        mock_check.assert_called_once()
 
 
 @pytest.mark.unit
 class TestDistributionTargetWrapperPromptEdgeCases:
     """Test edge cases for the prompt_target method."""
 
-    def test_prompt_target_invalid_class_map_entry(self):
+    def test_prompt_target_invalid_class_map_entry(self, mocker):
         """Test prompt_target with invalid class in CLASS_MAP."""
         # Temporarily modify CLASS_MAP to include invalid entry
         original_map = DistributionTargetWrapper.CLASS_MAP.copy()
         DistributionTargetWrapper.CLASS_MAP["invalid"] = str  # type: ignore[assignment]
 
         try:
-            with patch("rich.prompt.Prompt.ask", return_value="invalid"):
-                with pytest.raises(TypeError, match="__init__ of target class invalid is not a method"):
-                    DistributionTargetWrapper.prompt_target()
+            mocker.patch("rich.prompt.Prompt.ask", return_value="invalid")
+            with pytest.raises(TypeError, match="__init__ of target class invalid is not a method"):
+                DistributionTargetWrapper.prompt_target()
         finally:
             # Restore original CLASS_MAP
             DistributionTargetWrapper.CLASS_MAP.clear()
             DistributionTargetWrapper.CLASS_MAP.update(original_map)
 
-    def test_prompt_target_missing_init_method(self):
+    def test_prompt_target_missing_init_method(self, mocker):
         """Test prompt_target with class missing __init__ method."""
 
         # Create a class that doesn't inherit from object (rare case)
@@ -356,15 +355,15 @@ class TestDistributionTargetWrapperPromptEdgeCases:
         DistributionTargetWrapper.CLASS_MAP["bad_class"] = BadClass
 
         try:
-            with patch("rich.prompt.Prompt.ask", return_value="bad_class"):
-                with pytest.raises(TypeError, match="is not a method"):
-                    DistributionTargetWrapper.prompt_target()
+            mocker.patch("rich.prompt.Prompt.ask", return_value="bad_class")
+            with pytest.raises(TypeError, match="is not a method"):
+                DistributionTargetWrapper.prompt_target()
         finally:
             DistributionTargetWrapper.CLASS_MAP.clear()
             DistributionTargetWrapper.CLASS_MAP.update(original_map)
 
-    def test_prompt_target_nonexistent_type(self):
+    def test_prompt_target_nonexistent_type(self, mocker):
         """Test prompt_target with nonexistent target type."""
-        with patch("rich.prompt.Prompt.ask", return_value="nonexistent"):
-            with pytest.raises(ValueError, match="No target class found for type"):
-                DistributionTargetWrapper.prompt_target()
+        mocker.patch("rich.prompt.Prompt.ask", return_value="nonexistent")
+        with pytest.raises(ValueError, match="No target class found for type"):
+            DistributionTargetWrapper.prompt_target()

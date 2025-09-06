@@ -4,7 +4,6 @@ import pytest
 from datetime import datetime
 from pathlib import Path
 from typing import Any
-from unittest.mock import Mock, patch, MagicMock
 
 from marimba.core.schemas.generic import GenericMetadata
 from marimba.core.schemas.base import BaseMetadata
@@ -229,9 +228,9 @@ class TestGenericMetadata:
         assert len(metadata_files) == 0
 
     @pytest.mark.unit
-    def test_create_dataset_metadata_with_custom_saver(self, tmp_path, sample_datetime):
+    def test_create_dataset_metadata_with_custom_saver(self, mocker, tmp_path, sample_datetime):
         """Test create_dataset_metadata with custom saver."""
-        mock_saver = Mock()
+        mock_saver = mocker.Mock()
         items: dict[str, list[BaseMetadata]] = {
             "file1.jpg": [GenericMetadata(datetime_=sample_datetime, latitude=37.7749)]
         }
@@ -244,25 +243,25 @@ class TestGenericMetadata:
         mock_saver.assert_called_once()
 
     @pytest.mark.unit
-    def test_create_dataset_metadata_with_custom_name(self, tmp_path, sample_datetime):
+    def test_create_dataset_metadata_with_custom_name(self, mocker, tmp_path, sample_datetime):
         """Test create_dataset_metadata with custom metadata name."""
         items: dict[str, list[BaseMetadata]] = {"file1.jpg": [GenericMetadata(datetime_=sample_datetime)]}
 
-        with patch("marimba.core.schemas.generic.yaml_saver") as mock_saver:
-            GenericMetadata.create_dataset_metadata(
-                dataset_name="test_dataset", root_dir=tmp_path, items=items, metadata_name="custom_metadata"
-            )
+        mock_saver = mocker.patch("marimba.core.schemas.generic.yaml_saver")
+        GenericMetadata.create_dataset_metadata(
+            dataset_name="test_dataset", root_dir=tmp_path, items=items, metadata_name="custom_metadata"
+        )
 
-            # Should use custom name
-            mock_saver.assert_called_once()
-            call_args = mock_saver.call_args
-            assert call_args[0][1] == "custom_metadata"
+        # Should use custom name
+        mock_saver.assert_called_once()
+        call_args = mock_saver.call_args
+        assert call_args[0][1] == "custom_metadata"
 
     @pytest.mark.unit
-    def test_create_dataset_metadata_with_items_missing_format_hash(self, tmp_path):
+    def test_create_dataset_metadata_with_items_missing_format_hash(self, mocker, tmp_path):
         """Test create_dataset_metadata with items missing format_hash method."""
         # Mock metadata without format_hash method
-        mock_metadata = Mock(spec=BaseMetadata)
+        mock_metadata = mocker.Mock(spec=BaseMetadata)
         mock_metadata.datetime = None
         mock_metadata.latitude = None
         mock_metadata.longitude = None
@@ -273,11 +272,11 @@ class TestGenericMetadata:
 
         items: dict[str, list[BaseMetadata]] = {"file1.jpg": [mock_metadata]}
 
-        with patch("marimba.core.schemas.generic.yaml_saver") as mock_saver:
-            GenericMetadata.create_dataset_metadata(dataset_name="test_dataset", root_dir=tmp_path, items=items)
+        mock_saver = mocker.patch("marimba.core.schemas.generic.yaml_saver")
+        GenericMetadata.create_dataset_metadata(dataset_name="test_dataset", root_dir=tmp_path, items=items)
 
-            # Should handle missing format_hash gracefully
-            mock_saver.assert_called_once()
+        # Should handle missing format_hash gracefully
+        mock_saver.assert_called_once()
 
     @pytest.mark.unit
     def test_process_files_method(self):

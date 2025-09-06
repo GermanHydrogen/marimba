@@ -2,7 +2,6 @@
 
 from pathlib import Path
 from typing import Any
-from unittest.mock import Mock, patch, PropertyMock
 
 import pytest
 
@@ -34,7 +33,7 @@ class TestProjectWrapper:
         return ProjectWrapper(mock_project_dir)
 
     @pytest.fixture
-    def mock_pipeline_wrapper(self, mock_project_dir):
+    def mock_pipeline_wrapper(self, mock_project_dir, mocker):
         """Create a real PipelineWrapper instance for testing integration."""
         # Create a minimal pipeline directory structure
         pipeline_dir = mock_project_dir / "pipelines" / "test_pipeline"
@@ -50,11 +49,9 @@ class TestProjectWrapper:
         from marimba.core.wrappers.pipeline import PipelineWrapper
 
         # Create wrapper with mocked dependencies
-        with (
-            patch.object(PipelineWrapper, "_setup_logging"),
-            patch("marimba.core.installer.pipeline_installer.PipelineInstaller.create"),
-        ):
-            return PipelineWrapper(pipeline_dir, dry_run=True)
+        mocker.patch.object(PipelineWrapper, "_setup_logging")
+        mocker.patch("marimba.core.installer.pipeline_installer.PipelineInstaller.create")
+        return PipelineWrapper(pipeline_dir, dry_run=True)
 
     @pytest.fixture
     def mock_collection_wrapper(self, mock_project_dir):
@@ -80,12 +77,12 @@ class TestProjectWrapper:
         assert wrapper.pipelines_dir == mock_project_dir / "pipelines"
         assert wrapper.collections_dir == mock_project_dir / "collections"
 
-    @patch("marimba.core.wrappers.project.ProjectWrapper._check_file_structure")
-    @patch("marimba.core.wrappers.project.ProjectWrapper._setup_logging")
-    @patch("pathlib.Path.exists")
     @pytest.mark.integration
-    def test_create_project(self, mock_exists, mock_setup_logging, mock_check_structure, tmp_path):
+    def test_create_project(self, mocker, tmp_path):
         """Test project creation."""
+        mock_exists = mocker.patch("pathlib.Path.exists")
+        mock_setup_logging = mocker.patch("marimba.core.wrappers.project.ProjectWrapper._setup_logging")
+        mock_check_structure = mocker.patch("marimba.core.wrappers.project.ProjectWrapper._check_file_structure")
         mock_exists.return_value = False  # Make it think directory doesn't exist
         mock_setup_logging.return_value = None
         mock_check_structure.return_value = None
@@ -198,42 +195,38 @@ class TestProjectWrapper:
         assert "nonexistent_dataset" not in wrappers
 
     @pytest.mark.integration
-    def test_create_pipeline(self, project_wrapper, mock_project_dir):
+    def test_create_pipeline(self, mocker, project_wrapper, mock_project_dir):
         """Test creating a new pipeline with real validation."""
-        with (
-            patch("marimba.core.wrappers.pipeline.PipelineWrapper.create") as mock_create,
-            patch("marimba.core.wrappers.project.ProjectWrapper.check_name") as mock_check_name,
-        ):
+        mock_create = mocker.patch("marimba.core.wrappers.pipeline.PipelineWrapper.create")
+        mock_check_name = mocker.patch("marimba.core.wrappers.project.ProjectWrapper.check_name")
 
-            mock_pipeline = Mock()
-            mock_create.return_value = mock_pipeline
-            mock_check_name.return_value = None  # Name validation passes
+        mock_pipeline = mocker.Mock()
+        mock_create.return_value = mock_pipeline
+        mock_check_name.return_value = None  # Name validation passes
 
-            result = project_wrapper.create_pipeline("new_pipeline", "https://example.com/repo.git", {"key": "value"})
+        result = project_wrapper.create_pipeline("new_pipeline", "https://example.com/repo.git", {"key": "value"})
 
-            # Verify name checking was called
-            mock_check_name.assert_called_once_with("new_pipeline")
-            mock_create.assert_called_once()
-            assert result == mock_pipeline
+        # Verify name checking was called
+        mock_check_name.assert_called_once_with("new_pipeline")
+        mock_create.assert_called_once()
+        assert result == mock_pipeline
 
     @pytest.mark.integration
-    def test_create_collection(self, project_wrapper, mock_project_dir):
+    def test_create_collection(self, mocker, project_wrapper, mock_project_dir):
         """Test creating a new collection with real validation."""
-        with (
-            patch("marimba.core.wrappers.collection.CollectionWrapper.create") as mock_create,
-            patch("marimba.core.wrappers.project.ProjectWrapper.check_name") as mock_check_name,
-        ):
+        mock_create = mocker.patch("marimba.core.wrappers.collection.CollectionWrapper.create")
+        mock_check_name = mocker.patch("marimba.core.wrappers.project.ProjectWrapper.check_name")
 
-            mock_collection = Mock()
-            mock_create.return_value = mock_collection
-            mock_check_name.return_value = None  # Name validation passes
+        mock_collection = mocker.Mock()
+        mock_create.return_value = mock_collection
+        mock_check_name.return_value = None  # Name validation passes
 
-            result = project_wrapper.create_collection("new_collection", {"key": "value"})
+        result = project_wrapper.create_collection("new_collection", {"key": "value"})
 
-            # Verify name checking was called
-            mock_check_name.assert_called_once_with("new_collection")
-            mock_create.assert_called_once()
-            assert result == mock_collection
+        # Verify name checking was called
+        mock_check_name.assert_called_once_with("new_collection")
+        mock_create.assert_called_once()
+        assert result == mock_collection
 
     @pytest.mark.integration
     def test_create_dataset(self, project_wrapper, mock_project_dir):
@@ -253,12 +246,12 @@ class TestProjectWrapper:
         result.close()
 
     @pytest.mark.integration
-    def test_delete_project(self, project_wrapper):
+    def test_delete_project(self, mocker, project_wrapper):
         """Test project deletion."""
-        with patch("shutil.rmtree") as mock_rmtree:
-            result = project_wrapper.delete_project()
-            mock_rmtree.assert_called_once()
-            assert isinstance(result, Path)
+        mock_rmtree = mocker.patch("shutil.rmtree")
+        result = project_wrapper.delete_project()
+        mock_rmtree.assert_called_once()
+        assert isinstance(result, Path)
 
     @pytest.mark.integration
     def test_delete_pipeline(self, project_wrapper, mock_project_dir):
@@ -306,7 +299,7 @@ class TestProjectWrapper:
         assert result == dataset_dir
 
     @pytest.mark.integration
-    def test_install_pipelines(self, project_wrapper, mock_project_dir):
+    def test_install_pipelines(self, mocker, project_wrapper, mock_project_dir):
         """Test pipeline installation with real pipeline wrapper."""
         # Create a real pipeline directory
         pipeline_dir = mock_project_dir / "pipelines" / "test_pipeline"
@@ -315,23 +308,23 @@ class TestProjectWrapper:
         (pipeline_dir / "pipeline.yml").write_text("test: config")
 
         # Mock the install method on real wrappers
-        with patch("marimba.core.wrappers.pipeline.PipelineWrapper.install") as mock_install:
-            mock_install.return_value = None
+        mock_install = mocker.patch("marimba.core.wrappers.pipeline.PipelineWrapper.install")
+        mock_install.return_value = None
 
-            # This will work with whatever real pipeline wrappers exist
-            project_wrapper.install_pipelines()
+        # This will work with whatever real pipeline wrappers exist
+        project_wrapper.install_pipelines()
 
-            # Verify install was called if any pipeline wrappers were found
-            # (May not be called if pipeline validation fails, which is acceptable)
+        # Verify install was called if any pipeline wrappers were found
+        # (May not be called if pipeline validation fails, which is acceptable)
 
-    @patch("git.Repo")
     @pytest.mark.integration
-    def test_update_pipelines(self, mock_repo, project_wrapper, mock_project_dir):
+    def test_update_pipelines(self, mocker, project_wrapper, mock_project_dir):
         """Test pipeline updates."""
         pipeline_dir = mock_project_dir / "pipelines" / "test_pipeline"
         pipeline_dir.mkdir(parents=True)
 
-        mock_repo_instance = Mock()
+        mock_repo = mocker.patch("git.Repo")
+        mock_repo_instance = mocker.Mock()
         mock_repo.return_value = mock_repo_instance
 
         project_wrapper.update_pipelines()
@@ -363,27 +356,25 @@ class TestProjectWrapper:
         assert project_wrapper.name == mock_project_dir.name
 
     @pytest.mark.integration
-    def test_create_target(self, project_wrapper):
+    def test_create_target(self, mocker, project_wrapper):
         """Test creating a distribution target with name validation."""
         config = {"bucket": "test-bucket"}
 
-        with (
-            patch("marimba.core.wrappers.target.DistributionTargetWrapper.create") as mock_create,
-            patch("marimba.core.wrappers.project.ProjectWrapper.check_name") as mock_check_name,
-        ):
+        mock_create = mocker.patch("marimba.core.wrappers.target.DistributionTargetWrapper.create")
+        mock_check_name = mocker.patch("marimba.core.wrappers.project.ProjectWrapper.check_name")
 
-            # Create a mock that's actually a subclass of DistributionTargetWrapper
-            mock_target = Mock(spec=DistributionTargetWrapper)
-            mock_target.__class__ = DistributionTargetWrapper  # type: ignore[assignment]
-            mock_check_name.return_value = None  # Name validation passes
-            mock_create.return_value = mock_target
+        # Create a mock that's actually a subclass of DistributionTargetWrapper
+        mock_target = mocker.Mock(spec=DistributionTargetWrapper)
+        mock_target.__class__ = DistributionTargetWrapper  # type: ignore[assignment]
+        mock_check_name.return_value = None  # Name validation passes
+        mock_create.return_value = mock_target
 
-            result = project_wrapper.create_target("test_target", "s3", config)
+        result = project_wrapper.create_target("test_target", "s3", config)
 
-            # Verify name checking was called
-            mock_check_name.assert_called_once_with("test_target")
-            mock_create.assert_called_once()
-            assert result == mock_target
+        # Verify name checking was called
+        mock_check_name.assert_called_once_with("test_target")
+        mock_create.assert_called_once()
+        assert result == mock_target
 
     @pytest.mark.unit
     def test_check_name_valid(self):
@@ -472,10 +463,10 @@ class TestProjectWrapper:
         assert dataset_dir.exists()  # Should still exist
         assert result == dataset_dir
 
-    @patch("marimba.core.wrappers.project.ProjectWrapper._check_file_structure")
     @pytest.mark.integration
-    def test_invalid_structure_error(self, mock_check_structure, tmp_path):
+    def test_invalid_structure_error(self, mocker, tmp_path):
         """Test InvalidStructureError is raised for invalid project structure."""
+        mock_check_structure = mocker.patch("marimba.core.wrappers.project.ProjectWrapper._check_file_structure")
         mock_check_structure.side_effect = ProjectWrapper.InvalidStructureError("Invalid structure")
 
         with pytest.raises(ProjectWrapper.InvalidStructureError):
@@ -497,10 +488,10 @@ class TestProjectWrapper:
         with pytest.raises(ProjectWrapper.InvalidNameError):
             method(*args)
 
-    @patch("pathlib.Path.exists")
     @pytest.mark.integration
-    def test_create_project_already_exists(self, mock_exists, tmp_path):
+    def test_create_project_already_exists(self, mocker, tmp_path):
         """Test creating project when directory already exists raises FileExistsError."""
+        mock_exists = mocker.patch("pathlib.Path.exists")
         mock_exists.return_value = True
 
         with pytest.raises(FileExistsError):
@@ -517,14 +508,14 @@ class TestProjectWrapper:
         assert isinstance(wrappers, dict)
         # Empty since no valid target config exists
 
-    @patch("marimba.core.wrappers.project.remove_directory_tree")
     @pytest.mark.integration
-    def test_delete_with_readonly_files(self, mock_remove_tree, project_wrapper, mock_project_dir):
+    def test_delete_with_readonly_files(self, mocker, project_wrapper, mock_project_dir):
         """Test deletion handles readonly files properly."""
         pipeline_dir = mock_project_dir / "pipelines" / "test_pipeline"
         pipeline_dir.mkdir(parents=True)
 
         # Mock remove_directory_tree to simulate the actual deletion logic
+        mock_remove_tree = mocker.patch("marimba.core.wrappers.project.remove_directory_tree")
         mock_remove_tree.return_value = None
 
         result = project_wrapper.delete_pipeline("test_pipeline", dry_run=False)
@@ -561,24 +552,24 @@ class TestUtilityFunctions:
     """Test utility functions."""
 
     @pytest.mark.unit
-    def test_get_merged_keyword_args_empty(self):
+    def test_get_merged_keyword_args_empty(self, mocker):
         """Test merging with empty arguments."""
-        logger = Mock()
+        logger = mocker.Mock()
         result = get_merged_keyword_args({}, None, logger)
         assert result == {}
 
     @pytest.mark.unit
-    def test_get_merged_keyword_args_basic(self):
+    def test_get_merged_keyword_args_basic(self, mocker):
         """Test basic keyword argument merging."""
-        logger = Mock()
+        logger = mocker.Mock()
         kwargs = {"key1": "value1", "key2": "value2"}
         result = get_merged_keyword_args(kwargs, None, logger)
         assert result == kwargs
 
     @pytest.mark.unit
-    def test_get_merged_keyword_args_with_extra(self):
+    def test_get_merged_keyword_args_with_extra(self, mocker):
         """Test merging with extra keyword arguments."""
-        logger = Mock()
+        logger = mocker.Mock()
         kwargs = {"key1": "value1"}
         extra_args = ["key2=value2", "key3=value3"]
 
@@ -588,9 +579,9 @@ class TestUtilityFunctions:
         assert result == expected
 
     @pytest.mark.unit
-    def test_get_merged_keyword_args_override(self):
+    def test_get_merged_keyword_args_override(self, mocker):
         """Test that extra args can override existing ones."""
-        logger = Mock()
+        logger = mocker.Mock()
         kwargs = {"key1": "original"}
         extra_args = ["key1=override", "key2=new"]
 
@@ -600,9 +591,9 @@ class TestUtilityFunctions:
         assert result == expected
 
     @pytest.mark.unit
-    def test_get_merged_keyword_args_invalid_format(self):
+    def test_get_merged_keyword_args_invalid_format(self, mocker):
         """Test handling of invalid argument format."""
-        logger = Mock()
+        logger = mocker.Mock()
         kwargs = {"key1": "value1"}
         extra_args = ["invalidarg", "key2=value2"]
 
@@ -614,9 +605,9 @@ class TestUtilityFunctions:
         logger.warning.assert_any_call('Invalid extra argument provided: "invalidarg"')
 
     @pytest.mark.unit
-    def test_get_merged_keyword_args_evaluation_error(self):
+    def test_get_merged_keyword_args_evaluation_error(self, mocker):
         """Test handling of evaluation errors."""
-        logger = Mock()
+        logger = mocker.Mock()
         kwargs: dict[str, Any] = {}
         extra_args = ["key1=not_valid_literal"]
 
@@ -627,9 +618,9 @@ class TestUtilityFunctions:
         logger.warning.assert_called_with('Could not evaluate extra argument value: "not_valid_literal"')
 
     @pytest.mark.unit
-    def test_get_merged_keyword_args_numeric_values(self):
+    def test_get_merged_keyword_args_numeric_values(self, mocker):
         """Test handling of numeric values in extra args."""
-        logger = Mock()
+        logger = mocker.Mock()
         kwargs: dict[str, Any] = {}
         extra_args = ["int_val=42", "float_val=3.14", "bool_val=True", "list_val=[1,2,3]"]
 
@@ -639,17 +630,17 @@ class TestUtilityFunctions:
         assert result == expected
 
     @pytest.mark.unit
-    def test_get_merged_keyword_args_none_extra(self):
+    def test_get_merged_keyword_args_none_extra(self, mocker):
         """Test merging when extra_args is None."""
-        logger = Mock()
+        logger = mocker.Mock()
         kwargs = {"key1": "value1"}
         result = get_merged_keyword_args(kwargs, None, logger)
         assert result == kwargs
 
     @pytest.mark.unit
-    def test_get_merged_keyword_args_complex_types(self):
+    def test_get_merged_keyword_args_complex_types(self, mocker):
         """Test merging with complex data types."""
-        logger = Mock()
+        logger = mocker.Mock()
         kwargs = {"key1": "value1"}
         extra_args = ["key2=123", "key3=[1,2,3]", "key4={'nested': 'dict'}"]
 
@@ -659,9 +650,9 @@ class TestUtilityFunctions:
         assert result == expected
 
     @pytest.mark.unit
-    def test_get_merged_keyword_args_skip_invalid_format(self):
+    def test_get_merged_keyword_args_skip_invalid_format(self, mocker):
         """Test handling of invalid argument format."""
-        logger = Mock()
+        logger = mocker.Mock()
         kwargs = {"key1": "value1"}
         extra_args = ["invalid_format", "key2=value2"]
 
@@ -674,9 +665,9 @@ class TestUtilityFunctions:
         logger.warning.assert_any_call('Invalid extra argument provided: "invalid_format"')
 
     @pytest.mark.unit
-    def test_get_merged_keyword_args_invalid_value(self):
+    def test_get_merged_keyword_args_invalid_value(self, mocker):
         """Test handling of invalid value format."""
-        logger = Mock()
+        logger = mocker.Mock()
         kwargs = {"key1": "value1"}
         extra_args = ["key2=invalid_python_literal", "key3=valid_string"]
 

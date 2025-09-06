@@ -2,7 +2,6 @@
 
 import hashlib
 from pathlib import Path
-from unittest.mock import mock_open, patch
 
 import pytest
 
@@ -160,13 +159,13 @@ class TestHashUtilities:
         assert result == expected_hash
 
     @pytest.mark.integration
-    @patch("pathlib.Path.open")
-    def test_compute_hash_file_read_error(self, mock_open_method, tmp_path):
+    def test_compute_hash_file_read_error(self, mocker, tmp_path):
         """Test handling of file read error."""
         test_file = tmp_path / "test_file.txt"
         test_file.touch()  # Create the file so is_file() returns True
 
         # Mock the open method to raise OSError
+        mock_open_method = mocker.patch("pathlib.Path.open")
         mock_open_method.side_effect = OSError("Permission denied")
 
         with pytest.raises(OSError, match="Failed to read file"):
@@ -284,13 +283,13 @@ class TestHashUtilities:
         assert hash1 == hash2 == hash3
 
     @pytest.mark.integration
-    @patch("pathlib.Path.resolve")
-    def test_compute_hash_directory_resolve_error_with_root(self, mock_resolve, tmp_path, test_root_dir):
+    def test_compute_hash_directory_resolve_error_with_root(self, mocker, tmp_path, test_root_dir):
         """Test error handling when path.resolve() fails during relative path calculation."""
         test_dir = tmp_path / "test_dir"
         test_dir.mkdir()
 
         # Make the path's resolve() method raise ValueError
+        mock_resolve = mocker.patch("pathlib.Path.resolve")
         mock_resolve.side_effect = ValueError("Path resolution error")
 
         with pytest.raises(ValueError, match="is not within root directory"):

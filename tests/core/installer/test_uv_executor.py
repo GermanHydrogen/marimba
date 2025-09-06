@@ -1,5 +1,3 @@
-from unittest.mock import patch
-
 import pytest
 
 from marimba.core.installer.uv_executor import UvExecutor
@@ -23,9 +21,9 @@ def test_uv_executor_error():
 
 
 @pytest.mark.unit
-@patch("shutil.which")
-def test_uv_executor_create_uv_not_found(mock_which):
+def test_uv_executor_create_uv_not_found(mocker):
     """Test UvExecutor.create() when uv is not found in PATH."""
+    mock_which = mocker.patch("shutil.which")
     mock_which.return_value = None
 
     with pytest.raises(UvExecutor.UvError, match="uv executable not found in PATH"):

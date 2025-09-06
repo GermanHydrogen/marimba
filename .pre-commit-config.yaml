@@ -10,7 +10,7 @@ repos:
         entry: uv run ruff check
         language: system
         types: [ python ]
-        args: [ "--fix", "--config=config/.ruff.toml" ]
+        args: [ "--fix", "--config=config/ruff.toml" ]
         exclude: ^tests/|^docs/
 
       - id: black

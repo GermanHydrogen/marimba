@@ -1,7 +1,6 @@
 """Tests for marimba.core.utils.dependencies module."""
 
 import platform
-from unittest.mock import Mock, patch
 
 import pytest
 import typer
@@ -115,30 +114,30 @@ class TestGetCurrentPlatform:
     """Test get_current_platform function."""
 
     @pytest.mark.unit
-    @patch("platform.system")
-    def test_get_current_platform_darwin(self, mock_system):
+    def test_get_current_platform_darwin(self, mocker):
         """Test get_current_platform returns macOS for Darwin."""
+        mock_system = mocker.patch("platform.system")
         mock_system.return_value = "Darwin"
         assert get_current_platform() == Platform.MACOS
 
     @pytest.mark.unit
-    @patch("platform.system")
-    def test_get_current_platform_windows(self, mock_system):
+    def test_get_current_platform_windows(self, mocker):
         """Test get_current_platform returns Windows for Windows."""
+        mock_system = mocker.patch("platform.system")
         mock_system.return_value = "Windows"
         assert get_current_platform() == Platform.WINDOWS
 
     @pytest.mark.unit
-    @patch("platform.system")
-    def test_get_current_platform_linux(self, mock_system):
+    def test_get_current_platform_linux(self, mocker):
         """Test get_current_platform returns Linux for Linux."""
+        mock_system = mocker.patch("platform.system")
         mock_system.return_value = "Linux"
         assert get_current_platform() == Platform.LINUX
 
     @pytest.mark.unit
-    @patch("platform.system")
-    def test_get_current_platform_unknown_defaults_to_linux(self, mock_system):
+    def test_get_current_platform_unknown_defaults_to_linux(self, mocker):
         """Test get_current_platform defaults to Linux for unknown systems."""
+        mock_system = mocker.patch("platform.system")
         mock_system.return_value = "UnknownOS"
         assert get_current_platform() == Platform.LINUX
 
@@ -147,11 +146,11 @@ class TestShowDependencyError:
     """Test show_dependency_error function."""
 
     @pytest.mark.unit
-    @patch("marimba.core.utils.dependencies.Console")
-    @patch("marimba.core.utils.dependencies.get_current_platform")
-    def test_show_dependency_error_without_error_message(self, mock_get_platform, mock_console_class):
+    def test_show_dependency_error_without_error_message(self, mocker):
         """Test show_dependency_error without error message."""
-        mock_console = Mock()
+        mock_console_class = mocker.patch("marimba.core.utils.dependencies.Console")
+        mock_get_platform = mocker.patch("marimba.core.utils.dependencies.get_current_platform")
+        mock_console = mocker.Mock()
         mock_console_class.return_value = mock_console
         mock_get_platform.return_value = Platform.LINUX
 
@@ -161,11 +160,11 @@ class TestShowDependencyError:
         assert mock_console.print.call_count == 3
 
     @pytest.mark.unit
-    @patch("marimba.core.utils.dependencies.Console")
-    @patch("marimba.core.utils.dependencies.get_current_platform")
-    def test_show_dependency_error_with_error_message(self, mock_get_platform, mock_console_class):
+    def test_show_dependency_error_with_error_message(self, mocker):
         """Test show_dependency_error with error message."""
-        mock_console = Mock()
+        mock_console_class = mocker.patch("marimba.core.utils.dependencies.Console")
+        mock_get_platform = mocker.patch("marimba.core.utils.dependencies.get_current_platform")
+        mock_console = mocker.Mock()
         mock_console_class.return_value = mock_console
         mock_get_platform.return_value = Platform.MACOS
 
@@ -179,9 +178,9 @@ class TestCheckDependencyAvailable:
     """Test check_dependency_available function."""
 
     @pytest.mark.unit
-    @patch("shutil.which")
-    def test_check_dependency_available_found(self, mock_which):
+    def test_check_dependency_available_found(self, mocker):
         """Test check_dependency_available when tool is found."""
+        mock_which = mocker.patch("shutil.which")
         mock_which.return_value = "/usr/bin/exiftool"
 
         result = check_dependency_available(ToolDependency.EXIFTOOL)
@@ -190,9 +189,9 @@ class TestCheckDependencyAvailable:
         mock_which.assert_called_once_with("exiftool")
 
     @pytest.mark.unit
-    @patch("shutil.which")
-    def test_check_dependency_available_not_found(self, mock_which):
+    def test_check_dependency_available_not_found(self, mocker):
         """Test check_dependency_available when tool is not found."""
+        mock_which = mocker.patch("shutil.which")
         mock_which.return_value = None
 
         result = check_dependency_available(ToolDependency.EXIFTOOL)
@@ -211,9 +210,9 @@ class TestValidateDependencies:
         validate_dependencies([])
 
     @pytest.mark.unit
-    @patch("marimba.core.utils.dependencies.check_dependency_available")
-    def test_validate_dependencies_all_available(self, mock_check):
+    def test_validate_dependencies_all_available(self, mocker):
         """Test validate_dependencies when all tools are available."""
+        mock_check = mocker.patch("marimba.core.utils.dependencies.check_dependency_available")
         mock_check.return_value = True
 
         # Should not raise any exception
@@ -222,10 +221,10 @@ class TestValidateDependencies:
         mock_check.assert_called_once_with(ToolDependency.EXIFTOOL)
 
     @pytest.mark.unit
-    @patch("marimba.core.utils.dependencies.show_dependency_error_and_exit")
-    @patch("marimba.core.utils.dependencies.check_dependency_available")
-    def test_validate_dependencies_missing_tool(self, mock_check, mock_show_error_exit):
+    def test_validate_dependencies_missing_tool(self, mocker):
         """Test validate_dependencies when a tool is missing."""
+        mock_check = mocker.patch("marimba.core.utils.dependencies.check_dependency_available")
+        mock_show_error_exit = mocker.patch("marimba.core.utils.dependencies.show_dependency_error_and_exit")
         mock_check.return_value = False
 
         validate_dependencies([ToolDependency.EXIFTOOL])
@@ -236,10 +235,10 @@ class TestValidateDependencies:
         )
 
     @pytest.mark.unit
-    @patch("marimba.core.utils.dependencies.show_dependency_error_and_exit")
-    @patch("marimba.core.utils.dependencies.check_dependency_available")
-    def test_validate_dependencies_ffmpeg_without_ffprobe(self, mock_check, mock_show_error_exit):
+    def test_validate_dependencies_ffmpeg_without_ffprobe(self, mocker):
         """Test validate_dependencies when ffmpeg is available but ffprobe is not."""
+        mock_check = mocker.patch("marimba.core.utils.dependencies.check_dependency_available")
+        mock_show_error_exit = mocker.patch("marimba.core.utils.dependencies.show_dependency_error_and_exit")
 
         def mock_check_side_effect(tool):
             if tool == ToolDependency.FFMPEG:
@@ -257,9 +256,9 @@ class TestValidateDependencies:
         mock_show_error_exit.assert_called_once_with(ToolDependency.FFMPEG, "FFprobe (part of FFmpeg) is not available")
 
     @pytest.mark.unit
-    @patch("marimba.core.utils.dependencies.check_dependency_available")
-    def test_validate_dependencies_ffmpeg_with_ffprobe(self, mock_check):
+    def test_validate_dependencies_ffmpeg_with_ffprobe(self, mocker):
         """Test validate_dependencies when both ffmpeg and ffprobe are available."""
+        mock_check = mocker.patch("marimba.core.utils.dependencies.check_dependency_available")
         mock_check.return_value = True
 
         # Should not raise any exception
@@ -273,11 +272,11 @@ class TestShowDependencyErrorAndExit:
     """Test show_dependency_error_and_exit function."""
 
     @pytest.mark.unit
-    @patch("marimba.core.utils.dependencies.Console")
-    @patch("marimba.core.utils.dependencies.show_dependency_error")
-    def test_show_dependency_error_and_exit_default_exit_code(self, mock_show_error, mock_console_class):
+    def test_show_dependency_error_and_exit_default_exit_code(self, mocker):
         """Test show_dependency_error_and_exit with default exit code."""
-        mock_console = Mock()
+        mock_console_class = mocker.patch("marimba.core.utils.dependencies.Console")
+        mock_show_error = mocker.patch("marimba.core.utils.dependencies.show_dependency_error")
+        mock_console = mocker.Mock()
         mock_console_class.return_value = mock_console
 
         with pytest.raises(typer.Exit) as exc_info:
@@ -288,11 +287,11 @@ class TestShowDependencyErrorAndExit:
         assert mock_console.print.call_count == 2
 
     @pytest.mark.unit
-    @patch("marimba.core.utils.dependencies.Console")
-    @patch("marimba.core.utils.dependencies.show_dependency_error")
-    def test_show_dependency_error_and_exit_custom_exit_code(self, mock_show_error, mock_console_class):
+    def test_show_dependency_error_and_exit_custom_exit_code(self, mocker):
         """Test show_dependency_error_and_exit with custom exit code."""
-        mock_console = Mock()
+        mock_console_class = mocker.patch("marimba.core.utils.dependencies.Console")
+        mock_show_error = mocker.patch("marimba.core.utils.dependencies.show_dependency_error")
+        mock_console = mocker.Mock()
         mock_console_class.return_value = mock_console
 
         with pytest.raises(typer.Exit) as exc_info:
@@ -303,11 +302,11 @@ class TestShowDependencyErrorAndExit:
         assert mock_console.print.call_count == 2
 
     @pytest.mark.unit
-    @patch("marimba.core.utils.dependencies.Console")
-    @patch("marimba.core.utils.dependencies.show_dependency_error")
-    def test_show_dependency_error_and_exit_no_error_message(self, mock_show_error, mock_console_class):
+    def test_show_dependency_error_and_exit_no_error_message(self, mocker):
         """Test show_dependency_error_and_exit without error message."""
-        mock_console = Mock()
+        mock_console_class = mocker.patch("marimba.core.utils.dependencies.Console")
+        mock_show_error = mocker.patch("marimba.core.utils.dependencies.show_dependency_error")
+        mock_console = mocker.Mock()
         mock_console_class.return_value = mock_console
 
         with pytest.raises(typer.Exit) as exc_info:

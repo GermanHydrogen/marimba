@@ -2,7 +2,6 @@
 
 import tempfile
 from pathlib import Path
-from unittest.mock import Mock, MagicMock, patch
 
 import pytest
 
@@ -19,9 +18,9 @@ class TestVideoUtilities:
     """Test video utility functions."""
 
     @pytest.fixture
-    def mock_video_stream(self):
+    def mock_video_stream(self, mocker):
         """Create a mock video stream."""
-        stream = Mock()
+        stream = mocker.Mock()
         stream.average_rate = 30.0
         stream.time_base = 1 / 30.0
         stream.frames = 900
@@ -42,9 +41,9 @@ class TestVideoUtilities:
         assert total_frames == 900
 
     @pytest.mark.integration
-    def test_get_stream_properties_none_frame_rate(self):
+    def test_get_stream_properties_none_frame_rate(self, mocker):
         """Test get_stream_properties with None frame rate."""
-        stream = Mock()
+        stream = mocker.Mock()
         stream.average_rate = None
         stream.time_base = 1 / 30.0
         stream.frames = 900
@@ -53,9 +52,9 @@ class TestVideoUtilities:
             get_stream_properties(stream)
 
     @pytest.mark.integration
-    def test_get_stream_properties_none_time_base(self):
+    def test_get_stream_properties_none_time_base(self, mocker):
         """Test get_stream_properties with None time base."""
-        stream = Mock()
+        stream = mocker.Mock()
         stream.average_rate = 30.0
         stream.time_base = None
         stream.frames = 900
@@ -133,9 +132,9 @@ class TestVideoUtilities:
         assert len(potential_filenames) == 1
 
     @pytest.mark.integration
-    @patch("marimba.lib.video.logger")
-    def test_filter_existing_thumbnails_logging(self, mock_logger, tmp_path):
+    def test_filter_existing_thumbnails_logging(self, mocker, tmp_path):
         """Test that filtering logs existing files."""
+        mock_logger = mocker.patch("marimba.lib.video.logger")
         existing_file = tmp_path / "file1.jpg"
         existing_file.touch()
 
@@ -147,13 +146,13 @@ class TestVideoUtilities:
         assert "Thumbnail already exists" in str(mock_logger.info.call_args)
 
     @pytest.mark.integration
-    def test_save_thumbnail(self, tmp_path):
+    def test_save_thumbnail(self, mocker, tmp_path):
         """Test saving thumbnail from video frame."""
         output_path = tmp_path / "thumb.jpg"
 
         # Mock the video frame and image
-        mock_frame = Mock()
-        mock_image = Mock()
+        mock_frame = mocker.Mock()
+        mock_image = mocker.Mock()
         mock_frame.to_image.return_value = mock_image
 
         save_thumbnail(mock_frame, output_path)
@@ -164,25 +163,23 @@ class TestVideoUtilities:
         mock_image.save.assert_called_once_with(output_path)
 
     @pytest.mark.integration
-    @patch("av.open")
-    @patch("marimba.lib.video.get_stream_properties")
-    @patch("marimba.lib.video.generate_potential_filenames")
-    @patch("marimba.lib.video.filter_existing_thumbnails")
     def test_generate_video_thumbnails_basic(
         self,
-        mock_filter,
-        mock_generate_filenames,
-        mock_get_properties,
-        mock_av_open,
+        mocker,
         test_video_path,
         tmp_path,
     ):
         """Test basic video thumbnail generation."""
         output_dir = tmp_path / "output"
 
+        mock_av_open = mocker.patch("av.open")
+        mock_get_properties = mocker.patch("marimba.lib.video.get_stream_properties")
+        mock_generate_filenames = mocker.patch("marimba.lib.video.generate_potential_filenames")
+        mock_filter = mocker.patch("marimba.lib.video.filter_existing_thumbnails")
+
         # Mock the container and stream
-        mock_container = Mock()
-        mock_stream = Mock()
+        mock_container = mocker.Mock()
+        mock_stream = mocker.Mock()
         mock_container.streams.video = [mock_stream]
         mock_av_open.return_value = mock_container
 
@@ -202,25 +199,23 @@ class TestVideoUtilities:
         assert output_dir.exists()
 
     @pytest.mark.integration
-    @patch("av.open")
-    @patch("marimba.lib.video.get_stream_properties")
-    @patch("marimba.lib.video.generate_potential_filenames")
-    @patch("marimba.lib.video.filter_existing_thumbnails")
     def test_generate_video_thumbnails_with_frames(
         self,
-        mock_filter,
-        mock_generate_filenames,
-        mock_get_properties,
-        mock_av_open,
+        mocker,
         test_video_path,
         tmp_path,
     ):
         """Test video thumbnail generation with no potential filenames (simpler case)."""
         output_dir = tmp_path / "output"
 
+        mock_av_open = mocker.patch("av.open")
+        mock_get_properties = mocker.patch("marimba.lib.video.get_stream_properties")
+        mock_generate_filenames = mocker.patch("marimba.lib.video.generate_potential_filenames")
+        mock_filter = mocker.patch("marimba.lib.video.filter_existing_thumbnails")
+
         # Mock the container and stream
-        mock_container = Mock()
-        mock_stream = Mock()
+        mock_container = mocker.Mock()
+        mock_stream = mocker.Mock()
         mock_container.streams.video = [mock_stream]
         mock_av_open.return_value = mock_container
 
@@ -240,23 +235,23 @@ class TestVideoUtilities:
         assert result_paths == existing_paths
 
     @pytest.mark.integration
-    @patch("av.open")
-    def test_generate_video_thumbnails_av_error(self, mock_av_open, test_video_path, tmp_path):
+    def test_generate_video_thumbnails_av_error(self, mocker, test_video_path, tmp_path):
         """Test video thumbnail generation with AV error."""
         output_dir = tmp_path / "output"
 
+        mock_av_open = mocker.patch("av.open")
         mock_av_open.side_effect = Exception("Generic AV error")
 
         with pytest.raises(Exception, match="Generic AV error"):
             generate_video_thumbnails(test_video_path, output_dir)
 
     @pytest.mark.integration
-    @patch("av.open")
-    @patch("marimba.lib.video.show_dependency_error_and_exit")
-    def test_generate_video_thumbnails_ffmpeg_error(self, mock_show_error, mock_av_open, test_video_path, tmp_path):
+    def test_generate_video_thumbnails_ffmpeg_error(self, mocker, test_video_path, tmp_path):
         """Test video thumbnail generation with FFmpeg dependency error."""
         output_dir = tmp_path / "output"
 
+        mock_av_open = mocker.patch("av.open")
+        mock_show_error = mocker.patch("marimba.lib.video.show_dependency_error_and_exit")
         mock_av_open.side_effect = Exception("No such file or directory: ffmpeg not found")
 
         try:
@@ -267,25 +262,23 @@ class TestVideoUtilities:
         mock_show_error.assert_called_once()
 
     @pytest.mark.integration
-    @patch("av.open")
-    @patch("marimba.lib.video.get_stream_properties")
-    @patch("marimba.lib.video.generate_potential_filenames")
-    @patch("marimba.lib.video.filter_existing_thumbnails")
     def test_generate_video_thumbnails_custom_params(
         self,
-        mock_filter,
-        mock_generate_filenames,
-        mock_get_properties,
-        mock_av_open,
+        mocker,
         test_video_path,
         tmp_path,
     ):
         """Test video thumbnail generation with custom parameters."""
         output_dir = tmp_path / "output"
 
+        mock_av_open = mocker.patch("av.open")
+        mock_get_properties = mocker.patch("marimba.lib.video.get_stream_properties")
+        mock_generate_filenames = mocker.patch("marimba.lib.video.generate_potential_filenames")
+        mock_filter = mocker.patch("marimba.lib.video.filter_existing_thumbnails")
+
         # Mock the container and stream
-        mock_container = Mock()
-        mock_stream = Mock()
+        mock_container = mocker.Mock()
+        mock_stream = mocker.Mock()
         mock_container.streams.video = [mock_stream]
         mock_av_open.return_value = mock_container
 
@@ -311,39 +304,35 @@ class TestVideoUtilities:
         assert result_video == test_video_path
 
     @pytest.mark.integration
-    @patch("av.open")
-    @patch("marimba.lib.video.get_stream_properties")
-    @patch("marimba.lib.video.generate_potential_filenames")
-    @patch("marimba.lib.video.filter_existing_thumbnails")
-    @patch("marimba.lib.video.save_thumbnail")
-    @patch("marimba.lib.video.logger")
     def test_generate_video_thumbnails_with_frame_processing(
         self,
-        mock_logger,
-        mock_save_thumbnail,
-        mock_filter,
-        mock_generate_filenames,
-        mock_get_properties,
-        mock_av_open,
+        mocker,
         test_video_path,
         tmp_path,
     ):
         """Test video thumbnail generation with actual frame processing."""
         output_dir = tmp_path / "output"
 
+        mock_av_open = mocker.patch("av.open")
+        mock_get_properties = mocker.patch("marimba.lib.video.get_stream_properties")
+        mock_generate_filenames = mocker.patch("marimba.lib.video.generate_potential_filenames")
+        mock_filter = mocker.patch("marimba.lib.video.filter_existing_thumbnails")
+        mock_save_thumbnail = mocker.patch("marimba.lib.video.save_thumbnail")
+        mock_logger = mocker.patch("marimba.lib.video.logger")
+
         # Create mock video frame with proper type
         import av
 
-        mock_frame = Mock(spec=av.video.frame.VideoFrame)
+        mock_frame = mocker.Mock(spec=av.video.frame.VideoFrame)
         mock_frame.pts = 10
 
         # Create mock packet that yields frames
-        mock_packet = Mock()
+        mock_packet = mocker.Mock()
         mock_packet.decode.return_value = [mock_frame]
 
         # Create mock container with demux that yields packets
-        mock_container = Mock()
-        mock_stream = Mock()
+        mock_container = mocker.Mock()
+        mock_stream = mocker.Mock()
         mock_container.streams.video = [mock_stream]
         mock_container.demux.return_value = [mock_packet]
         mock_av_open.return_value = mock_container
@@ -375,37 +364,34 @@ class TestVideoUtilities:
         assert output_path in result_paths
 
     @pytest.mark.integration
-    @patch("av.open")
-    @patch("marimba.lib.video.get_stream_properties")
-    @patch("marimba.lib.video.generate_potential_filenames")
-    @patch("marimba.lib.video.filter_existing_thumbnails")
-    @patch("marimba.lib.video.save_thumbnail")
     def test_generate_video_thumbnails_early_exit_no_overwrite(
         self,
-        mock_save_thumbnail,
-        mock_filter,
-        mock_generate_filenames,
-        mock_get_properties,
-        mock_av_open,
+        mocker,
         test_video_path,
         tmp_path,
     ):
         """Test early exit when not overwriting and no potential filenames left."""
         output_dir = tmp_path / "output"
 
+        mock_av_open = mocker.patch("av.open")
+        mock_get_properties = mocker.patch("marimba.lib.video.get_stream_properties")
+        mock_generate_filenames = mocker.patch("marimba.lib.video.generate_potential_filenames")
+        mock_filter = mocker.patch("marimba.lib.video.filter_existing_thumbnails")
+        mock_save_thumbnail = mocker.patch("marimba.lib.video.save_thumbnail")
+
         # Create mock video frame with proper type
         import av
 
-        mock_frame = Mock(spec=av.video.frame.VideoFrame)
+        mock_frame = mocker.Mock(spec=av.video.frame.VideoFrame)
         mock_frame.pts = 10
 
         # Create mock packet that yields frames
-        mock_packet = Mock()
+        mock_packet = mocker.Mock()
         mock_packet.decode.return_value = [mock_frame]
 
         # Create mock container
-        mock_container = Mock()
-        mock_stream = Mock()
+        mock_container = mocker.Mock()
+        mock_stream = mocker.Mock()
         mock_container.streams.video = [mock_stream]
         mock_container.demux.return_value = [mock_packet]
         mock_av_open.return_value = mock_container

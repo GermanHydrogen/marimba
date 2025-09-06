@@ -1,7 +1,6 @@
 import tempfile
 from pathlib import Path
 from unittest import TestCase
-from unittest.mock import MagicMock, patch
 from uuid import UUID, uuid4
 
 import pytest
@@ -40,8 +39,9 @@ class TestIfdo(TestCase):
         self.test_dir.cleanup()
 
     @pytest.mark.integration
-    @patch("uuid.uuid4", return_value=UUID("12345678123456781234567812345678"))
-    def test_load_ifdo(self, mock_uuid: MagicMock) -> None:
+    def test_load_ifdo(self) -> None:
+        # Using pytest-mock would require converting the whole class to use fixtures
+        # For now, keep this simple test as is since it doesn't actually use the mock
         self.ifdo.save(self.ifdo_path)
         loaded_ifdo = load_ifdo(self.ifdo_path)
         self.assertEqual(self.ifdo, loaded_ifdo)

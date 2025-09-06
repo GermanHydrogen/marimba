@@ -1,7 +1,6 @@
 """Tests for marimba.lib.exif module."""
 
 from pathlib import Path
-from unittest.mock import Mock, patch
 
 import pytest
 from exiftool.exceptions import ExifToolException
@@ -18,11 +17,11 @@ class TestExifUtilities:
         return tmp_path / "test_image.jpg"
 
     @pytest.mark.integration
-    @patch("exiftool.ExifToolHelper")
-    def test_get_dict_with_metadata(self, mock_exiftool_helper, test_image_path):
+    def test_get_dict_with_metadata(self, mocker, test_image_path):
         """Test getting EXIF data from image with metadata."""
         # Mock the ExifToolHelper context manager and metadata
-        mock_et = Mock()
+        mock_exiftool_helper = mocker.patch("exiftool.ExifToolHelper")
+        mock_et = mocker.Mock()
         mock_exiftool_helper.return_value.__enter__.return_value = mock_et
 
         expected_metadata = {"FileName": "test_image.jpg", "ImageWidth": 800}
@@ -34,10 +33,10 @@ class TestExifUtilities:
         mock_et.get_metadata.assert_called_once_with(str(test_image_path))
 
     @pytest.mark.integration
-    @patch("exiftool.ExifToolHelper")
-    def test_get_dict_no_metadata(self, mock_exiftool_helper, test_image_path):
+    def test_get_dict_no_metadata(self, mocker, test_image_path):
         """Test getting EXIF data from image without metadata."""
-        mock_et = Mock()
+        mock_exiftool_helper = mocker.patch("exiftool.ExifToolHelper")
+        mock_et = mocker.Mock()
         mock_exiftool_helper.return_value.__enter__.return_value = mock_et
 
         mock_et.get_metadata.return_value = []  # No metadata
@@ -48,10 +47,10 @@ class TestExifUtilities:
         mock_et.get_metadata.assert_called_once_with(str(test_image_path))
 
     @pytest.mark.integration
-    @patch("exiftool.ExifToolHelper")
-    def test_get_dict_empty_metadata(self, mock_exiftool_helper, test_image_path):
+    def test_get_dict_empty_metadata(self, mocker, test_image_path):
         """Test getting EXIF data when metadata is None."""
-        mock_et = Mock()
+        mock_exiftool_helper = mocker.patch("exiftool.ExifToolHelper")
+        mock_et = mocker.Mock()
         mock_exiftool_helper.return_value.__enter__.return_value = mock_et
 
         mock_et.get_metadata.return_value = None  # None metadata
@@ -62,10 +61,10 @@ class TestExifUtilities:
         mock_et.get_metadata.assert_called_once_with(str(test_image_path))
 
     @pytest.mark.integration
-    @patch("exiftool.ExifToolHelper")
-    def test_get_dict_with_string_path(self, mock_exiftool_helper):
+    def test_get_dict_with_string_path(self, mocker):
         """Test getting EXIF data using string path."""
-        mock_et = Mock()
+        mock_exiftool_helper = mocker.patch("exiftool.ExifToolHelper")
+        mock_et = mocker.Mock()
         mock_exiftool_helper.return_value.__enter__.return_value = mock_et
 
         expected_metadata = {"FileName": "test_image.jpg"}
@@ -78,10 +77,10 @@ class TestExifUtilities:
         mock_et.get_metadata.assert_called_once_with(string_path)
 
     @pytest.mark.integration
-    @patch("exiftool.ExifToolHelper")
-    @patch("marimba.lib.exif.show_dependency_error_and_exit")
-    def test_get_dict_exiftool_not_found(self, mock_show_error, mock_exiftool_helper, test_image_path):
+    def test_get_dict_exiftool_not_found(self, mocker, test_image_path):
         """Test handling when exiftool is not found."""
+        mock_exiftool_helper = mocker.patch("exiftool.ExifToolHelper")
+        mock_show_error = mocker.patch("marimba.lib.exif.show_dependency_error_and_exit")
         mock_exiftool_helper.side_effect = FileNotFoundError("exiftool not found")
 
         result = get_dict(test_image_path)
@@ -90,9 +89,9 @@ class TestExifUtilities:
         mock_show_error.assert_called_once()
 
     @pytest.mark.integration
-    @patch("exiftool.ExifToolHelper")
-    def test_get_dict_file_not_found_other(self, mock_exiftool_helper, test_image_path):
+    def test_get_dict_file_not_found_other(self, mocker, test_image_path):
         """Test handling FileNotFoundError not related to exiftool."""
+        mock_exiftool_helper = mocker.patch("exiftool.ExifToolHelper")
         mock_exiftool_helper.side_effect = FileNotFoundError("Image file not found")
 
         result = get_dict(test_image_path)
@@ -100,9 +99,9 @@ class TestExifUtilities:
         assert result is None
 
     @pytest.mark.integration
-    @patch("exiftool.ExifToolHelper")
-    def test_get_dict_exiftool_exception(self, mock_exiftool_helper, test_image_path):
+    def test_get_dict_exiftool_exception(self, mocker, test_image_path):
         """Test handling ExifToolException."""
+        mock_exiftool_helper = mocker.patch("exiftool.ExifToolHelper")
         mock_exiftool_helper.side_effect = ExifToolException("Invalid EXIF data")
 
         result = get_dict(test_image_path)
@@ -110,10 +109,10 @@ class TestExifUtilities:
         assert result is None
 
     @pytest.mark.integration
-    @patch("exiftool.ExifToolHelper")
-    def test_get_dict_multiple_images(self, mock_exiftool_helper, test_image_path):
+    def test_get_dict_multiple_images(self, mocker, test_image_path):
         """Test getting EXIF data when multiple items in metadata list."""
-        mock_et = Mock()
+        mock_exiftool_helper = mocker.patch("exiftool.ExifToolHelper")
+        mock_et = mocker.Mock()
         mock_exiftool_helper.return_value.__enter__.return_value = mock_et
 
         # Multiple metadata entries - should return first one
@@ -129,10 +128,10 @@ class TestExifUtilities:
         mock_et.get_metadata.assert_called_once_with(str(test_image_path))
 
     @pytest.mark.integration
-    @patch("exiftool.ExifToolHelper")
-    def test_get_dict_various_metadata_types(self, mock_exiftool_helper, test_image_path):
+    def test_get_dict_various_metadata_types(self, mocker, test_image_path):
         """Test getting EXIF data with various metadata field types."""
-        mock_et = Mock()
+        mock_exiftool_helper = mocker.patch("exiftool.ExifToolHelper")
+        mock_et = mocker.Mock()
         mock_exiftool_helper.return_value.__enter__.return_value = mock_et
 
         complex_metadata = {

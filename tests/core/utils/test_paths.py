@@ -4,7 +4,6 @@ import os
 import shutil
 import stat
 from pathlib import Path
-from unittest.mock import Mock, patch, MagicMock
 
 import pytest
 import typer
@@ -75,9 +74,9 @@ class TestFindProjectDir:
         assert result is None
 
     @pytest.mark.unit
-    @patch("os.access")
-    def test_find_project_dir_no_read_access(self, mock_access, tmp_path):
+    def test_find_project_dir_no_read_access(self, mocker, tmp_path):
         """Test finding project directory with no read access."""
+        mock_access = mocker.patch("os.access")
         mock_access.return_value = False
 
         result = find_project_dir(tmp_path)
@@ -115,10 +114,10 @@ class TestFindProjectDirOrExit:
         assert result == temp_project
 
     @pytest.mark.unit
-    @patch("marimba.core.utils.paths.Path.cwd")
-    @patch("marimba.core.utils.paths.find_project_dir")
-    def test_find_project_dir_or_exit_with_none_uses_cwd(self, mock_find, mock_cwd, tmp_path):
+    def test_find_project_dir_or_exit_with_none_uses_cwd(self, mocker, tmp_path):
         """Test find_project_dir_or_exit with None uses current working directory."""
+        mock_cwd = mocker.patch("marimba.core.utils.paths.Path.cwd")
+        mock_find = mocker.patch("marimba.core.utils.paths.find_project_dir")
         mock_cwd.return_value = tmp_path
         mock_find.return_value = tmp_path
 
@@ -128,9 +127,9 @@ class TestFindProjectDirOrExit:
         mock_find.assert_called_once_with(tmp_path)
 
     @pytest.mark.unit
-    @patch("marimba.core.utils.paths.find_project_dir")
-    def test_find_project_dir_or_exit_not_found_exits(self, mock_find, tmp_path):
+    def test_find_project_dir_or_exit_not_found_exits(self, mocker, tmp_path):
         """Test find_project_dir_or_exit exits when project not found."""
+        mock_find = mocker.patch("marimba.core.utils.paths.find_project_dir")
         mock_find.return_value = None
 
         with pytest.raises(typer.Exit) as exc_info:
@@ -155,11 +154,12 @@ class TestRemoveDirectoryTree:
         assert test_dir.exists()
 
     @pytest.mark.unit
-    @patch("shutil.rmtree")
-    def test_remove_directory_tree_actual_deletion(self, mock_rmtree, tmp_path):
+    def test_remove_directory_tree_actual_deletion(self, mocker, tmp_path):
         """Test remove_directory_tree with actual deletion."""
         test_dir = tmp_path / "test_dir"
         test_dir.mkdir()
+
+        mock_rmtree = mocker.patch("shutil.rmtree")
 
         remove_directory_tree(test_dir, "test entity", dry_run=False)
 
@@ -176,9 +176,9 @@ class TestRemoveDirectoryTree:
         assert exc_info.value.exit_code == 1
 
     @pytest.mark.unit
-    @patch("shutil.rmtree")
-    def test_remove_directory_tree_deletion_error(self, mock_rmtree, tmp_path):
+    def test_remove_directory_tree_deletion_error(self, mocker, tmp_path):
         """Test remove_directory_tree with deletion error."""
+        mock_rmtree = mocker.patch("shutil.rmtree")
         mock_rmtree.side_effect = OSError("Permission denied")
         test_dir = tmp_path / "test_dir"
         test_dir.mkdir()
@@ -252,7 +252,7 @@ class TestHardlinkPath:
         assert dest_file.read_text() == "test content"
 
     @pytest.mark.unit
-    def test_hardlink_path_linking_error(self, tmp_path):
+    def test_hardlink_path_linking_error(self, mocker, tmp_path):
         """Test hardlink_path with hard link creation error."""
         # Create source structure
         src_dir = tmp_path / "src"
@@ -262,9 +262,9 @@ class TestHardlinkPath:
 
         dest_dir = tmp_path / "dest"
 
-        with patch.object(Path, "hardlink_to", side_effect=OSError("Hard link failed")):
-            # Should not raise exception, just log error
-            hardlink_path(src_dir, dest_dir, dry_run=False)
+        mocker.patch.object(Path, "hardlink_to", side_effect=OSError("Hard link failed"))
+        # Should not raise exception, just log error
+        hardlink_path(src_dir, dest_dir, dry_run=False)
 
 
 class TestDetectHardlinkedFiles:
@@ -367,9 +367,9 @@ class TestDetectReadonlyFiles:
         assert result == []
 
     @pytest.mark.unit
-    @patch("os.access")
-    def test_detect_readonly_files_writable_file(self, mock_access, tmp_path):
+    def test_detect_readonly_files_writable_file(self, mocker, tmp_path):
         """Test detect_readonly_files with writable file."""
+        mock_access = mocker.patch("os.access")
         mock_access.return_value = True
         test_file = tmp_path / "test_file.txt"
         test_file.touch()
@@ -379,9 +379,9 @@ class TestDetectReadonlyFiles:
         assert result == []
 
     @pytest.mark.unit
-    @patch("os.access")
-    def test_detect_readonly_files_readonly_file(self, mock_access, tmp_path):
+    def test_detect_readonly_files_readonly_file(self, mocker, tmp_path):
         """Test detect_readonly_files with read-only file."""
+        mock_access = mocker.patch("os.access")
         mock_access.return_value = False
         test_file = tmp_path / "test_file.txt"
         test_file.touch()
@@ -391,9 +391,9 @@ class TestDetectReadonlyFiles:
         assert test_file in result
 
     @pytest.mark.unit
-    @patch("os.access")
-    def test_detect_readonly_files_access_error(self, mock_access, tmp_path):
+    def test_detect_readonly_files_access_error(self, mocker, tmp_path):
         """Test detect_readonly_files with access permission error."""
+        mock_access = mocker.patch("os.access")
         mock_access.side_effect = PermissionError("Access denied")
         test_file = tmp_path / "test_file.txt"
         test_file.touch()
@@ -430,12 +430,12 @@ class TestFormatPathForLogging:
         assert result == "file.txt"
 
     @pytest.mark.unit
-    @patch("marimba.core.utils.paths.find_project_dir")
-    def test_format_path_for_logging_without_project_dir_found(self, mock_find, tmp_path):
+    def test_format_path_for_logging_without_project_dir_found(self, mocker, tmp_path):
         """Test format_path_for_logging without project_dir, but project found."""
         project_dir = tmp_path / "project"
         project_dir.mkdir()
         test_path = project_dir / "file.txt"
+        mock_find = mocker.patch("marimba.core.utils.paths.find_project_dir")
         mock_find.return_value = project_dir
 
         result = format_path_for_logging(test_path)
@@ -443,9 +443,9 @@ class TestFormatPathForLogging:
         assert result == "file.txt"
 
     @pytest.mark.unit
-    @patch("marimba.core.utils.paths.find_project_dir")
-    def test_format_path_for_logging_without_project_dir_not_found(self, mock_find, tmp_path):
+    def test_format_path_for_logging_without_project_dir_not_found(self, mocker, tmp_path):
         """Test format_path_for_logging without project_dir and project not found."""
+        mock_find = mocker.patch("marimba.core.utils.paths.find_project_dir")
         mock_find.return_value = None
         test_path = tmp_path / "file.txt"
 

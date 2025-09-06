@@ -1,7 +1,6 @@
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, cast
-from unittest.mock import MagicMock, patch, Mock
 
 import pytest
 from ifdo.models import ImageData
@@ -139,9 +138,9 @@ class TestiFDOMetadataProperties:
             _ = metadata.altitude
 
     @pytest.mark.unit
-    def test_context_property(self):
+    def test_context_property(self, mocker):
         """Test context property returns correct value."""
-        mock_context = Mock()
+        mock_context = mocker.Mock()
         mock_context.name = "test context"
         image_data = ImageData()
         image_data.image_context = mock_context
@@ -157,9 +156,9 @@ class TestiFDOMetadataProperties:
         assert metadata.context is None
 
     @pytest.mark.unit
-    def test_license_property(self):
+    def test_license_property(self, mocker):
         """Test license property returns correct value."""
-        mock_license = Mock()
+        mock_license = mocker.Mock()
         mock_license.name = "MIT License"
         image_data = ImageData()
         image_data.image_license = mock_license
@@ -175,11 +174,11 @@ class TestiFDOMetadataProperties:
         assert metadata.license is None
 
     @pytest.mark.unit
-    def test_creators_property(self):
+    def test_creators_property(self, mocker):
         """Test creators property returns correct list."""
-        mock_creator1 = Mock()
+        mock_creator1 = mocker.Mock()
         mock_creator1.name = "Creator One"
-        mock_creator2 = Mock()
+        mock_creator2 = mocker.Mock()
         mock_creator2.name = "Creator Two"
 
         image_data = ImageData()
@@ -348,7 +347,7 @@ class TestiFDOMetadataProcessMethods:
 
 
 @pytest.mark.integration
-def test_create_dataset_metadata():
+def test_create_dataset_metadata(mocker):
     mock_uuid = "a43a84f2-b657-44e0-bafe-72e2624115fa"
 
     def mock_saver(path: Path, output_name: str, data: dict[str, Any]) -> None:
@@ -367,12 +366,12 @@ def test_create_dataset_metadata():
     data_setname = "TestDataSet"
     root_dir = Path("/tmp")
     items = {"image.jpg": [cast(BaseMetadata, iFDOMetadata(image_data=ImageData(image_altitude_meters=0.0)))]}
-    with patch("uuid.uuid4", MagicMock(return_value=mock_uuid)):
-        iFDOMetadata.create_dataset_metadata(data_setname, root_dir, items, saver_overwrite=mock_saver)
+    mocker.patch("uuid.uuid4", mocker.MagicMock(return_value=mock_uuid))
+    iFDOMetadata.create_dataset_metadata(data_setname, root_dir, items, saver_overwrite=mock_saver)
 
 
 @pytest.mark.integration
-def test_create_dataset_metadata_with_metadata_name():
+def test_create_dataset_metadata_with_metadata_name(mocker):
     """Test create_dataset_metadata with custom metadata name."""
     mock_uuid = "test-uuid"
 
@@ -382,14 +381,14 @@ def test_create_dataset_metadata_with_metadata_name():
     image_data = ImageData(image_altitude_meters=0.0)
     items = {"image.jpg": [cast(BaseMetadata, iFDOMetadata(image_data))]}
 
-    with patch("uuid.uuid4", MagicMock(return_value=mock_uuid)):
-        iFDOMetadata.create_dataset_metadata(
-            "TestDataSet", Path("/tmp"), items, metadata_name="custom", saver_overwrite=mock_saver
-        )
+    mocker.patch("uuid.uuid4", mocker.MagicMock(return_value=mock_uuid))
+    iFDOMetadata.create_dataset_metadata(
+        "TestDataSet", Path("/tmp"), items, metadata_name="custom", saver_overwrite=mock_saver
+    )
 
 
 @pytest.mark.integration
-def test_create_dataset_metadata_video_file():
+def test_create_dataset_metadata_video_file(mocker):
     """Test create_dataset_metadata handles video files correctly."""
     mock_uuid = "test-uuid"
 
@@ -403,8 +402,8 @@ def test_create_dataset_metadata_video_file():
     video_metadata = iFDOMetadata(image_data_list)
     items = {"video.mp4": [cast(BaseMetadata, video_metadata)]}
 
-    with patch("uuid.uuid4", MagicMock(return_value=mock_uuid)):
-        iFDOMetadata.create_dataset_metadata("TestDataSet", Path("/tmp"), items, saver_overwrite=mock_saver)
+    mocker.patch("uuid.uuid4", mocker.MagicMock(return_value=mock_uuid))
+    iFDOMetadata.create_dataset_metadata("TestDataSet", Path("/tmp"), items, saver_overwrite=mock_saver)
 
 
 @pytest.mark.integration

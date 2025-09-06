@@ -2,7 +2,6 @@
 
 import tempfile
 from pathlib import Path
-from unittest.mock import Mock, patch
 
 import cv2
 import numpy as np
@@ -329,12 +328,12 @@ class TestImageUtilities:
             assert img.size == (100, 80)
 
     @pytest.mark.integration
-    @patch("cv2.imread")
-    @patch("cv2.cvtColor")
-    @patch("cv2.Laplacian")
-    def test_is_blurry_true(self, mock_laplacian, mock_cvtcolor, mock_imread, test_image_rgb):
+    def test_is_blurry_true(self, mocker, test_image_rgb):
         """Test blur detection when image is blurry."""
         # Mock OpenCV functions
+        mock_imread = mocker.patch("cv2.imread")
+        mock_cvtcolor = mocker.patch("cv2.cvtColor")
+        mock_laplacian = mocker.patch("cv2.Laplacian")
         mock_imread.return_value = np.zeros((80, 100, 3), dtype=np.uint8)
         mock_cvtcolor.return_value = np.zeros((80, 100), dtype=np.uint8)
         mock_laplacian.return_value.var.return_value = 50.0  # Below default threshold
@@ -344,12 +343,12 @@ class TestImageUtilities:
         assert result is True
 
     @pytest.mark.integration
-    @patch("cv2.imread")
-    @patch("cv2.cvtColor")
-    @patch("cv2.Laplacian")
-    def test_is_blurry_false(self, mock_laplacian, mock_cvtcolor, mock_imread, test_image_rgb):
+    def test_is_blurry_false(self, mocker, test_image_rgb):
         """Test blur detection when image is not blurry."""
         # Mock OpenCV functions
+        mock_imread = mocker.patch("cv2.imread")
+        mock_cvtcolor = mocker.patch("cv2.cvtColor")
+        mock_laplacian = mocker.patch("cv2.Laplacian")
         mock_imread.return_value = np.zeros((80, 100, 3), dtype=np.uint8)
         mock_cvtcolor.return_value = np.zeros((80, 100), dtype=np.uint8)
         mock_laplacian.return_value.var.return_value = 150.0  # Above default threshold
@@ -359,20 +358,20 @@ class TestImageUtilities:
         assert result is False
 
     @pytest.mark.integration
-    @patch("cv2.imread")
-    def test_is_blurry_invalid_image(self, mock_imread, test_image_rgb):
+    def test_is_blurry_invalid_image(self, mocker, test_image_rgb):
         """Test blur detection with invalid image."""
+        mock_imread = mocker.patch("cv2.imread")
         mock_imread.return_value = None
 
         with pytest.raises(ValueError, match="Could not load the image"):
             is_blurry(test_image_rgb)
 
     @pytest.mark.integration
-    @patch("cv2.imread")
-    @patch("cv2.cvtColor")
-    @patch("cv2.Laplacian")
-    def test_is_blurry_custom_threshold(self, mock_laplacian, mock_cvtcolor, mock_imread, test_image_rgb):
+    def test_is_blurry_custom_threshold(self, mocker, test_image_rgb):
         """Test blur detection with custom threshold."""
+        mock_imread = mocker.patch("cv2.imread")
+        mock_cvtcolor = mocker.patch("cv2.cvtColor")
+        mock_laplacian = mocker.patch("cv2.Laplacian")
         mock_imread.return_value = np.zeros((80, 100, 3), dtype=np.uint8)
         mock_cvtcolor.return_value = np.zeros((80, 100), dtype=np.uint8)
         mock_laplacian.return_value.var.return_value = 75.0
@@ -403,17 +402,17 @@ class TestImageUtilities:
             assert img.size == (50, 40)
 
     @pytest.mark.integration
-    @patch("cv2.imread")
-    @patch("cv2.createCLAHE")
-    @patch("cv2.imwrite")
-    def test_apply_clahe(self, mock_imwrite, mock_create_clahe, mock_imread, test_image_rgb, tmp_path):
+    def test_apply_clahe(self, mocker, test_image_rgb, tmp_path):
         """Test CLAHE application."""
         output_path = tmp_path / "clahe.png"
 
         # Mock OpenCV functions
         mock_img = np.zeros((80, 100), dtype=np.uint8)
+        mock_imread = mocker.patch("cv2.imread")
+        mock_create_clahe = mocker.patch("cv2.createCLAHE")
+        mock_imwrite = mocker.patch("cv2.imwrite")
         mock_imread.return_value = mock_img
-        mock_clahe_obj = Mock()
+        mock_clahe_obj = mocker.Mock()
         mock_clahe_obj.apply.return_value = mock_img
         mock_create_clahe.return_value = mock_clahe_obj
 
@@ -433,9 +432,9 @@ class TestImageUtilities:
             ("sharpen", "Could not read image"),
         ],
     )
-    @patch("cv2.imread")
-    def test_opencv_functions_invalid_image(self, mock_imread, function_name, error_message, test_image_rgb):
+    def test_opencv_functions_invalid_image(self, mocker, function_name, error_message, test_image_rgb):
         """Test OpenCV-based functions with invalid image."""
+        mock_imread = mocker.patch("cv2.imread")
         mock_imread.return_value = None
 
         # Get the function from globals using its name
@@ -445,15 +444,15 @@ class TestImageUtilities:
             func(test_image_rgb)
 
     @pytest.mark.integration
-    @patch("cv2.imread")
-    @patch("cv2.GaussianBlur")
-    @patch("cv2.imwrite")
-    def test_gaussian_blur(self, mock_imwrite, mock_blur, mock_imread, test_image_rgb, tmp_path):
+    def test_gaussian_blur(self, mocker, test_image_rgb, tmp_path):
         """Test Gaussian blur application."""
         output_path = tmp_path / "blurred.png"
 
         # Mock OpenCV functions
         mock_img = np.zeros((80, 100, 3), dtype=np.uint8)
+        mock_imread = mocker.patch("cv2.imread")
+        mock_blur = mocker.patch("cv2.GaussianBlur")
+        mock_imwrite = mocker.patch("cv2.imwrite")
         mock_imread.return_value = mock_img
         mock_blur.return_value = mock_img
 
@@ -464,15 +463,15 @@ class TestImageUtilities:
         mock_imwrite.assert_called_once()
 
     @pytest.mark.integration
-    @patch("cv2.imread")
-    @patch("cv2.filter2D")
-    @patch("cv2.imwrite")
-    def test_sharpen(self, mock_imwrite, mock_filter2d, mock_imread, test_image_rgb, tmp_path):
+    def test_sharpen(self, mocker, test_image_rgb, tmp_path):
         """Test image sharpening."""
         output_path = tmp_path / "sharpened.png"
 
         # Mock OpenCV functions
         mock_img = np.zeros((80, 100, 3), dtype=np.uint8)
+        mock_imread = mocker.patch("cv2.imread")
+        mock_filter2d = mocker.patch("cv2.filter2D")
+        mock_imwrite = mocker.patch("cv2.imwrite")
         mock_imread.return_value = mock_img
         mock_filter2d.return_value = mock_img
 
@@ -491,10 +490,10 @@ class TestImageUtilities:
         assert height == 80
 
     @pytest.mark.integration
-    @patch("PIL.Image.open")
-    def test_get_width_height_invalid_size(self, mock_open, test_image_rgb):
+    def test_get_width_height_invalid_size(self, mocker, test_image_rgb):
         """Test get_width_height with invalid size tuple."""
-        mock_img = Mock()
+        mock_open = mocker.patch("PIL.Image.open")
+        mock_img = mocker.Mock()
         mock_img.size = (100,)  # Invalid - only one dimension
         mock_open.return_value.__enter__.return_value = mock_img
 

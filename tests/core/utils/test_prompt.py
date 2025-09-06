@@ -8,8 +8,6 @@ Tests the functionality of the prompt_schema function including:
 - Error handling for unsupported types
 """
 
-from unittest.mock import patch
-
 import pytest
 
 from marimba.core.utils.prompt import prompt_schema
@@ -19,9 +17,9 @@ from marimba.core.utils.prompt import prompt_schema
 class TestPromptSchema:
     """Test prompt_schema function."""
 
-    @patch("rich.prompt.Prompt.ask")
-    def test_prompt_string_values(self, mock_ask):
+    def test_prompt_string_values(self, mocker):
         """Test prompting for string values."""
+        mock_ask = mocker.patch("rich.prompt.Prompt.ask")
         schema = {"name": "default_name", "description": "default_desc"}
         mock_ask.side_effect = ["custom_name", "custom_desc"]
 
@@ -30,9 +28,9 @@ class TestPromptSchema:
         assert result == {"name": "custom_name", "description": "custom_desc"}
         assert mock_ask.call_count == 2
 
-    @patch("rich.prompt.IntPrompt.ask")
-    def test_prompt_integer_values(self, mock_ask):
+    def test_prompt_integer_values(self, mocker):
         """Test prompting for integer values."""
+        mock_ask = mocker.patch("rich.prompt.IntPrompt.ask")
         schema = {"count": 10, "max_items": 100}
         mock_ask.side_effect = [25, 200]
 
@@ -41,9 +39,9 @@ class TestPromptSchema:
         assert result == {"count": 25, "max_items": 200}
         assert mock_ask.call_count == 2
 
-    @patch("rich.prompt.FloatPrompt.ask")
-    def test_prompt_float_values(self, mock_ask):
+    def test_prompt_float_values(self, mocker):
         """Test prompting for float values."""
+        mock_ask = mocker.patch("rich.prompt.FloatPrompt.ask")
         schema = {"threshold": 0.5, "factor": 1.0}
         mock_ask.side_effect = [0.8, 2.5]
 
@@ -52,9 +50,9 @@ class TestPromptSchema:
         assert result == {"threshold": 0.8, "factor": 2.5}
         assert mock_ask.call_count == 2
 
-    @patch("rich.prompt.Confirm.ask")
-    def test_prompt_boolean_values(self, mock_ask):
+    def test_prompt_boolean_values(self, mocker):
         """Test prompting for boolean values."""
+        mock_ask = mocker.patch("rich.prompt.Confirm.ask")
         schema = {"enabled": True, "debug": False}
         mock_ask.side_effect = [False, True]
 
@@ -63,12 +61,12 @@ class TestPromptSchema:
         assert result == {"enabled": False, "debug": True}
         assert mock_ask.call_count == 2
 
-    @patch("rich.prompt.Confirm.ask")
-    @patch("rich.prompt.IntPrompt.ask")
-    @patch("rich.prompt.FloatPrompt.ask")
-    @patch("rich.prompt.Prompt.ask")
-    def test_prompt_mixed_types(self, mock_prompt, mock_float, mock_int, mock_confirm):
+    def test_prompt_mixed_types(self, mocker):
         """Test prompting for mixed data types."""
+        mock_prompt = mocker.patch("rich.prompt.Prompt.ask")
+        mock_float = mocker.patch("rich.prompt.FloatPrompt.ask")
+        mock_int = mocker.patch("rich.prompt.IntPrompt.ask")
+        mock_confirm = mocker.patch("rich.prompt.Confirm.ask")
         schema = {"name": "test", "count": 5, "ratio": 0.5, "enabled": True}
         mock_prompt.return_value = "new_name"
         mock_int.return_value = 10
@@ -83,9 +81,9 @@ class TestPromptSchema:
         mock_float.assert_called_once_with("ratio", default=0.5)
         mock_confirm.assert_called_once_with("enabled", default=True)
 
-    @patch("rich.prompt.Prompt.ask")
-    def test_prompt_with_none_response(self, mock_ask):
+    def test_prompt_with_none_response(self, mocker):
         """Test prompting when user response is None (should keep original value)."""
+        mock_ask = mocker.patch("rich.prompt.Prompt.ask")
         schema = {"name": "default", "description": "default_desc"}
         mock_ask.side_effect = ["new_name", None]
 
@@ -93,9 +91,9 @@ class TestPromptSchema:
 
         assert result == {"name": "new_name", "description": "default_desc"}  # Should keep original default
 
-    @patch("rich.prompt.Prompt.ask")
-    def test_prompt_keyboard_interrupt(self, mock_ask):
+    def test_prompt_keyboard_interrupt(self, mocker):
         """Test handling KeyboardInterrupt during prompting."""
+        mock_ask = mocker.patch("rich.prompt.Prompt.ask")
         schema = {"name": "default"}
         mock_ask.side_effect = KeyboardInterrupt()
 
@@ -121,9 +119,9 @@ class TestPromptSchema:
         with pytest.raises(NotImplementedError, match="Unsupported type: CustomType"):
             prompt_schema(schema)
 
-    @patch("rich.prompt.Prompt.ask")
-    def test_empty_schema(self, mock_ask):
+    def test_empty_schema(self, mocker):
         """Test prompting with empty schema."""
+        mock_ask = mocker.patch("rich.prompt.Prompt.ask")
         schema: dict[str, str] = {}
 
         result = prompt_schema(schema)
@@ -131,25 +129,25 @@ class TestPromptSchema:
         assert result == {}
         mock_ask.assert_not_called()
 
-    @patch("rich.prompt.Prompt.ask")
-    def test_schema_original_not_modified(self, mock_ask):
+    def test_schema_original_not_modified(self, mocker):
         """Test that original schema is not modified during prompting."""
+        mock_ask = mocker.patch("rich.prompt.Prompt.ask")
         original_schema = {"name": "original", "count": 42}
         schema_copy = original_schema.copy()
         mock_ask.side_effect = ["modified", 100]
 
-        with patch("rich.prompt.IntPrompt.ask") as mock_int:
-            mock_int.return_value = 100
-            result = prompt_schema(original_schema)
+        mock_int = mocker.patch("rich.prompt.IntPrompt.ask")
+        mock_int.return_value = 100
+        result = prompt_schema(original_schema)
 
         # Original schema should be unchanged
         assert original_schema == schema_copy
         # But result should have new values
         assert result == {"name": "modified", "count": 100}
 
-    @patch("rich.prompt.Confirm.ask")
-    def test_keyboard_interrupt_after_partial_input(self, mock_ask):
+    def test_keyboard_interrupt_after_partial_input(self, mocker):
         """Test KeyboardInterrupt after partial input is provided."""
+        mock_ask = mocker.patch("rich.prompt.Confirm.ask")
         schema = {"enabled": True, "debug": False}
         mock_ask.side_effect = [False, KeyboardInterrupt()]
 

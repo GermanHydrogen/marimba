@@ -9,8 +9,6 @@ import sys
 import tempfile
 from pathlib import Path
 from typing import Any
-from unittest.mock import Mock, patch, MagicMock
-from unittest import TestCase
 
 import pytest
 
@@ -53,7 +51,7 @@ class MockTestPipeline(BasePipeline):
         return {}
 
 
-class TestFindPipelineModulePath(TestCase):
+class TestFindPipelineModulePath:
     """Test cases for _find_pipeline_module_path function."""
 
     @pytest.mark.integration
@@ -66,7 +64,7 @@ class TestFindPipelineModulePath(TestCase):
 
             result = _find_pipeline_module_path(repo_path)
 
-            self.assertEqual(result, pipeline_file)
+            assert result == pipeline_file
 
     @pytest.mark.integration
     def test_find_nested_pipeline_file(self):
@@ -80,7 +78,7 @@ class TestFindPipelineModulePath(TestCase):
 
             result = _find_pipeline_module_path(repo_path)
 
-            self.assertEqual(result, pipeline_file)
+            assert result == pipeline_file
 
     @pytest.mark.integration
     def test_no_pipeline_file_raises_error(self):
@@ -91,23 +89,23 @@ class TestFindPipelineModulePath(TestCase):
             (repo_path / "README.md").touch()
             (repo_path / "config.py").touch()
 
-            with self.assertRaises(FileNotFoundError) as context:
+            with pytest.raises(FileNotFoundError) as context:
                 _find_pipeline_module_path(repo_path)
 
-            self.assertIn("No pipeline implementation found", str(context.exception))
-            self.assertIn(".pipeline.py", str(context.exception))
+            assert "No pipeline implementation found" in str(context.value)
+            assert ".pipeline.py" in str(context.value)
 
     @pytest.mark.integration
-    def test_no_pipeline_file_with_allow_empty(self):
+    def test_no_pipeline_file_with_allow_empty(self, mocker):
         """Test that None is returned when no .pipeline.py file exists and allow_empty=True."""
         with tempfile.TemporaryDirectory() as temp_dir:
             repo_path = Path(temp_dir)
 
-            with patch("marimba.core.parallel.pipeline_loader._log_empty_repo_warning") as mock_log:
-                result = _find_pipeline_module_path(repo_path, allow_empty=True)
+            mock_log = mocker.patch("marimba.core.parallel.pipeline_loader._log_empty_repo_warning")
+            result = _find_pipeline_module_path(repo_path, allow_empty=True)
 
-                self.assertIsNone(result)
-                mock_log.assert_called_once_with(repo_path)
+            assert result is None
+            mock_log.assert_called_once_with(repo_path)
 
     @pytest.mark.integration
     def test_multiple_pipeline_files_raises_error(self):
@@ -119,20 +117,20 @@ class TestFindPipelineModulePath(TestCase):
             pipeline_file1.touch()
             pipeline_file2.touch()
 
-            with self.assertRaises(FileNotFoundError) as context:
+            with pytest.raises(FileNotFoundError) as context:
                 _find_pipeline_module_path(repo_path)
 
-            self.assertIn("Multiple pipeline implementations found", str(context.exception))
+            assert "Multiple pipeline implementations found" in str(context.value)
 
 
-class TestLogEmptyRepoWarning(TestCase):
+class TestLogEmptyRepoWarning:
     """Test cases for _log_empty_repo_warning function."""
 
-    @patch("marimba.core.parallel.pipeline_loader.get_logger")
     @pytest.mark.unit
-    def test_logs_warning_message(self, mock_get_logger):
+    def test_logs_warning_message(self, mocker):
         """Test that warning message is logged with correct content."""
-        mock_logger = Mock()
+        mock_logger = mocker.Mock()
+        mock_get_logger = mocker.patch("marimba.core.parallel.pipeline_loader.get_logger")
         mock_get_logger.return_value = mock_logger
         repo_path = Path("/test/repo")
 
@@ -143,13 +141,13 @@ class TestLogEmptyRepoWarning(TestCase):
 
         # Check that warning message contains expected content
         warning_message = mock_logger.warning.call_args[0][0]
-        self.assertIn("no Marimba Pipeline implementation was found", warning_message)
-        self.assertIn(".pipeline.py", warning_message)
-        self.assertIn("Pipeline template", warning_message)
-        self.assertIn("https://raw.githubusercontent.com", warning_message)
+        assert "no Marimba Pipeline implementation was found" in warning_message
+        assert ".pipeline.py" in warning_message
+        assert "Pipeline template" in warning_message
+        assert "https://raw.githubusercontent.com" in warning_message
 
 
-class TestLoadPipelineModule(TestCase):
+class TestLoadPipelineModule:
     """Test cases for _load_pipeline_module function."""
 
     @pytest.mark.integration
@@ -161,52 +159,52 @@ class TestLoadPipelineModule(TestCase):
 
             module_name, module, module_spec = _load_pipeline_module(module_path)
 
-            self.assertEqual(module_name, "test.pipeline")
-            self.assertIsNotNone(module)
-            self.assertIsNotNone(module_spec)
-            self.assertIn("test.pipeline", sys.modules)
+            assert module_name == "test.pipeline"
+            assert module is not None
+            assert module_spec is not None
+            assert "test.pipeline" in sys.modules
 
-    @patch("marimba.core.parallel.pipeline_loader.spec_from_file_location")
     @pytest.mark.integration
-    def test_load_module_spec_none(self, mock_spec_from_file):
+    def test_load_module_spec_none(self, mocker):
         """Test ImportError when module spec is None."""
+        mock_spec_from_file = mocker.patch("marimba.core.parallel.pipeline_loader.spec_from_file_location")
         mock_spec_from_file.return_value = None
         module_path = Path("/fake/path/test.pipeline.py")
 
-        with self.assertRaises(ImportError) as context:
+        with pytest.raises(ImportError) as context:
             _load_pipeline_module(module_path)
 
-        self.assertIn("Could not load spec", str(context.exception))
+        assert "Could not load spec" in str(context.value)
 
-    @patch("marimba.core.parallel.pipeline_loader.spec_from_file_location")
     @pytest.mark.integration
-    def test_load_module_loader_none(self, mock_spec_from_file):
+    def test_load_module_loader_none(self, mocker):
         """Test ImportError when module spec loader is None."""
-        mock_spec = Mock()
+        mock_spec_from_file = mocker.patch("marimba.core.parallel.pipeline_loader.spec_from_file_location")
+        mock_spec = mocker.Mock()
         mock_spec.loader = None
         mock_spec_from_file.return_value = mock_spec
         module_path = Path("/fake/path/test.pipeline.py")
 
-        with self.assertRaises(ImportError) as context:
+        with pytest.raises(ImportError) as context:
             _load_pipeline_module(module_path)
 
-        self.assertIn("Could not find loader", str(context.exception))
+        assert "Could not find loader" in str(context.value)
 
 
-class TestIsValidPipelineClass(TestCase):
+class TestIsValidPipelineClass:
     """Test cases for _is_valid_pipeline_class function."""
 
     @pytest.mark.unit
     def test_valid_pipeline_class(self):
         """Test that a valid pipeline class returns True."""
         result = _is_valid_pipeline_class(MockTestPipeline)
-        self.assertTrue(result)
+        assert result
 
     @pytest.mark.unit
     def test_base_pipeline_class_invalid(self):
         """Test that BasePipeline itself returns False."""
         result = _is_valid_pipeline_class(BasePipeline)
-        self.assertFalse(result)
+        assert not result
 
     @pytest.mark.unit
     def test_non_class_object_invalid(self):
@@ -214,17 +212,17 @@ class TestIsValidPipelineClass(TestCase):
         # These tests check the function's handling of invalid arguments
         # The function should handle these gracefully
         result = _is_valid_pipeline_class(str)  # type: ignore
-        self.assertFalse(result)
+        assert not result
 
         result = _is_valid_pipeline_class(int)  # type: ignore
-        self.assertFalse(result)
+        assert not result
 
         # Test with an actual class that's not a pipeline
         class NotAPipeline:
             pass
 
         result = _is_valid_pipeline_class(NotAPipeline)
-        self.assertFalse(result)
+        assert not result
 
     @pytest.mark.unit
     def test_non_pipeline_class_invalid(self):
@@ -234,7 +232,7 @@ class TestIsValidPipelineClass(TestCase):
             pass
 
         result = _is_valid_pipeline_class(NotAPipeline)
-        self.assertFalse(result)
+        assert not result
 
     @pytest.mark.unit
     def test_type_error_handling(self):
@@ -247,16 +245,16 @@ class TestIsValidPipelineClass(TestCase):
                 raise TypeError("Can't determine class")
 
         result = _is_valid_pipeline_class(ProblematicClass)  # type: ignore
-        self.assertFalse(result)
+        assert not result
 
 
-class TestFindPipelineClass(TestCase):
+class TestFindPipelineClass:
     """Test cases for _find_pipeline_class function."""
 
     @pytest.mark.unit
-    def test_find_valid_pipeline_class(self):
+    def test_find_valid_pipeline_class(self, mocker):
         """Test finding a valid pipeline class in a module."""
-        mock_module = Mock()
+        mock_module = mocker.Mock()
         mock_module.__dict__ = {
             "MockTestPipeline": MockTestPipeline,
             "some_function": lambda: None,
@@ -265,22 +263,22 @@ class TestFindPipelineClass(TestCase):
 
         result = _find_pipeline_class(mock_module)
 
-        self.assertEqual(result, MockTestPipeline)
+        assert result == MockTestPipeline
 
     @pytest.mark.unit
-    def test_no_pipeline_class_raises_error(self):
+    def test_no_pipeline_class_raises_error(self, mocker):
         """Test that ImportError is raised when no pipeline class is found."""
-        mock_module = Mock()
+        mock_module = mocker.Mock()
         mock_module.__dict__ = {
             "some_function": lambda: None,
             "some_variable": 42,
             "NotAPipeline": str,  # Not a pipeline class
         }
 
-        with self.assertRaises(ImportError) as context:
+        with pytest.raises(ImportError) as context:
             _find_pipeline_class(mock_module)
 
-        self.assertIn("Pipeline class has not been set", str(context.exception))
+        assert "Pipeline class has not been set" in str(context.value)
 
     @pytest.mark.unit
     def test_module_without_dict_raises_error(self):
@@ -292,13 +290,13 @@ class TestFindPipelineClass(TestCase):
 
         mock_module = NoDict()
 
-        with self.assertRaises(ImportError) as context:
+        with pytest.raises(ImportError) as context:
             _find_pipeline_class(mock_module)  # type: ignore
 
-        self.assertIn("module has no __dict__", str(context.exception))
+        assert "module has no __dict__" in str(context.value)
 
     @pytest.mark.unit
-    def test_multiple_pipeline_classes_returns_first(self):
+    def test_multiple_pipeline_classes_returns_first(self, mocker):
         """Test that first valid pipeline class is returned when multiple exist."""
 
         class AnotherTestPipeline(BasePipeline):
@@ -321,7 +319,7 @@ class TestFindPipelineClass(TestCase):
             ) -> dict[Path, tuple[Path, list[BaseMetadata] | None, dict[str, Any] | None]]:
                 return {}
 
-        mock_module = Mock()
+        mock_module = mocker.Mock()
         mock_module.__dict__ = {
             "FirstPipeline": MockTestPipeline,
             "SecondPipeline": AnotherTestPipeline,
@@ -330,27 +328,28 @@ class TestFindPipelineClass(TestCase):
         result = _find_pipeline_class(mock_module)
 
         # Should return one of the valid classes (implementation dependent on dict ordering)
-        self.assertTrue(issubclass(result, BasePipeline))
-        self.assertNotEqual(result, BasePipeline)
+        assert issubclass(result, BasePipeline)
+        assert result != BasePipeline
 
 
-class TestConfigurePipelineLogging(TestCase):
+class TestConfigurePipelineLogging:
     """Test cases for _configure_pipeline_logging function."""
 
-    @patch("marimba.core.parallel.pipeline_loader.get_file_handler")
-    @patch("marimba.core.parallel.pipeline_loader.LogPrefixFilter")
     @pytest.mark.unit
-    def test_configure_logging_with_prefix(self, mock_prefix_filter, mock_get_file_handler):
+    def test_configure_logging_with_prefix(self, mocker):
         """Test configuring pipeline logging with log prefix."""
-        mock_pipeline = Mock()
-        mock_pipeline.logger = Mock()
+        mock_get_file_handler = mocker.patch("marimba.core.parallel.pipeline_loader.get_file_handler")
+        mock_prefix_filter = mocker.patch("marimba.core.parallel.pipeline_loader.LogPrefixFilter")
+
+        mock_pipeline = mocker.Mock()
+        mock_pipeline.logger = mocker.Mock()
         mock_pipeline.logger.handlers = []
 
-        mock_handler = Mock()
+        mock_handler = mocker.Mock()
         mock_handler.baseFilename = "/test/log/file.log"
         mock_get_file_handler.return_value = mock_handler
 
-        mock_filter_instance = Mock()
+        mock_filter_instance = mocker.Mock()
         mock_prefix_filter.return_value = mock_filter_instance
 
         root_dir = Path("/test/root")
@@ -367,15 +366,16 @@ class TestConfigurePipelineLogging(TestCase):
         mock_get_file_handler.assert_called_once_with(root_dir, pipeline_name, False)
         mock_pipeline.logger.addHandler.assert_called_once_with(mock_handler)
 
-    @patch("marimba.core.parallel.pipeline_loader.get_file_handler")
     @pytest.mark.unit
-    def test_configure_logging_without_prefix(self, mock_get_file_handler):
+    def test_configure_logging_without_prefix(self, mocker):
         """Test configuring pipeline logging without log prefix."""
-        mock_pipeline = Mock()
-        mock_pipeline.logger = Mock()
+        mock_get_file_handler = mocker.patch("marimba.core.parallel.pipeline_loader.get_file_handler")
+
+        mock_pipeline = mocker.Mock()
+        mock_pipeline.logger = mocker.Mock()
         mock_pipeline.logger.handlers = []
 
-        mock_handler = Mock()
+        mock_handler = mocker.Mock()
         mock_handler.baseFilename = "/test/log/file.log"
         mock_get_file_handler.return_value = mock_handler
 
@@ -391,16 +391,17 @@ class TestConfigurePipelineLogging(TestCase):
         mock_get_file_handler.assert_called_once_with(root_dir, pipeline_name, True)
         mock_pipeline.logger.addHandler.assert_called_once_with(mock_handler)
 
-    @patch("marimba.core.parallel.pipeline_loader.get_file_handler")
     @pytest.mark.unit
-    def test_prevent_duplicate_handlers(self, mock_get_file_handler):
+    def test_prevent_duplicate_handlers(self, mocker):
         """Test that duplicate handlers are not added."""
-        mock_pipeline = Mock()
-        existing_handler = Mock()
+        mock_get_file_handler = mocker.patch("marimba.core.parallel.pipeline_loader.get_file_handler")
+
+        mock_pipeline = mocker.Mock()
+        existing_handler = mocker.Mock()
         existing_handler.baseFilename = "/test/log/file.log"
         mock_pipeline.logger.handlers = [existing_handler]
 
-        mock_handler = Mock()
+        mock_handler = mocker.Mock()
         mock_handler.baseFilename = "/test/log/file.log"  # Same path as existing
         mock_get_file_handler.return_value = mock_handler
 
@@ -415,22 +416,23 @@ class TestConfigurePipelineLogging(TestCase):
         mock_pipeline.logger.addHandler.assert_called_once_with(mock_handler)
 
 
-class TestLoadPipelineInstance(TestCase):
+class TestLoadPipelineInstance:
     """Test cases for load_pipeline_instance function."""
 
-    def setUp(self):
-        """Set up test fixtures."""
-        self.temp_dir = tempfile.TemporaryDirectory()
-        self.root_dir = Path(self.temp_dir.name) / "root"
-        self.repo_dir = Path(self.temp_dir.name) / "repo"
-        self.config_path = Path(self.temp_dir.name) / "config.yaml"
+    @pytest.fixture
+    def pipeline_test_dirs(self):
+        """Set up test directories and files."""
+        temp_dir = tempfile.TemporaryDirectory()
+        root_dir = Path(temp_dir.name) / "root"
+        repo_dir = Path(temp_dir.name) / "repo"
+        config_path = Path(temp_dir.name) / "config.yaml"
 
-        self.root_dir.mkdir()
-        self.repo_dir.mkdir()
-        self.config_path.write_text("key: value")
+        root_dir.mkdir()
+        repo_dir.mkdir()
+        config_path.write_text("key: value")
 
         # Create a test pipeline file
-        self.pipeline_file = self.repo_dir / "test.pipeline.py"
+        pipeline_file = repo_dir / "test.pipeline.py"
         pipeline_content = """
 from pathlib import Path
 from typing import Any
@@ -455,92 +457,134 @@ class MockTestPipeline(BasePipeline):
     def _package(self, data_dir: Path, config: dict[str, Any], **kwargs: Any) -> dict[Path, tuple[Path, list[BaseMetadata] | None, dict[str, Any] | None]]:
         return {}
 """
-        self.pipeline_file.write_text(pipeline_content)
+        pipeline_file.write_text(pipeline_content)
 
-    def tearDown(self):
-        """Clean up test fixtures."""
-        self.temp_dir.cleanup()
+        yield {
+            "temp_dir": temp_dir,
+            "root_dir": root_dir,
+            "repo_dir": repo_dir,
+            "config_path": config_path,
+            "pipeline_file": pipeline_file,
+        }
 
-    @patch("marimba.core.parallel.pipeline_loader._configure_pipeline_logging")
-    @patch("marimba.core.parallel.pipeline_loader.load_config")
+        temp_dir.cleanup()
+
     @pytest.mark.integration
-    def test_load_pipeline_instance_success(self, mock_load_config, mock_configure_logging):
+    def test_load_pipeline_instance_success(self, pipeline_test_dirs, mocker):
         """Test successfully loading a pipeline instance."""
+        mock_configure_logging = mocker.patch("marimba.core.parallel.pipeline_loader._configure_pipeline_logging")
+        mock_load_config = mocker.patch("marimba.core.parallel.pipeline_loader.load_config")
         mock_load_config.return_value = {"test": "config"}
 
         result = load_pipeline_instance(
-            self.root_dir, self.repo_dir, "test_pipeline", self.config_path, False, "LOG_PREFIX"
+            pipeline_test_dirs["root_dir"],
+            pipeline_test_dirs["repo_dir"],
+            "test_pipeline",
+            pipeline_test_dirs["config_path"],
+            False,
+            "LOG_PREFIX",
         )
 
-        self.assertIsNotNone(result)
-        self.assertIsInstance(result, BasePipeline)
+        assert result is not None
+        assert isinstance(result, BasePipeline)
 
         # Check that configuration was loaded
-        mock_load_config.assert_called_once_with(self.config_path)
+        mock_load_config.assert_called_once_with(pipeline_test_dirs["config_path"])
 
         # Check that logging was configured
-        mock_configure_logging.assert_called_once_with(result, self.root_dir, "test_pipeline", False, "LOG_PREFIX")
+        mock_configure_logging.assert_called_once_with(
+            result, pipeline_test_dirs["root_dir"], "test_pipeline", False, "LOG_PREFIX"
+        )
 
     @pytest.mark.integration
-    def test_load_pipeline_instance_empty_repo_allow_empty(self):
+    def test_load_pipeline_instance_empty_repo_allow_empty(self, pipeline_test_dirs, mocker):
         """Test loading from empty repository with allow_empty=True."""
         # Remove the pipeline file to simulate empty repo
-        self.pipeline_file.unlink()
+        pipeline_test_dirs["pipeline_file"].unlink()
 
-        with patch("marimba.core.parallel.pipeline_loader._log_empty_repo_warning"):
-            result = load_pipeline_instance(
-                self.root_dir, self.repo_dir, "test_pipeline", self.config_path, False, allow_empty=True
-            )
+        mocker.patch("marimba.core.parallel.pipeline_loader._log_empty_repo_warning")
+        result = load_pipeline_instance(
+            pipeline_test_dirs["root_dir"],
+            pipeline_test_dirs["repo_dir"],
+            "test_pipeline",
+            pipeline_test_dirs["config_path"],
+            False,
+            allow_empty=True,
+        )
 
-        self.assertIsNone(result)
+        assert result is None
 
     @pytest.mark.integration
-    def test_load_pipeline_instance_empty_repo_no_allow_empty(self):
+    def test_load_pipeline_instance_empty_repo_no_allow_empty(self, pipeline_test_dirs):
         """Test loading from empty repository with allow_empty=False raises error."""
         # Remove the pipeline file to simulate empty repo
-        self.pipeline_file.unlink()
+        pipeline_test_dirs["pipeline_file"].unlink()
 
-        with self.assertRaises(FileNotFoundError):
-            load_pipeline_instance(self.root_dir, self.repo_dir, "test_pipeline", self.config_path, False)
+        with pytest.raises(FileNotFoundError):
+            load_pipeline_instance(
+                pipeline_test_dirs["root_dir"],
+                pipeline_test_dirs["repo_dir"],
+                "test_pipeline",
+                pipeline_test_dirs["config_path"],
+                False,
+            )
 
-    @patch("marimba.core.parallel.pipeline_loader._load_pipeline_module")
     @pytest.mark.integration
-    def test_load_pipeline_instance_import_error(self, mock_load_module):
+    def test_load_pipeline_instance_import_error(self, pipeline_test_dirs, mocker):
         """Test handling of import errors during module loading."""
+        mock_load_module = mocker.patch("marimba.core.parallel.pipeline_loader._load_pipeline_module")
         mock_load_module.side_effect = ImportError("Test import error")
 
-        with self.assertRaises(ImportError) as context:
-            load_pipeline_instance(self.root_dir, self.repo_dir, "test_pipeline", self.config_path, False)
+        with pytest.raises(ImportError) as context:
+            load_pipeline_instance(
+                pipeline_test_dirs["root_dir"],
+                pipeline_test_dirs["repo_dir"],
+                "test_pipeline",
+                pipeline_test_dirs["config_path"],
+                False,
+            )
 
-        self.assertIn("Test import error", str(context.exception))
+        assert "Test import error" in str(context.value)
 
-    @patch("marimba.core.parallel.pipeline_loader.load_config")
     @pytest.mark.integration
-    def test_sys_path_manipulation(self, mock_load_config):
+    def test_sys_path_manipulation(self, pipeline_test_dirs, mocker):
         """Test that sys.path is properly manipulated during module loading."""
+        mock_load_config = mocker.patch("marimba.core.parallel.pipeline_loader.load_config")
         mock_load_config.return_value = {}
         original_path = sys.path.copy()
 
-        result = load_pipeline_instance(self.root_dir, self.repo_dir, "test_pipeline", self.config_path, False)
+        result = load_pipeline_instance(
+            pipeline_test_dirs["root_dir"],
+            pipeline_test_dirs["repo_dir"],
+            "test_pipeline",
+            pipeline_test_dirs["config_path"],
+            False,
+        )
 
         # sys.path should be restored to original state
-        self.assertEqual(sys.path, original_path)
-        self.assertIsNotNone(result)
+        assert sys.path == original_path
+        assert result is not None
 
-    @patch("marimba.core.parallel.pipeline_loader._find_pipeline_class")
-    @patch("marimba.core.parallel.pipeline_loader.load_config")
     @pytest.mark.integration
-    def test_module_execution_failure(self, mock_load_config, mock_find_class):
+    def test_module_execution_failure(self, pipeline_test_dirs, mocker):
         """Test handling of module execution failures."""
+        mock_find_class = mocker.patch("marimba.core.parallel.pipeline_loader._find_pipeline_class")
+        mock_load_config = mocker.patch("marimba.core.parallel.pipeline_loader.load_config")
         mock_load_config.return_value = {}
 
         # Create a pipeline file with syntax error
-        bad_pipeline_file = self.repo_dir / "bad.pipeline.py"
+        bad_pipeline_file = pipeline_test_dirs["repo_dir"] / "bad.pipeline.py"
         bad_pipeline_file.write_text("invalid python syntax <<<")
-        self.pipeline_file.unlink()  # Remove good file
+        pipeline_test_dirs["pipeline_file"].unlink()  # Remove good file
 
-        with self.assertRaises(Exception):  # Could be SyntaxError or other execution error
-            load_pipeline_instance(self.root_dir, self.repo_dir, "test_pipeline", self.config_path, False)
+        with pytest.raises(Exception):  # Could be SyntaxError or other execution error
+            load_pipeline_instance(
+                pipeline_test_dirs["root_dir"],
+                pipeline_test_dirs["repo_dir"],
+                "test_pipeline",
+                pipeline_test_dirs["config_path"],
+                False,
+            )
 
 
 if __name__ == "__main__":

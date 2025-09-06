@@ -1,7 +1,6 @@
 """Tests for marimba.core.utils.map module."""
 
 import math
-from unittest.mock import Mock, patch
 
 import pytest
 
@@ -247,10 +246,10 @@ class TestAxesDrawing:
     """Test axes drawing functionality."""
 
     @pytest.mark.unit
-    @patch("marimba.core.utils.map.ImageDraw.ImageDraw")
-    def test_add_axes_basic(self, mock_draw):
+    def test_add_axes_basic(self, mocker):
         """Test basic axes drawing functionality."""
-        mock_draw_instance = Mock()
+        mock_draw = mocker.patch("marimba.core.utils.map.ImageDraw.ImageDraw")
+        mock_draw_instance = mocker.Mock()
 
         add_axes(
             mock_draw_instance,
@@ -270,10 +269,10 @@ class TestAxesDrawing:
         assert mock_draw_instance.text.called
 
     @pytest.mark.unit
-    @patch("marimba.core.utils.map.ImageDraw.ImageDraw")
-    def test_add_axes_no_lines(self, mock_draw):
+    def test_add_axes_no_lines(self, mocker):
         """Test axes drawing with no grid lines."""
-        mock_draw_instance = Mock()
+        mock_draw = mocker.patch("marimba.core.utils.map.ImageDraw.ImageDraw")
+        mock_draw_instance = mocker.Mock()
 
         add_axes(
             mock_draw_instance,
@@ -293,10 +292,10 @@ class TestAxesDrawing:
         assert True  # Function should not raise an error
 
     @pytest.mark.unit
-    @patch("marimba.core.utils.map.ImageDraw.ImageDraw")
-    def test_add_axes_large_decimal_precision(self, mock_draw):
+    def test_add_axes_large_decimal_precision(self, mocker):
         """Test axes drawing with high precision coordinates."""
-        mock_draw_instance = Mock()
+        mock_draw = mocker.patch("marimba.core.utils.map.ImageDraw.ImageDraw")
+        mock_draw_instance = mocker.Mock()
 
         # Very small coordinate range requiring high precision
         add_axes(
@@ -364,26 +363,26 @@ class TestMapGeneration:
     """Test map generation functionality."""
 
     @pytest.mark.integration
-    @patch("marimba.core.utils.map.requests.head")
-    @patch("marimba.core.utils.map.StaticMap")
-    @patch("marimba.core.utils.map.Image.new")
-    @patch("marimba.core.utils.map.ImageDraw.Draw")
-    def test_make_summary_map_basic(self, mock_draw, mock_image_new, mock_static_map, mock_head):
+    def test_make_summary_map_basic(self, mocker):
         """Test basic map generation."""
         # Mock successful network response
-        mock_response = Mock()
+        mock_head = mocker.patch("marimba.core.utils.map.requests.head")
+        mock_response = mocker.Mock()
         mock_response.status_code = 200
         mock_head.return_value = mock_response
 
         # Mock StaticMap
-        mock_map = Mock()
-        mock_map.render.return_value = Mock()
+        mock_static_map = mocker.patch("marimba.core.utils.map.StaticMap")
+        mock_map = mocker.Mock()
+        mock_map.render.return_value = mocker.Mock()
         mock_static_map.return_value = mock_map
 
         # Mock PIL Image
-        mock_img = Mock()
+        mock_image_new = mocker.patch("marimba.core.utils.map.Image.new")
+        mock_img = mocker.Mock()
         mock_image_new.return_value = mock_img
-        mock_draw.return_value = Mock()
+        mock_draw = mocker.patch("marimba.core.utils.map.ImageDraw.Draw")
+        mock_draw.return_value = mocker.Mock()
 
         coords = [(37.7749, -122.4194), (37.7849, -122.4094)]
 
@@ -394,11 +393,11 @@ class TestMapGeneration:
         mock_map.render.assert_called_once()
 
     @pytest.mark.integration
-    @patch("marimba.core.utils.map.StaticMap")
-    def test_make_summary_map_network_error(self, mock_static_map):
+    def test_make_summary_map_network_error(self, mocker):
         """Test map generation with network error."""
         # Mock StaticMap to raise ConnectionError
-        mock_map = Mock()
+        mock_static_map = mocker.patch("marimba.core.utils.map.StaticMap")
+        mock_map = mocker.Mock()
         mock_map.render.side_effect = __import__("requests").exceptions.ConnectionError("Network error")
         mock_static_map.return_value = mock_map
 
@@ -408,11 +407,11 @@ class TestMapGeneration:
             make_summary_map(coords, width=500, height=500)
 
     @pytest.mark.unit
-    @patch("marimba.core.utils.map.requests.head")
-    @patch("marimba.core.utils.map.StaticMap")
-    def test_make_summary_map_empty_coords(self, mock_static_map, mock_head):
+    def test_make_summary_map_empty_coords(self, mocker):
         """Test map generation with empty coordinates."""
-        mock_response = Mock()
+        mock_head = mocker.patch("marimba.core.utils.map.requests.head")
+        mock_static_map = mocker.patch("marimba.core.utils.map.StaticMap")
+        mock_response = mocker.Mock()
         mock_response.status_code = 200
         mock_head.return_value = mock_response
 
@@ -423,16 +422,16 @@ class TestMapGeneration:
         mock_static_map.assert_not_called()
 
     @pytest.mark.unit
-    @patch("marimba.core.utils.map.requests.head")
-    @patch("marimba.core.utils.map.StaticMap")
-    def test_make_summary_map_single_coordinate(self, mock_static_map, mock_head):
+    def test_make_summary_map_single_coordinate(self, mocker):
         """Test map generation with single coordinate."""
-        mock_response = Mock()
+        mock_head = mocker.patch("marimba.core.utils.map.requests.head")
+        mock_static_map = mocker.patch("marimba.core.utils.map.StaticMap")
+        mock_response = mocker.Mock()
         mock_response.status_code = 200
         mock_head.return_value = mock_response
 
-        mock_map = Mock()
-        mock_map.render.return_value = Mock()
+        mock_map = mocker.Mock()
+        mock_map.render.return_value = mocker.Mock()
         mock_static_map.return_value = mock_map
 
         coords = [(37.7749, -122.4194)]  # Single coordinate
