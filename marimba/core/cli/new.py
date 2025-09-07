@@ -198,15 +198,15 @@ def collection(
             collection_config,
         )
     except ProjectWrapper.InvalidNameError as e:
-        logger.exception(e)
+        logger.exception("Collection creation failed")
         rprint(error_panel(f"Invalid collection name: {e}"))
         raise typer.Exit(code=1) from e
     except ProjectWrapper.NoSuchCollectionError as e:
-        logger.exception(e)
+        logger.exception("Collection creation failed")
         rprint(error_panel(f"No such parent collection: {e}"))
         raise typer.Exit(code=1) from e
     except ProjectWrapper.CreateCollectionError as e:
-        logger.exception(e)
+        logger.exception("Collection creation failed")
         rprint(error_panel(f"Could not create collection: {e}"))
         raise typer.Exit(code=1) from e
     except Exception as e:

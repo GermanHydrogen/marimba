@@ -79,6 +79,7 @@ class GenericMetadata(BaseMetadata):
         return self.datetime.isoformat()
 
     def __lt__(self, other: Union["GenericMetadata", datetime]) -> bool:
+        """Compare if this metadata is older than another metadata or datetime."""
         if isinstance(other, GenericMetadata | datetime):
             if self.datetime is None:
                 return True
@@ -89,6 +90,7 @@ class GenericMetadata(BaseMetadata):
         return NotImplemented
 
     def __gt__(self, other: Union["GenericMetadata", datetime]) -> bool:
+        """Compare if this metadata is newer than another metadata or datetime."""
         if isinstance(other, GenericMetadata | datetime):
             if self.datetime is None:
                 return False
@@ -99,15 +101,18 @@ class GenericMetadata(BaseMetadata):
         return NotImplemented
 
     def __eq__(self, other: object) -> bool:
+        """Compare if this metadata has the same datetime as another metadata or datetime."""
         if isinstance(other, GenericMetadata | datetime):
             other_dt = other.datetime if isinstance(other, GenericMetadata) else other
             return self.datetime == other_dt
         return NotImplemented
 
     def __le__(self, other: Union["GenericMetadata", datetime]) -> bool:
+        """Compare if this metadata is older than or equal to another metadata or datetime."""
         return self < other or self == other
 
     def __ge__(self, other: Union["GenericMetadata", datetime]) -> bool:
+        """Compare if this metadata is newer than or equal to another metadata or datetime."""
         return self > other or self == other
 
     def __hash__(self) -> int:

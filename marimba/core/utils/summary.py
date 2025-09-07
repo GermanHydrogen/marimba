@@ -195,8 +195,8 @@ class ImagerySummary:
                 )
                 if seek_result.returncode != 0:
                     return True
-        except Exception as e:
-            logger.exception(f"Error checking video {video_path}: {e}")
+        except Exception:
+            logger.exception(f"Error checking video {video_path}")
             return True
         else:
             return False
@@ -227,8 +227,8 @@ class ImagerySummary:
             try:
                 with Image.open(path) as img:
                     return img.size, len(img.getbands()) * 8
-            except Exception as e:
-                logger.exception(f"Error processing image {path}: {e!s}")
+            except Exception:
+                logger.exception(f"Error processing image {path}")
                 return None, None
 
         resolutions = set()
@@ -1074,6 +1074,7 @@ class ImagerySummary:
             )
 
     def __str__(self) -> str:
+        """Return a formatted string representation of the dataset summary."""
         local_timezone = datetime.now().astimezone().tzinfo
         dataset_metadata: list[list[str]] = [
             ["Dataset Name", self.dataset_name],

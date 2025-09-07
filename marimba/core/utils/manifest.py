@@ -85,7 +85,7 @@ class Manifest:
             return list(directory.glob("**/*"))
         except Exception as e:
             if logger:
-                logger.exception(f"Failed to glob directory {directory}: {e!s}")
+                logger.exception(f"Failed to glob directory {directory}")
             msg = f"Failed to scan directory {directory}: {e!s}"
             raise OSError(msg) from e
 
@@ -147,7 +147,7 @@ class Manifest:
             return rel_path, compute_hash(item, directory)
         except (OSError, PermissionError) as e:
             if logger:
-                logger.exception(f"Failed to process file {item}: {e!s}")
+                logger.exception(f"Failed to process file {item}")
             msg = f"Failed to process file {item}: {e!s}"
             raise OSError(msg) from e
 
@@ -216,7 +216,7 @@ class Manifest:
                     hashes[rel_path] = file_hash
             except Exception as e:
                 if logger:
-                    logger.exception(f"Error processing file {item}: {e!s}")
+                    logger.exception(f"Error processing file {item}")
                 msg = f"Failed to process file {item}: {e!s}"
                 raise RuntimeError(msg) from e
 
@@ -284,7 +284,7 @@ class Manifest:
 
         except Exception as e:
             if logger:
-                logger.exception(f"Failed to create manifest: {e!s}")
+                logger.exception("Failed to create manifest")
             msg = "Failed to create manifest completely"
             raise RuntimeError(msg) from e
 
@@ -327,7 +327,7 @@ class Manifest:
             )
         except Exception as e:
             if logger:
-                logger.exception(f"Failed to create comparison manifest: {e!s}")
+                logger.exception("Failed to create comparison manifest")
             msg = "Failed to validate directory"
             raise RuntimeError(msg) from e
 
@@ -430,7 +430,7 @@ class Manifest:
                     f.write(f"{file_path.as_posix()}:{file_hash}\n")
         except OSError as e:
             if logger:
-                logger.exception(f"Failed to save manifest to {path}: {e!s}")
+                logger.exception(f"Failed to save manifest to {path}")
             msg = f"Failed to save manifest to {path}: {e!s}"
             raise OSError(msg) from e
 

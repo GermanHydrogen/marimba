@@ -95,7 +95,7 @@ class PipelineInstaller:
             self._install()
 
         except Exception as e:
-            self._logger.exception(f"Error installing pipeline dependencies: {e}")
+            self._logger.exception("Error installing pipeline dependencies")
             raise PipelineInstaller.InstallError from e
 
     def _install(self) -> None:

@@ -1740,13 +1740,13 @@ class ProjectWrapper(LogMixin):
                 pipeline_wrapper.update()
                 self.logger.info(f'Updated pipeline "{pipeline_name}"')
             # TODO @<cjackett>: Raise these exceptions and handle in marimba.py
-            except (OSError, ValueError) as e:
+            except (OSError, ValueError):
                 self.logger.exception(
-                    f'Failed to update pipeline "{pipeline_name}" due to an I/O or value error: {e}',
+                    f'Failed to update pipeline "{pipeline_name}" due to an I/O or value error',
                 )
-            except Exception as e:
+            except Exception:
                 self.logger.exception(
-                    f'Failed to update pipeline "{pipeline_name}" due to an unexpected error: {e}',
+                    f'Failed to update pipeline "{pipeline_name}" due to an unexpected error',
                 )
 
     def install_pipelines(self) -> None:

@@ -341,7 +341,7 @@ def package_command(  # noqa: PLR0915
             ),
         )
     except ProjectWrapper.CompositionError as e:
-        project_wrapper.logger.exception(e)
+        project_wrapper.logger.exception("Operation failed")
         rprint(error_panel(str(e)))
         raise typer.Exit from None
     except ProjectWrapper.NoSuchPipelineError as e:
@@ -368,7 +368,7 @@ def package_command(  # noqa: PLR0915
         rprint(error_panel(str(e), title="Packaging failed: Read-only files detected"))
         raise typer.Exit from None
     except Exception as e:
-        project_wrapper.logger.exception(e)
+        project_wrapper.logger.exception("Operation failed")
         rprint(error_panel(f"Could not package collection: {e}"))
         raise typer.Exit from None
     finally:
@@ -495,7 +495,7 @@ def distribute_command(
         rprint(error_panel(error_message))
         raise typer.Exit from None
     except Exception as e:
-        project_wrapper.logger.exception(e)
+        project_wrapper.logger.exception("Operation failed")
         rprint(error_panel(f"Could not distribute dataset: {e}"))
         raise typer.Exit from None
 
@@ -514,7 +514,7 @@ def update_command(
         project_wrapper.update_pipelines()
         rprint(success_panel("Successfully updated (pulled) all pipeline repositories"))
     except Exception as e:
-        project_wrapper.logger.exception(e)
+        project_wrapper.logger.exception("Operation failed")
         rprint(error_panel(f"Could not update pipelines: {e}"))
         raise typer.Exit from None
 
@@ -533,7 +533,7 @@ def install_command(
         project_wrapper.install_pipelines()
         rprint(success_panel("Successfully installed all pipeline dependencies"))
     except Exception as e:
-        project_wrapper.logger.exception(e)
+        project_wrapper.logger.exception("Operation failed")
         rprint(error_panel(f"Could not install pipelines: {e}"))
         raise typer.Exit from None
 

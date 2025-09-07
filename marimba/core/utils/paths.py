@@ -156,9 +156,9 @@ def hardlink_path(src_path: Path, dest_path: Path, dry_run: bool) -> None:
                 try:
                     destination.hardlink_to(src_file)
                     logger.info(f"Created hard link: {destination} -> {src_file}")
-                except OSError as e:
+                except OSError:
                     logger.exception(
-                        f"Failed to create hard link: {destination} -> {src_file}: {e}",
+                        f"Failed to create hard link: {destination} -> {src_file}",
                     )
 
 
