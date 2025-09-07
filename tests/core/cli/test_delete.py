@@ -79,8 +79,8 @@ def test_batch_delete_operation_handles_all_exceptions():
     for i, exception in enumerate(exception_types):
         items = [f"item_{i}"]
 
-        def mock_delete_func(_name: str, _dry_run: bool) -> Path:
-            raise exception
+        def mock_delete_func(_name: str, _dry_run: bool, exc: Exception = exception) -> Path:
+            raise exc
 
         success_items, errors = batch_delete_operation(items, mock_delete_func, "entity", "Testing...", False)
 

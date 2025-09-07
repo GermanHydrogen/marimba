@@ -1,6 +1,7 @@
 """Tests for marimba.core.schemas.base module."""
 
 from datetime import UTC, datetime
+from typing import Any
 
 import pytest
 
@@ -39,7 +40,7 @@ class TestBaseMetadata:
         class CompleteMetadata(BaseMetadata):
             """Complete implementation of BaseMetadata."""
 
-            def __init__(self):
+            def __init__(self) -> None:
                 self._hash = None
 
             @property
@@ -81,18 +82,26 @@ class TestBaseMetadata:
             @classmethod
             def create_dataset_metadata(
                 cls,
-                dataset_name,
-                root_dir,
-                items,
-                metadata_name=None,
+                dataset_name: str,
+                root_dir: Any,
+                items: Any,
+                metadata_name: Any = None,
                 *,
-                dry_run=False,
-                saver_overwrite=None,
-            ):
+                dry_run: bool = False,
+                saver_overwrite: Any = None,
+            ) -> None:
                 pass
 
             @classmethod
-            def process_files(cls, dataset_mapping, max_workers=None, logger=None, *, dry_run=False, chunk_size=None):
+            def process_files(
+                cls,
+                dataset_mapping: Any,
+                max_workers: Any = None,
+                logger: Any = None,
+                *,
+                dry_run: bool = False,
+                chunk_size: Any = None,
+            ) -> None:
                 pass
 
         # Should be able to instantiate
@@ -251,18 +260,26 @@ class TestBaseMetadata:
             @classmethod
             def create_dataset_metadata(
                 cls,
-                dataset_name,
-                root_dir,
-                items,
-                metadata_name=None,
+                dataset_name: str,
+                root_dir: Any,
+                items: Any,
+                metadata_name: Any = None,
                 *,
-                dry_run=False,
-                saver_overwrite=None,
-            ):
+                dry_run: bool = False,
+                saver_overwrite: Any = None,
+            ) -> None:
                 pass
 
             @classmethod
-            def process_files(cls, dataset_mapping, max_workers=None, logger=None, *, dry_run=False, chunk_size=None):
+            def process_files(
+                cls,
+                dataset_mapping: Any,
+                max_workers: Any = None,
+                logger: Any = None,
+                *,
+                dry_run: bool = False,
+                chunk_size: Any = None,
+            ) -> None:
                 pass
 
         metadata = TypedMetadata()

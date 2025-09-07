@@ -15,6 +15,7 @@ import logging
 import shutil
 import tempfile
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -26,19 +27,31 @@ from marimba.core.wrappers.pipeline import PipelineWrapper
 class MockTestPipeline(BasePipeline):
     """Mock test pipeline class for testing purposes (renamed to avoid pytest collection)."""
 
-    def __init__(self, root_path, config=None, metadata_class=BaseMetadata, *, dry_run=False):
+    def __init__(
+        self,
+        root_path: Any,
+        config: Any = None,
+        metadata_class: Any = BaseMetadata,
+        *,
+        dry_run: bool = False,
+    ) -> None:
         super().__init__(root_path, config, metadata_class, dry_run=dry_run)
 
     @staticmethod
-    def get_pipeline_config_schema():
+    def get_pipeline_config_schema() -> dict[str, Any]:
         return {"test_param": "default_value", "test_int": 42}
 
     @staticmethod
-    def get_collection_config_schema():
+    def get_collection_config_schema() -> dict[str, Any]:
         return {"collection_param": "default_collection"}
 
-    def _package(self, data_dir, config, **kwargs):
-        return {Path("test.txt"): (Path("relative/test.txt"), [], {})}
+    def _package(
+        self,
+        data_dir: Path,
+        config: dict[str, Any],
+        **kwargs: dict[str, Any],
+    ) -> dict[Path, tuple[Path, list[BaseMetadata] | None, dict[str, Any] | None]]:
+        return {Path("test.txt"): (Path("relative/test.txt"), None, None)}
 
 
 class TestPipelineWrapperInitialization:

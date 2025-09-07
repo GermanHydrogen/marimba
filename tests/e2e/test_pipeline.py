@@ -5,6 +5,7 @@ These tests validate pipeline creation, deletion, processing, and management wor
 """
 
 from pathlib import Path
+from typing import Any
 
 import pytest
 import pytest_mock
@@ -30,11 +31,12 @@ class TestPipelineManagement:
         assert_cli_success(result, context="Project creation for pipeline test")
 
         # Create a mock that actually creates the repo directory structure
-        def mock_clone_from(_url, to_path, **_kwargs):
+        def mock_clone_from(_url: str, to_path: str, **_kwargs: Any) -> Any:
             repo_path = Path(to_path)
             repo_path.mkdir(parents=True, exist_ok=True)
             # Create a basic pipeline.yml file that the system expects
             (repo_path / "pipeline.yml").write_text("name: test_pipeline\nversion: 1.0\n")
+            # Mock object is returned through the side effect mechanism, not directly
             return mocker.Mock()
 
         # Mock the Git clone operation to avoid network dependency

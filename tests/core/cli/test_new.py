@@ -482,7 +482,8 @@ def test_project_exit_code_on_success(setup_test_directory: Path) -> None:
     assert result.exit_code == 0
 
     # Verify the project was actually created (not just mocked)
-    assert project_dir.exists() and (project_dir / ".marimba").exists()
+    assert project_dir.exists()
+    assert (project_dir / ".marimba").exists()
 
 
 @pytest.mark.integration

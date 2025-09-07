@@ -33,7 +33,8 @@ class TestCLI:
         """Test that the CLI app is created correctly."""
         assert isinstance(marimba_cli, typer.Typer)
         assert marimba_cli.info.name == "Marimba"
-        assert marimba_cli.info.help is not None and "FAIR scientific image datasets" in marimba_cli.info.help
+        assert marimba_cli.info.help is not None
+        assert "FAIR scientific image datasets" in marimba_cli.info.help
 
     @pytest.mark.unit
     def test_version_callback_with_version(self, mocker):

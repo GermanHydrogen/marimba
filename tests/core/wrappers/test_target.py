@@ -346,7 +346,7 @@ class TestDistributionTargetWrapperPromptEdgeCases:
         # In Python 3, all classes have __init__ by default, so this test
         # is more of a theoretical edge case
         class BadClass:
-            def __new__(cls):
+            def __new__(cls) -> "BadClass":
                 return object.__new__(cls)
 
         # The function checks isinstance(target_class.__init__, FunctionType)
