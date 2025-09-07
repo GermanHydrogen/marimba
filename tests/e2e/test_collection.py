@@ -249,15 +249,16 @@ class TestCollectionDeletion:
 
         # Test batch delete with multiple collections (only those that exist)
         collections_to_delete = collection_names[:3]  # Delete first 3
-        existing_to_delete = []
-        for collection_name in collections_to_delete:
-            if (temp_project_dir / "collections" / collection_name).exists():
-                existing_to_delete.append(collection_name)
+        existing_to_delete = [
+            collection_name
+            for collection_name in collections_to_delete
+            if (temp_project_dir / "collections" / collection_name).exists()
+        ]
 
         if existing_to_delete:
             result = runner.invoke(
                 app,
-                ["delete", "collection"] + existing_to_delete + ["--project-dir", str(temp_project_dir)],
+                ["delete", "collection", *existing_to_delete, "--project-dir", str(temp_project_dir)],
             )
             assert result.exit_code == 0
 
@@ -296,7 +297,7 @@ class TestCollectionDeletion:
         # Step 4: Test batch delete multiple collections
         result = runner.invoke(
             app,
-            ["delete", "collection"] + collection_names + ["--project-dir", str(temp_project_dir)],
+            ["delete", "collection", *collection_names, "--project-dir", str(temp_project_dir)],
         )
         assert result.exit_code == 0, f"Batch collection deletion failed: {result.stdout}"
 
@@ -360,7 +361,7 @@ class TestCollectionWorkflows:
         collection_names = ["test_025", "test_026", "test_045"]
         result = runner.invoke(
             app,
-            ["delete", "collection"] + collection_names + ["--project-dir", str(temp_project_dir)],
+            ["delete", "collection", *collection_names, "--project-dir", str(temp_project_dir)],
         )
         # Should succeed because collections now exist
         assert result.exit_code == 0, f"Delete should succeed for existing collections: {result.stdout}"

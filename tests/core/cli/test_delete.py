@@ -159,7 +159,7 @@ def test_delete_pipeline_command(mocker, setup_project_dir):
     mock_delete = mocker.patch.object(ProjectWrapper, "delete_pipeline", return_value=Path("/path"))
     result = runner.invoke(
         marimba_cli,
-        ["delete", "pipeline"] + pipeline_names + ["--project-dir", str(setup_project_dir)],
+        ["delete", "pipeline", *pipeline_names, "--project-dir", str(setup_project_dir)],
     )
 
     assert_cli_success(result, context="Pipeline deletion batch")
@@ -181,7 +181,7 @@ def test_delete_pipeline_no_such_pipeline(mocker, setup_project_dir):
     )
     result = runner.invoke(
         marimba_cli,
-        ["delete", "pipeline"] + pipeline_names + ["--project-dir", str(setup_project_dir)],
+        ["delete", "pipeline", *pipeline_names, "--project-dir", str(setup_project_dir)],
     )
 
     assert_cli_failure(
@@ -201,7 +201,7 @@ def test_delete_collection_command(mocker, setup_project_dir):
     mock_delete = mocker.patch.object(ProjectWrapper, "delete_collection", return_value=Path("/path"))
     result = runner.invoke(
         marimba_cli,
-        ["delete", "collection"] + collection_names + ["--project-dir", str(setup_project_dir)],
+        ["delete", "collection", *collection_names, "--project-dir", str(setup_project_dir)],
     )
 
     assert_cli_success(result, context="Collection deletion batch")
@@ -223,7 +223,7 @@ def test_delete_collection_no_such_collection(mocker, setup_project_dir):
     )
     result = runner.invoke(
         marimba_cli,
-        ["delete", "collection"] + collection_names + ["--project-dir", str(setup_project_dir)],
+        ["delete", "collection", *collection_names, "--project-dir", str(setup_project_dir)],
     )
 
     assert_cli_failure(result, expected_exit_code=1, context="Collection deletion with missing collection")
@@ -237,7 +237,7 @@ def test_delete_target_command(mocker, setup_project_dir):
 
     mocker.patch("marimba.core.cli.delete.find_project_dir_or_exit", return_value=setup_project_dir)
     mock_delete = mocker.patch.object(ProjectWrapper, "delete_target", return_value=Path("/path"))
-    result = runner.invoke(marimba_cli, ["delete", "target"] + target_names + ["--project-dir", str(setup_project_dir)])
+    result = runner.invoke(marimba_cli, ["delete", "target", *target_names, "--project-dir", str(setup_project_dir)])
 
     assert_cli_success(result, context="Target deletion batch")
     assert mock_delete.call_count == 2
@@ -256,7 +256,7 @@ def test_delete_target_no_such_target(mocker, setup_project_dir):
         "delete_target",
         side_effect=ProjectWrapper.NoSuchTargetError("Target not found"),
     )
-    result = runner.invoke(marimba_cli, ["delete", "target"] + target_names + ["--project-dir", str(setup_project_dir)])
+    result = runner.invoke(marimba_cli, ["delete", "target", *target_names, "--project-dir", str(setup_project_dir)])
 
     assert_cli_failure(
         result,
@@ -275,7 +275,7 @@ def test_delete_dataset_command(mocker, setup_project_dir):
     mock_delete = mocker.patch.object(ProjectWrapper, "delete_dataset", return_value=Path("/path"))
     result = runner.invoke(
         marimba_cli,
-        ["delete", "dataset"] + dataset_names + ["--project-dir", str(setup_project_dir)],
+        ["delete", "dataset", *dataset_names, "--project-dir", str(setup_project_dir)],
     )
 
     assert_cli_success(result, context="Dataset deletion batch")
@@ -293,7 +293,7 @@ def test_delete_dataset_no_such_dataset(mocker, setup_project_dir):
     mocker.patch.object(ProjectWrapper, "delete_dataset", side_effect=FileExistsError("Dataset not found"))
     result = runner.invoke(
         marimba_cli,
-        ["delete", "dataset"] + dataset_names + ["--project-dir", str(setup_project_dir)],
+        ["delete", "dataset", *dataset_names, "--project-dir", str(setup_project_dir)],
     )
 
     assert_cli_failure(
@@ -312,7 +312,7 @@ def test_delete_command_with_dry_run(mocker):
     mocker.patch("marimba.core.cli.delete.find_project_dir_or_exit", return_value=Path("/project"))
     mocker.patch.object(ProjectWrapper, "__init__", return_value=None)
     mock_delete = mocker.patch.object(ProjectWrapper, "delete_pipeline", return_value=Path("/path"))
-    result = runner.invoke(marimba_cli, ["delete", "pipeline"] + pipeline_names + ["--dry-run"])
+    result = runner.invoke(marimba_cli, ["delete", "pipeline", *pipeline_names, "--dry-run"])
 
     assert_cli_success(result, context="Pipeline deletion dry run")
     mock_delete.assert_called_once_with("pipeline1", True)
@@ -332,7 +332,7 @@ def test_delete_multiple_items_mixed_results(mocker, setup_project_dir):
     mocker.patch.object(ProjectWrapper, "delete_pipeline", side_effect=mock_delete_pipeline)
     result = runner.invoke(
         marimba_cli,
-        ["delete", "pipeline"] + pipeline_names + ["--project-dir", str(setup_project_dir)],
+        ["delete", "pipeline", *pipeline_names, "--project-dir", str(setup_project_dir)],
     )
 
     assert_cli_failure(result, expected_exit_code=1, context="Mixed batch operation with partial failures")

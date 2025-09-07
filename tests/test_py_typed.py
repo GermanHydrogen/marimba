@@ -35,9 +35,9 @@ class TestPyTypedMarker:
                 py_typed_files = [f for f in all_paths if "py.typed" in f]
                 if py_typed_files:
                     assert True, "py.typed found in distribution files"
-        except (ImportError, AttributeError) as e:
+        except (ImportError, AttributeError):
             # This is fine - we've already checked the file exists in source
-            print(f"Note: Could not check distribution files due to: {e}")
+            pass
 
     @pytest.mark.unit
     def test_importable_with_types(self) -> None:

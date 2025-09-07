@@ -927,7 +927,6 @@ def test_target_already_exists_error(mocker: pytest_mock.MockerFixture, setup_te
         marimba_cli,
         ["new", "target", target_name, "--project-dir", str(project_dir)],
     )
-    print(result.output)
     assert result.exit_code != 0
     assert "A Marimba target already exists" in result.output
 

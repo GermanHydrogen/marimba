@@ -449,17 +449,17 @@ class MockTestPipeline(BasePipeline):
     @staticmethod
     def get_pipeline_config_schema() -> dict[str, Any]:
         return {}
-    
+
     @staticmethod
     def get_collection_config_schema() -> dict[str, Any]:
         return {}
-    
+
     def _import(self, data_dir: Path, source_path: Path, config: dict[str, Any], **kwargs: Any) -> None:
         pass
-    
+
     def _process(self, data_dir: Path, config: dict[str, Any], **kwargs: Any) -> None:
         pass
-    
+
     def _package(self, data_dir: Path, config: dict[str, Any], **kwargs: Any) -> dict[Path, tuple[Path, list[BaseMetadata] | None, dict[str, Any] | None]]:
         return {}
 """

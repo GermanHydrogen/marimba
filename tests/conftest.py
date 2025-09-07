@@ -356,6 +356,7 @@ def assert_cli_failure(
 def run_cli_command(
     runner: CliRunner,
     command_args: list[str],
+    *,
     expected_success: bool = True,
     expected_message: str | None = None,
     context: str = "",
@@ -448,6 +449,7 @@ parameters:
 
 def create_mock_collection_structure(
     base_path: Path,
+    *,
     collection_name: str = "test_collection",
     config_overrides: dict[str, Any] | None = None,
     add_sample_data: bool = True,
@@ -539,7 +541,7 @@ def create_complete_mock_project(base_path: Path, project_name: str = "test_proj
     create_mock_pipeline_structure(project_dir, "sample_pipeline")
 
     # Add sample collection
-    create_mock_collection_structure(project_dir, "sample_collection")
+    create_mock_collection_structure(project_dir, collection_name="sample_collection")
 
     # Add sample dataset
     create_mock_dataset_structure(project_dir, "sample_dataset")
