@@ -121,7 +121,7 @@ class TestCLI:
     @pytest.mark.integration
     def test_import_command_basic(self, mocker, runner, mock_project_dir):
         """Test basic import command functionality."""
-        mock_validate_deps = mocker.patch("marimba.main.validate_dependencies")
+        mocker.patch("marimba.main.validate_dependencies")
         mock_find_project = mocker.patch("marimba.main.find_project_dir_or_exit")
         mock_project_wrapper = mocker.patch("marimba.main.ProjectWrapper")
         mock_project = mocker.Mock()
@@ -150,7 +150,7 @@ class TestCLI:
     @pytest.mark.integration
     def test_import_command_with_options(self, mocker, runner, mock_project_dir):
         """Test import command with various options."""
-        mock_validate_deps = mocker.patch("marimba.main.validate_dependencies")
+        mocker.patch("marimba.main.validate_dependencies")
         mock_find_project = mocker.patch("marimba.main.find_project_dir_or_exit")
         mock_project_wrapper = mocker.patch("marimba.main.ProjectWrapper")
         mock_project = mocker.Mock()
@@ -436,7 +436,7 @@ class TestCommandErrorHandling:
     @pytest.mark.integration
     def test_import_command_project_error(self, mocker, runner, mock_project_dir):
         """Test import command when project wrapper raises error."""
-        mock_validate_deps = mocker.patch("marimba.main.validate_dependencies")
+        mocker.patch("marimba.main.validate_dependencies")
         mock_find_project = mocker.patch("marimba.main.find_project_dir_or_exit")
         mock_project_wrapper = mocker.patch("marimba.main.ProjectWrapper")
         mock_project_wrapper.side_effect = Exception("Project error")
@@ -537,7 +537,7 @@ class TestCLIIntegration:
         """Test --debug flag."""
         mock_logger = mocker.patch("marimba.main.get_logger")
         mock_logger.return_value = mocker.Mock()
-        result = runner.invoke(marimba_cli, ["--debug", "version"])
+        _ = runner.invoke(marimba_cli, ["--debug", "version"])
         # Should not error with debug flag
 
     @pytest.mark.integration
@@ -545,14 +545,14 @@ class TestCLIIntegration:
         """Test --quiet flag."""
         mock_logger = mocker.patch("marimba.main.get_logger")
         mock_logger.return_value = mocker.Mock()
-        result = runner.invoke(marimba_cli, ["--quiet", "version"])
+        _ = runner.invoke(marimba_cli, ["--quiet", "version"])
         # Should not error with quiet flag
 
     @pytest.mark.integration
     def test_end_to_end_workflow_simulation(self, mocker, runner, tmp_path):
         """Test simulated end-to-end workflow commands."""
         # Set up mocks
-        mock_validate_deps = mocker.patch("marimba.main.validate_dependencies")
+        mocker.patch("marimba.main.validate_dependencies")
         mock_find_project = mocker.patch("marimba.main.find_project_dir_or_exit")
         mock_project_wrapper = mocker.patch("marimba.main.ProjectWrapper")
         mock_project = mocker.Mock()

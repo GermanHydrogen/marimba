@@ -251,10 +251,12 @@ class TestRunImportCommand:
 
         # Verify logging calls
         assert mock_logger.info.call_count == 2
-        mock_logger.info.assert_any_call(
-            "Started [steel_blue3]import[/steel_blue3] command for pipeline [light_pink3]ConcretePipeline[/light_pink3] with args "
-            f"data_dir=formatted/path, source_path={source_dir}, config={{'test': 'config'}}, kwargs={{'extra': 'args'}}",
+        expected_message = (
+            "Started [steel_blue3]import[/steel_blue3] command for pipeline "
+            f"[light_pink3]ConcretePipeline[/light_pink3] with args data_dir=formatted/path, "
+            f"source_path={source_dir}, config={{'test': 'config'}}, kwargs={{'extra': 'args'}}"
         )
+        mock_logger.info.assert_any_call(expected_message)
         mock_logger.info.assert_any_call(
             "Completed [steel_blue3]import[/steel_blue3] command for pipeline [light_pink3]ConcretePipeline[/light_pink3]",
         )

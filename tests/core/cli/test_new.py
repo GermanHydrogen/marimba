@@ -269,12 +269,6 @@ def test_find_project_dir_or_exit_raises_exit(
 #     Returns:
 #         None
 #     """
-#     relative_path = setup_test_directory_structure.relative_to(Path.cwd())
-#     root_dir = setup_test_directory_structure.parent
-#
-#     with patch("marimba.core.cli.new.find_project_dir", return_value=root_dir):
-#         result = find_project_dir_or_exit(relative_path)
-#         assert result == root_dir
 
 
 @pytest.mark.integration
@@ -448,12 +442,6 @@ def test_project_logs_command_execution(setup_test_directory: Path) -> None:
 #     Returns:
 #         None
 #     """
-#     invalid_path = tmp_path / "invalid_path"
-#
-#     with patch("marimba.core.wrappers.project.ProjectWrapper.create", side_effect=ValueError("Invalid path")):
-#         result = runner.invoke(marimba, ["new", "project", str(invalid_path)])
-#         assert result.exit_code != 0
-#         assert "Invalid path" in result.output
 
 
 @pytest.mark.integration

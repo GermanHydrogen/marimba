@@ -72,7 +72,7 @@ class TestS3DistributionTarget:
     @pytest.mark.integration
     def test_s3_target_init_strip_prefix(self, mocker, s3_credentials):
         """Test S3DistributionTarget strips trailing slashes from prefix."""
-        mock_resource = mocker.patch("marimba.core.distribution.s3.resource")
+        mocker.patch("marimba.core.distribution.s3.resource")
         s3_credentials["base_prefix"] = "datasets///"
 
         target = S3DistributionTarget(**s3_credentials)
@@ -318,7 +318,7 @@ class TestS3DistributionTarget:
         mock_stat.return_value = mock_stat_result
 
         # Also need to mock is_dir for the path checking in glob
-        mock_is_dir = mocker.patch("pathlib.Path.is_dir", return_value=True)
+        mocker.patch("pathlib.Path.is_dir", return_value=True)
         mock_upload = mocker.patch.object(target, "_upload")
         target.distribute(mock_dataset_wrapper)
 
@@ -341,7 +341,7 @@ class TestS3DistributionTarget:
         mock_progress.return_value.__exit__ = mocker.Mock(return_value=None)
 
         target = S3DistributionTarget(**s3_credentials)
-        mock_upload = mocker.patch.object(target, "_upload")
+        mocker.patch.object(target, "_upload")
         target.distribute(mock_dataset_wrapper)
 
         # Progress should be created and used for collection, size calc, and upload

@@ -152,7 +152,6 @@ class TestGenericMetadata:
         """Test comparison operators when datetime is None."""
         metadata_none = GenericMetadata()
         metadata_with_dt = GenericMetadata(datetime_=datetime(2024, 1, 15))
-        other_metadata_none = GenericMetadata()
 
         # None datetime should be less than any datetime
         assert metadata_none < metadata_with_dt

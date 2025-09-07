@@ -578,7 +578,7 @@ class MockTestPipeline(BasePipeline):
     @pytest.mark.integration
     def test_module_execution_failure(self, pipeline_test_dirs, mocker):
         """Test handling of module execution failures."""
-        mock_find_class = mocker.patch("marimba.core.parallel.pipeline_loader._find_pipeline_class")
+        mocker.patch("marimba.core.parallel.pipeline_loader._find_pipeline_class")
         mock_load_config = mocker.patch("marimba.core.parallel.pipeline_loader.load_config")
         mock_load_config.return_value = {}
 

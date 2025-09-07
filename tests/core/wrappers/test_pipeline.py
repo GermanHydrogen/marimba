@@ -204,7 +204,7 @@ class TestPipelineWrapperLogging:
         mock_logger = mocker.Mock()
         mock_get_logger.return_value = mock_logger
 
-        wrapper = PipelineWrapper(tmp_path, dry_run=False)
+        _ = PipelineWrapper(tmp_path, dry_run=False)
 
         # Verify file handler was created and added
         mock_get_file_handler.assert_called_once_with(tmp_path, tmp_path.name, False)
@@ -225,7 +225,7 @@ class TestPipelineWrapperLogging:
         mock_file_handler = mocker.Mock()
         mock_get_file_handler.return_value = mock_file_handler
 
-        wrapper = PipelineWrapper(tmp_path, dry_run=True)
+        _ = PipelineWrapper(tmp_path, dry_run=True)
 
         # Verify file handler was created with dry_run=True
         mock_get_file_handler.assert_called_once_with(tmp_path, tmp_path.name, True)
@@ -247,7 +247,7 @@ class TestPipelineWrapperCreate:
         mock_repo_class.clone_from.return_value = mock_repo
 
         mock_init = mocker.patch.object(PipelineWrapper, "__init__", return_value=None)
-        result = PipelineWrapper.create(pipeline_dir, "https://github.com/example/pipeline.git", dry_run=True)
+        _ = PipelineWrapper.create(pipeline_dir, "https://github.com/example/pipeline.git", dry_run=True)
 
         # Verify directory was created
         assert pipeline_dir.exists()
@@ -279,7 +279,7 @@ class TestPipelineWrapperCreate:
         """Test pipeline creation with string path."""
         pipeline_dir = tmp_path / "string_path_test"
 
-        mock_repo_class = mocker.patch("marimba.core.wrappers.pipeline.Repo")
+        mocker.patch("marimba.core.wrappers.pipeline.Repo")
         mocker.patch.object(PipelineWrapper, "__init__", return_value=None)
         mocker.patch("marimba.core.wrappers.pipeline.save_config")
 
@@ -489,7 +489,7 @@ class TestPipelineWrapperPipelineClassDiscovery:
         pipeline_file.write_text("# Test pipeline")
 
         mock_spec_from_file_location = mocker.patch("marimba.core.wrappers.pipeline.spec_from_file_location")
-        mock_module_from_spec = mocker.patch("marimba.core.wrappers.pipeline.module_from_spec")
+        mocker.patch("marimba.core.wrappers.pipeline.module_from_spec")
 
         mock_spec = mocker.Mock()
         mock_spec.loader = None
@@ -710,7 +710,7 @@ class TestPipelineWrapperPipelineConfigPrompt:
     @pytest.mark.integration
     def test_prompt_pipeline_config_with_project_logger(self, mocker):
         """Test pipeline configuration prompting with custom project logger."""
-        mock_prompt_schema = mocker.patch("marimba.core.wrappers.pipeline.prompt_schema")
+        mocker.patch("marimba.core.wrappers.pipeline.prompt_schema")
 
         mock_pipeline = mocker.Mock()
         mock_pipeline.get_pipeline_config_schema.return_value = {}
@@ -725,7 +725,7 @@ class TestPipelineWrapperPipelineConfigPrompt:
 
         wrapper = PipelineWrapper(self.temp_dir)
 
-        result = wrapper.prompt_pipeline_config(project_logger=mock_project_logger)
+        _ = wrapper.prompt_pipeline_config(project_logger=mock_project_logger)
 
         # Verify project logger was used instead of pipeline logger
         mock_project_logger.info.assert_called_once_with("Provided pipeline config={}")
@@ -734,7 +734,7 @@ class TestPipelineWrapperPipelineConfigPrompt:
     def test_prompt_pipeline_config_uses_pipeline_logger_by_default(self, mocker):
         """Test that pipeline logger is used when no project logger is provided."""
         mock_get_logger = mocker.patch("marimba.core.utils.log.get_logger")
-        mock_prompt_schema = mocker.patch("marimba.core.wrappers.pipeline.prompt_schema")
+        mocker.patch("marimba.core.wrappers.pipeline.prompt_schema")
 
         mock_pipeline = mocker.Mock()
         mock_pipeline.get_pipeline_config_schema.return_value = {}
@@ -750,7 +750,7 @@ class TestPipelineWrapperPipelineConfigPrompt:
 
         wrapper = PipelineWrapper(self.temp_dir)
 
-        result = wrapper.prompt_pipeline_config()
+        _ = wrapper.prompt_pipeline_config()
 
         # Verify pipeline's logger was used (mock_logger through get_logger)
         mock_logger.info.assert_called_once_with("Provided pipeline config={}")

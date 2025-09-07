@@ -246,7 +246,6 @@ class TestAxesDrawing:
     @pytest.mark.unit
     def test_add_axes_basic(self, mocker):
         """Test basic axes drawing functionality."""
-        mock_draw = mocker.patch("marimba.core.utils.map.ImageDraw.ImageDraw")
         mock_draw_instance = mocker.Mock()
 
         add_axes(
@@ -269,7 +268,6 @@ class TestAxesDrawing:
     @pytest.mark.unit
     def test_add_axes_no_lines(self, mocker):
         """Test axes drawing with no grid lines."""
-        mock_draw = mocker.patch("marimba.core.utils.map.ImageDraw.ImageDraw")
         mock_draw_instance = mocker.Mock()
 
         add_axes(
@@ -292,7 +290,6 @@ class TestAxesDrawing:
     @pytest.mark.unit
     def test_add_axes_large_decimal_precision(self, mocker):
         """Test axes drawing with high precision coordinates."""
-        mock_draw = mocker.patch("marimba.core.utils.map.ImageDraw.ImageDraw")
         mock_draw_instance = mocker.Mock()
 
         # Very small coordinate range requiring high precision
@@ -414,7 +411,7 @@ class TestMapGeneration:
         mock_head.return_value = mock_response
 
         # Should handle empty coordinates gracefully
-        result = make_summary_map([], width=500, height=500)
+        _ = make_summary_map([], width=500, height=500)
 
         # Should not create a map with no coordinates
         mock_static_map.assert_not_called()
@@ -434,7 +431,7 @@ class TestMapGeneration:
 
         coords = [(37.7749, -122.4194)]  # Single coordinate
 
-        result = make_summary_map(coords, width=500, height=500)
+        _ = make_summary_map(coords, width=500, height=500)
 
         # Should handle single coordinate
         mock_static_map.assert_called_once()
