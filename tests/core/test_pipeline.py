@@ -78,7 +78,7 @@ class TestBasePipelineInitialization:
         assert pipeline._root_path == root_path
         assert pipeline._config == config
         assert pipeline._metadata_class == BaseMetadata
-        assert pipeline._dry_run == True
+        assert pipeline._dry_run
 
     @pytest.mark.unit
     def test_init_with_path_object(self):
@@ -90,7 +90,7 @@ class TestBasePipelineInitialization:
         assert pipeline._root_path == root_path
         assert pipeline._config is None
         assert pipeline._metadata_class == BaseMetadata
-        assert pipeline._dry_run == False
+        assert not pipeline._dry_run
 
     @pytest.mark.unit
     def test_init_with_custom_metadata_class(self):
@@ -109,7 +109,7 @@ class TestBasePipelineInitialization:
         pipeline = ConcretePipeline("/test")
 
         assert pipeline.config is None
-        assert pipeline.dry_run == False
+        assert not pipeline.dry_run
         assert pipeline._metadata_class == BaseMetadata
 
 
@@ -136,14 +136,14 @@ class TestBasePipelineProperties:
         """Test the dry_run property."""
         pipeline = ConcretePipeline("/test", dry_run=True)
 
-        assert pipeline.dry_run == True
+        assert pipeline.dry_run
 
     @pytest.mark.unit
     def test_dry_run_property_false(self):
         """Test the dry_run property when False."""
         pipeline = ConcretePipeline("/test")
 
-        assert pipeline.dry_run == False
+        assert not pipeline.dry_run
 
     @pytest.mark.unit
     def test_class_name_property(self):

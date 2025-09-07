@@ -1,6 +1,6 @@
 """Tests for marimba.core.schemas.generic module."""
 
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -16,7 +16,7 @@ class TestGenericMetadata:
     @pytest.fixture
     def sample_datetime(self):
         """Sample datetime for testing."""
-        return datetime(2024, 1, 15, 12, 30, 45)
+        return datetime(2024, 1, 15, 12, 30, 45, tzinfo=UTC)
 
     @pytest.fixture
     def basic_metadata(self, sample_datetime):
@@ -106,7 +106,7 @@ class TestGenericMetadata:
     def test_isoformat_with_datetime(self, basic_metadata):
         """Test isoformat with datetime."""
         result = basic_metadata.isoformat()
-        assert result == "2024-01-15T12:30:45"
+        assert result == "2024-01-15T12:30:45+00:00"
 
     @pytest.mark.unit
     def test_isoformat_without_datetime(self):
@@ -118,8 +118,8 @@ class TestGenericMetadata:
     @pytest.mark.unit
     def test_comparison_operators_with_datetime(self, sample_datetime):
         """Test comparison operators with datetime objects."""
-        earlier_dt = datetime(2024, 1, 14, 12, 30, 45)
-        later_dt = datetime(2024, 1, 16, 12, 30, 45)
+        earlier_dt = datetime(2024, 1, 14, 12, 30, 45, tzinfo=UTC)
+        later_dt = datetime(2024, 1, 16, 12, 30, 45, tzinfo=UTC)
 
         metadata = GenericMetadata(datetime_=sample_datetime)
 
@@ -133,8 +133,8 @@ class TestGenericMetadata:
     @pytest.mark.unit
     def test_comparison_operators_with_metadata(self, sample_datetime):
         """Test comparison operators with other GenericMetadata objects."""
-        earlier_dt = datetime(2024, 1, 14, 12, 30, 45)
-        later_dt = datetime(2024, 1, 16, 12, 30, 45)
+        earlier_dt = datetime(2024, 1, 14, 12, 30, 45, tzinfo=UTC)
+        later_dt = datetime(2024, 1, 16, 12, 30, 45, tzinfo=UTC)
 
         metadata = GenericMetadata(datetime_=sample_datetime)
         earlier_metadata = GenericMetadata(datetime_=earlier_dt)
@@ -151,7 +151,7 @@ class TestGenericMetadata:
     def test_comparison_operators_with_none_datetime(self):
         """Test comparison operators when datetime is None."""
         metadata_none = GenericMetadata()
-        metadata_with_dt = GenericMetadata(datetime_=datetime(2024, 1, 15))
+        metadata_with_dt = GenericMetadata(datetime_=datetime(2024, 1, 15, tzinfo=UTC))
 
         # None datetime should be less than any datetime
         assert metadata_none < metadata_with_dt

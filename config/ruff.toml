@@ -72,8 +72,6 @@ lint.ignore = [
     "D102",    # Missing docstring in public method (test methods don't need docstrings)
     "D103",    # Missing docstring in public function (test functions don't need docstrings)
     "D107",    # Missing docstring in __init__ (test classes don't need __init__ docstrings)
-    "DTZ001",  # datetime without tzinfo (acceptable in tests)
-    "E712",    # Avoid equality comparisons to True/False (acceptable in tests for clarity)
     "LOG001",  # Use logging.getLogger() (direct Logger instantiation is fine in tests)
     "PGH003",  # Use specific rule codes when ignoring type issues (generic ignores acceptable in tests)
     "PLC0415", # Import should be at top-level (conditional imports acceptable in tests)
@@ -102,6 +100,5 @@ lint.ignore = [
     "PT018",   # Assertion should be broken down (complex assertions acceptable in tests)
     "S103",    # os.chmod setting permissive mask (acceptable in tests)
     "S110",    # try-except-pass detected (acceptable in test cleanup)
-    "DTZ005",  # datetime.now() without tz argument (acceptable in tests)
     "INP001",  # File is part of implicit namespace package (tests don't need __init__.py)
 ]

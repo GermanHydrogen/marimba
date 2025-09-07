@@ -1,6 +1,6 @@
 """Tests for marimba.core.schemas.base module."""
 
-from datetime import datetime
+from datetime import UTC, datetime
 
 import pytest
 
@@ -25,7 +25,7 @@ class TestBaseMetadata:
 
             @property
             def datetime(self):
-                return datetime.now()
+                return datetime.now(UTC)
 
             # Missing other required properties
 
@@ -44,7 +44,7 @@ class TestBaseMetadata:
 
             @property
             def datetime(self):
-                return datetime(2023, 1, 1, 12, 0, 0)
+                return datetime(2023, 1, 1, 12, 0, 0, tzinfo=UTC)
 
             @property
             def latitude(self):
@@ -99,7 +99,7 @@ class TestBaseMetadata:
         metadata = CompleteMetadata()  # type: ignore[no-untyped-call]
 
         # Test property access
-        assert metadata.datetime == datetime(2023, 1, 1, 12, 0, 0)
+        assert metadata.datetime == datetime(2023, 1, 1, 12, 0, 0, tzinfo=UTC)
         assert metadata.latitude == 37.7749
         assert metadata.longitude == -122.4194
         assert metadata.altitude == 100.0
