@@ -156,8 +156,9 @@ def execute_import(
     )
 
     if pipeline_instance is None:
+        msg = f"{log_string_prefix}Failed to load pipeline instance for {pipeline_name}"
         raise RuntimeError(
-            f"{log_string_prefix}Failed to load pipeline instance for {pipeline_name}",
+            msg,
         )
 
     # Run the import method
@@ -223,8 +224,9 @@ def execute_process(
     )
 
     if pipeline_instance is None:
+        msg = f"{log_string_prefix}Failed to load pipeline instance for {pipeline_name}"
         raise RuntimeError(
-            f"{log_string_prefix}Failed to load pipeline instance for {pipeline_name}",
+            msg,
         )
 
     # Run the process method
@@ -289,8 +291,9 @@ def execute_packaging(
     )
 
     if pipeline_instance is None:
+        msg = f"{log_string_prefix}Failed to load pipeline instance for {pipeline_name}"
         raise RuntimeError(
-            f"{log_string_prefix}Failed to load pipeline instance for {pipeline_name}",
+            msg,
         )
 
     # Run the package method
@@ -460,7 +463,8 @@ class ProjectWrapper(LogMixin):
 
         # Check that the root directory doesn't already exist
         if root_dir.exists():
-            raise FileExistsError(f'"{root_dir}" already exists')
+            msg = f'"{root_dir}" already exists'
+            raise FileExistsError(msg)
 
         # Create the folder structure
         root_dir.mkdir(parents=True)
@@ -517,8 +521,9 @@ class ProjectWrapper(LogMixin):
 
         def check_dir_exists(path: Path) -> None:
             if not path.is_dir():
+                msg = f'"{path}" does not exist or is not a directory'
                 raise ProjectWrapper.InvalidStructureError(
-                    f'"{path}" does not exist or is not a directory',
+                    msg,
                 )
 
         check_dir_exists(self.root_dir)
@@ -639,8 +644,9 @@ class ProjectWrapper(LogMixin):
         # Check that a pipeline with the same name doesn't already exist
         pipeline_dir = self.pipelines_dir / name
         if pipeline_dir.exists():
+            msg = f'A pipeline with the name "{name}" already exists'
             raise ProjectWrapper.CreatePipelineError(
-                f'A pipeline with the name "{name}" already exists',
+                msg,
             )
 
         # Show warning if there are already collections in the project
@@ -705,8 +711,9 @@ class ProjectWrapper(LogMixin):
                     f'Deleted pipeline "{name}" at {format_path_for_logging(pipeline_dir, self._root_dir)}',
                 )
         else:
+            msg = f'A pipeline with the name "{name}" does not exist'
             raise ProjectWrapper.DeletePipelineError(
-                f'A pipeline with the name "{name}" does not exist',
+                msg,
             )
         return pipeline_dir
 
@@ -734,8 +741,9 @@ class ProjectWrapper(LogMixin):
         # Check that a collection with the same name doesn't already exist
         collection_dir = self.collections_dir / name
         if collection_dir.exists():
+            msg = f'A collection with the name "{name}" already exists'
             raise ProjectWrapper.CreateCollectionError(
-                f'A collection with the name "{name}" already exists',
+                msg,
             )
 
         # Create the collection directory
@@ -781,8 +789,9 @@ class ProjectWrapper(LogMixin):
                 f'Deleted collection "{name}" at {format_path_for_logging(collection_dir, self._root_dir)}',
             )
         else:
+            msg = f'A collection with the name "{name}" does not exist'
             raise ProjectWrapper.NoSuchCollectionError(
-                f'A collection with the name "{name}" does not exist',
+                msg,
             )
         return collection_dir
 
@@ -798,8 +807,9 @@ class ProjectWrapper(LogMixin):
         for pipeline_name in pipeline_names:
             pipeline_wrapper = self._pipeline_wrappers.get(pipeline_name)
             if pipeline_wrapper is None:
+                msg = f'Pipeline "{pipeline_name}" does not exist within the project'
                 raise ProjectWrapper.RunCommandError(
-                    f'Pipeline "{pipeline_name}" does not exist within the project',
+                    msg,
                 )
             pipeline_wrappers_to_run[pipeline_name] = pipeline_wrapper
 
@@ -807,8 +817,9 @@ class ProjectWrapper(LogMixin):
         for collection_name in collection_names:
             collection_wrapper = self._collection_wrappers.get(collection_name)
             if collection_wrapper is None:
+                msg = f'Collection "{collection_name}" does not exist within the project.'
                 raise ProjectWrapper.RunCommandError(
-                    f'Collection "{collection_name}" does not exist within the project.',
+                    msg,
                 )
             collection_wrappers_to_run[collection_name] = collection_wrapper
 
@@ -821,8 +832,9 @@ class ProjectWrapper(LogMixin):
     ) -> None:
         for run_pipeline_name, run_pipeline in pipelines_to_run.items():
             if not hasattr(run_pipeline, command_name):
+                msg = f'Command "{command_name}" does not exist for pipeline "{run_pipeline_name}".'
                 raise ProjectWrapper.RunCommandError(
-                    f'Command "{command_name}" does not exist for pipeline "{run_pipeline_name}".',
+                    msg,
                 )
 
     def _create_command_tasks(
@@ -972,8 +984,9 @@ class ProjectWrapper(LogMixin):
                         message = future.result()
                         self.logger.info(f"{log_string_prefix}{message}")
                     except Exception as e:
+                        msg = f"{log_string_prefix}{e}"
                         raise ProjectWrapper.MarimbaProcessError(
-                            f"{log_string_prefix}{e}",
+                            msg,
                         ) from e
                     finally:
                         progress.advance(tasks_by_pipeline_name[pipeline_name])
@@ -1168,10 +1181,13 @@ class ProjectWrapper(LogMixin):
                         self.logger.info(f"{log_string_prefix}{message}")
                         dataset_mapping[pipeline_name][collection_name].update(pipeline_data_mapping)
                     except Exception as e:
-                        raise ProjectWrapper.CompositionError(
+                        msg = (
                             f"{log_string_prefix}"
                             f'Pipeline "{pipeline_name}" failed to compose its data for collection '
-                            f'"{collection_name}":\n{e}',
+                            f'"{collection_name}":\n{e}'
+                        )
+                        raise ProjectWrapper.CompositionError(
+                            msg,
                         ) from e
                     finally:
                         progress.advance(task)
@@ -1337,7 +1353,8 @@ class ProjectWrapper(LogMixin):
                     f'Deleted dataset "{dataset_name}" at {format_path_for_logging(dataset_root_dir, self._root_dir)}',
                 )
         else:
-            raise FileExistsError(f'"{dataset_root_dir}" dataset does not exist')
+            msg = f'"{dataset_root_dir}" dataset does not exist'
+            raise FileExistsError(msg)
         return dataset_root_dir
 
     def create_target(
@@ -1378,7 +1395,8 @@ class ProjectWrapper(LogMixin):
             target_wrapper,
             DistributionTargetWrapper,
         ):
-            raise ValueError("Expected a DistributionTargetWrapper instance")
+            msg = "Expected a DistributionTargetWrapper instance"
+            raise ValueError(msg)
 
         self._target_wrappers[target_name] = target_wrapper
         self.logger.info(
@@ -1414,7 +1432,8 @@ class ProjectWrapper(LogMixin):
                     f'"{format_path_for_logging(target_config_path, self._root_dir)}"',
                 )
         else:
-            raise FileExistsError(f'"{target_config_path}"target does not exist')
+            msg = f'"{target_config_path}"target does not exist'
+            raise FileExistsError(msg)
         return target_config_path
 
     def distribute(
@@ -1596,8 +1615,9 @@ class ProjectWrapper(LogMixin):
                         message = future.result()
                         self.logger.info(f"{log_string_prefix}{message}")
                     except Exception as e:
+                        msg = f"{log_string_prefix}{e}"
                         raise ProjectWrapper.MarimbaThreadError(
-                            f"{log_string_prefix}{e}",
+                            msg,
                         ) from e
                     finally:
                         progress.advance(tasks_by_pipeline_name[pipeline_name])
@@ -1641,9 +1661,12 @@ class ProjectWrapper(LogMixin):
         for pipeline_wrapper in self.pipeline_wrappers.values():
             pipeline = pipeline_wrapper.get_instance()
             if pipeline is None:
-                raise RuntimeError(
+                msg = (
                     f"Failed to load pipeline instance for '{pipeline_wrapper.name}'. "
-                    "Pipeline may be invalid or empty.",
+                    "Pipeline may be invalid or empty."
+                )
+                raise RuntimeError(
+                    msg,
                 )
             schema.update(pipeline.get_collection_config_schema())
         return schema

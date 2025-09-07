@@ -135,7 +135,8 @@ def get_mapping_processor_decorator(
     if level == MetadataGenerationLevelOptions.collection:
         return _run_mapping_processor_per_pipline_and_collection
 
-    raise TypeError(f"Unknown mapping processor type: {level}")
+    msg = f"Unknown mapping processor type: {level}"
+    raise TypeError(msg)
 
 
 def _run_mapping_processor(

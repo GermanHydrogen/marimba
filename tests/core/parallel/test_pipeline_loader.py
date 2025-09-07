@@ -245,7 +245,8 @@ class TestIsValidPipelineClass:
         class ProblematicClass:
             @property  # type: ignore
             def __class__(self) -> Any:
-                raise TypeError("Can't determine class")
+                msg = "Can't determine class"
+                raise TypeError(msg)
 
         result = _is_valid_pipeline_class(ProblematicClass)  # type: ignore
         assert not result
@@ -460,7 +461,9 @@ class MockTestPipeline(BasePipeline):
     def _process(self, data_dir: Path, config: dict[str, Any], **kwargs: Any) -> None:
         pass
 
-    def _package(self, data_dir: Path, config: dict[str, Any], **kwargs: Any) -> dict[Path, tuple[Path, list[BaseMetadata] | None, dict[str, Any] | None]]:
+    def _package(
+        self, data_dir: Path, config: dict[str, Any], **kwargs: Any
+    ) -> dict[Path, tuple[Path, list[BaseMetadata] | None, dict[str, Any] | None]]:
         return {}
 """
         pipeline_file.write_text(pipeline_content)

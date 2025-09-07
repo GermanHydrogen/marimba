@@ -55,7 +55,8 @@ def get_stream_properties(
     total_frames = stream.frames
 
     if frame_rate is None or time_base is None:
-        raise ValueError("Frame rate or time base is None")
+        msg = "Frame rate or time base is None"
+        raise ValueError(msg)
 
     return float(frame_rate), float(time_base), total_frames
 

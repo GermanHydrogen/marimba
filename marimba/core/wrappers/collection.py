@@ -73,7 +73,8 @@ class CollectionWrapper:
 
         # Check that the root directory doesn't already exist
         if root_dir.is_dir():
-            raise FileExistsError(f"Collection directory {root_dir} already exists")
+            msg = f"Collection directory {root_dir} already exists"
+            raise FileExistsError(msg)
 
         # Create the file structure and write the config
         root_dir.mkdir(parents=True)
@@ -105,14 +106,16 @@ class CollectionWrapper:
 
         def check_dir_exists(path: Path) -> None:
             if not path.is_dir():
+                msg = f'"{path}" does not exist or is not a directory'
                 raise CollectionWrapper.InvalidStructureError(
-                    f'"{path}" does not exist or is not a directory',
+                    msg,
                 )
 
         def check_file_exists(path: Path) -> None:
             if not path.is_file():
+                msg = f'"{path}" does not exist or is not a file'
                 raise CollectionWrapper.InvalidStructureError(
-                    f'"{path}" does not exist or is not a file',
+                    msg,
                 )
 
         check_dir_exists(self.root_dir)
@@ -142,8 +145,9 @@ class CollectionWrapper:
         """
         pipeline_data_dir = self._get_pipeline_data_dir(pipeline_name)
         if pipeline_data_dir.is_dir():
+            msg = f'Pipeline data directory "{pipeline_data_dir}" already exists'
             raise FileExistsError(
-                f'Pipeline data directory "{pipeline_data_dir}" already exists',
+                msg,
             )
 
         pipeline_data_dir.mkdir(parents=True)
@@ -176,7 +180,8 @@ class CollectionWrapper:
         """
         pipeline_data_dir = self._get_pipeline_data_dir(pipeline_name)
         if not pipeline_data_dir.is_dir():
+            msg = f'Pipeline "{pipeline_name}" does not exist'
             raise CollectionWrapper.NoSuchPipelineError(
-                f'Pipeline "{pipeline_name}" does not exist',
+                msg,
             )
         return pipeline_data_dir

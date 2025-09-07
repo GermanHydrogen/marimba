@@ -19,7 +19,7 @@ def temp_dir():
 @pytest.fixture
 def temp_dir_with_requirements(temp_dir: Path) -> Generator[Path, None, None]:
     requirements = "\n"
-    with open(temp_dir / "requirements.txt", "w") as requirements_file:
+    with (temp_dir / "requirements.txt").open("w") as requirements_file:
         requirements_file.write(requirements)
 
     return temp_dir  # type: ignore[return-value]
@@ -60,7 +60,8 @@ def test_installer_executor_error(caplog: pytest.LogCaptureFixture, temp_dir_wit
     logger = logging.Logger("test")
 
     def mock_executor(*args: str) -> ExecutorResult:
-        raise UvExecutor.UvError("")
+        msg = ""
+        raise UvExecutor.UvError(msg)
 
     installer = PipelineInstaller(temp_dir_with_requirements, logger, mock_executor)
 

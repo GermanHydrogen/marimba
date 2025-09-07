@@ -51,7 +51,8 @@ def multithreaded(max_workers: int | None = None) -> Callable[[T], T]:
             **kwargs: Any,  # noqa: ANN401
         ) -> list[Any]:
             if not isinstance(items, Sized):
-                raise TypeError("items must be a Sized iterable")
+                msg = "items must be a Sized iterable"
+                raise TypeError(msg)
 
             # Use the provided logger if available, otherwise use the module logger
             log = logger or get_logger(__name__)

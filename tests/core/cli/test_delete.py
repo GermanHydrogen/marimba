@@ -49,7 +49,8 @@ def test_batch_delete_operation_with_errors():
 
     def mock_delete_func(name: str, dry_run: bool) -> Path:
         if name == "bad_item":
-            raise ProjectWrapper.NoSuchCollectionError("Collection not found")
+            msg = "Collection not found"
+            raise ProjectWrapper.NoSuchCollectionError(msg)
         return Path(f"/path/to/{name}")
 
     success_items, errors = batch_delete_operation(items, mock_delete_func, "collection", "Deleting...", False)
@@ -325,7 +326,8 @@ def test_delete_multiple_items_mixed_results(mocker, setup_project_dir):
 
     def mock_delete_pipeline(name: str, dry_run: bool) -> Path:
         if name == "fail":
-            raise ProjectWrapper.NoSuchPipelineError("Pipeline not found")
+            msg = "Pipeline not found"
+            raise ProjectWrapper.NoSuchPipelineError(msg)
         return Path(f"/path/to/{name}")
 
     mocker.patch("marimba.core.cli.delete.find_project_dir_or_exit", return_value=setup_project_dir)

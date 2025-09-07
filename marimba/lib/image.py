@@ -234,7 +234,8 @@ def turn_clockwise(
 
     # Validate the turns value
     if turns not in [1, 2, 3]:
-        raise ValueError("Turns must be an integer between 1 and 3 inclusive")
+        msg = "Turns must be an integer between 1 and 3 inclusive"
+        raise ValueError(msg)
 
     # Map turns to the corresponding rotation constants
     rotation_constants = {
@@ -295,7 +296,8 @@ def is_blurry(path: str | Path, threshold: float = 100.0) -> bool:
     """
     image = cv2.imread(str(path))
     if image is None:
-        raise ValueError(f"Could not load the image from the path: {path}")
+        msg = f"Could not load the image from the path: {path}"
+        raise ValueError(msg)
 
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     variance_of_laplacian = cv2.Laplacian(gray, cv2.CV_64F).var()
@@ -306,7 +308,8 @@ def is_blurry(path: str | Path, threshold: float = 100.0) -> bool:
     image_is_blurry = variance_of_laplacian < threshold
 
     if not isinstance(image_is_blurry, bool):
-        raise TypeError("Expected image_is_blurry to be a boolean")
+        msg = "Expected image_is_blurry to be a boolean"
+        raise TypeError(msg)
 
     return image_is_blurry
 
@@ -360,7 +363,8 @@ def apply_clahe(
 
     img = cv2.imread(str(path), 0)
     if img is None:
-        raise ValueError(f"Could not read image from {path}")
+        msg = f"Could not read image from {path}"
+        raise ValueError(msg)
 
     # Apply CLAHE to the image
     clahe = cv2.createCLAHE(clipLimit=clip_limit, tileGridSize=tile_grid_size)
@@ -387,7 +391,8 @@ def gaussian_blur(
 
     img = cv2.imread(str(path))
     if img is None:
-        raise ValueError(f"Could not read image from {path}")
+        msg = f"Could not read image from {path}"
+        raise ValueError(msg)
 
     # Apply Gaussian blur to the image
     img_blur = cv2.GaussianBlur(img, kernel_size, 0)
@@ -408,7 +413,8 @@ def sharpen(path: str | Path, destination: str | Path | None = None) -> None:
 
     img = cv2.imread(str(path))
     if img is None:
-        raise ValueError(f"Could not read image from {path}")
+        msg = f"Could not read image from {path}"
+        raise ValueError(msg)
 
     # Apply sharpening to the image
     kernel = np.array([[-1, -1, -1], [-1, 9, -1], [-1, -1, -1]])
@@ -434,7 +440,8 @@ def get_width_height(path: str | Path) -> tuple[int, int]:
         size = img.size
 
     if not (isinstance(size, tuple) and len(size) == expected_dimensions and all(isinstance(x, int) for x in size)):
-        raise ValueError("Size must be a tuple of two integers")
+        msg = "Size must be a tuple of two integers"
+        raise ValueError(msg)
 
     return size
 

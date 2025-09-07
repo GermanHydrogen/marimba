@@ -126,14 +126,16 @@ class PipelineWrapper(LogMixin):
 
         def check_dir_exists(path: Path) -> None:
             if not path.is_dir():
+                msg = f'"{path}" does not exist or is not a directory'
                 raise PipelineWrapper.InvalidStructureError(
-                    f'"{path}" does not exist or is not a directory',
+                    msg,
                 )
 
         def check_file_exists(path: Path) -> None:
             if not path.is_file():
+                msg = f'"{path}" does not exist or is not a file'
                 raise PipelineWrapper.InvalidStructureError(
-                    f'"{path}" does not exist or is not a file',
+                    msg,
                 )
 
         check_dir_exists(self.root_dir)
@@ -174,8 +176,9 @@ class PipelineWrapper(LogMixin):
 
         # Check that the root directory doesn't already exist
         if root_dir.exists():
+            msg = f'Pipeline root directory "{root_dir}" already exists'
             raise FileExistsError(
-                f'Pipeline root directory "{root_dir}" already exists',
+                msg,
             )
 
         # Create the pipeline root directory
@@ -256,13 +259,15 @@ class PipelineWrapper(LogMixin):
 
             # Ensure there is one result
             if len(pipeline_module_paths) == 0:
+                msg = f'No pipeline implementation found in "{self.repo_dir}"'
                 raise FileNotFoundError(
-                    f'No pipeline implementation found in "{self.repo_dir}"',
+                    msg,
                 )
 
             if len(pipeline_module_paths) > 1:
+                msg = f'Multiple pipeline implementations found in "{self.repo_dir}": {pipeline_module_paths}.'
                 raise FileNotFoundError(
-                    f'Multiple pipeline implementations found in "{self.repo_dir}": {pipeline_module_paths}.',
+                    msg,
                 )
             pipeline_module_path = pipeline_module_paths[0]
 
@@ -273,8 +278,9 @@ class PipelineWrapper(LogMixin):
             )
 
             if pipeline_module_spec is None:
+                msg = f"Could not load spec for {pipeline_module_name} from {pipeline_module_path}"
                 raise ImportError(
-                    f"Could not load spec for {pipeline_module_name} from {pipeline_module_path}",
+                    msg,
                 )
 
             # Create the pipeline module
@@ -285,8 +291,9 @@ class PipelineWrapper(LogMixin):
 
             # Ensure that loader is not None before executing the module
             if pipeline_module_spec.loader is None:
+                msg = f"Could not find loader for {pipeline_module_name} from {pipeline_module_path}"
                 raise ImportError(
-                    f"Could not find loader for {pipeline_module_name} from {pipeline_module_path}",
+                    msg,
                 )
 
             # Execute it

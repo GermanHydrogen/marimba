@@ -408,6 +408,7 @@ def make_summary_map(
             zoom,
         )
     except requests.exceptions.ConnectionError:
-        raise NetworkConnectionError("Unable to render the map") from None
+        msg = "Unable to render the map"
+        raise NetworkConnectionError(msg) from None
     else:
         return image

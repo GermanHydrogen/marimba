@@ -130,21 +130,25 @@ class DistributionTargetWrapper:
         # Get the distribution target class
         target_class = DistributionTargetWrapper.CLASS_MAP.get(target_type)
         if target_class is None:
-            raise ValueError(f"No target class found for type {target_type}")
+            msg = f"No target class found for type {target_type}"
+            raise ValueError(msg)
 
         # Ensure that target_class is indeed a class
         if not isclass(target_class):
-            raise TypeError(f"Target class for type {target_type} is not a class")
+            msg = f"Target class for type {target_type} is not a class"
+            raise TypeError(msg)
 
         # Check if __init__ method exists
         if not hasattr(target_class, "__init__"):
+            msg = f"Target class {target_type} does not have an __init__ method"
             raise TypeError(
-                f"Target class {target_type} does not have an __init__ method",
+                msg,
             )
 
         # Ensure that target_class.__init__ is a method
         if not isinstance(target_class.__init__, FunctionType):  # type: ignore[attr-defined]
-            raise TypeError(f"__init__ of target class {target_type} is not a method")
+            msg = f"__init__ of target class {target_type} is not a method"
+            raise TypeError(msg)
 
         # Get the distribution target __init__ positional and keyword arguments
         arg_spec = getfullargspec(target_class)
@@ -191,20 +195,25 @@ class DistributionTargetWrapper:
         """
         target_type = self.config.get("type", None)
         if target_type is None:
+            msg = "The distribution target configuration must specify a 'type'."
             raise DistributionTargetWrapper.InvalidConfigError(
-                "The distribution target configuration must specify a 'type'.",
+                msg,
             )
 
         if target_type not in DistributionTargetWrapper.CLASS_MAP:
-            raise DistributionTargetWrapper.InvalidConfigError(
+            msg = (
                 f"Invalid distribution target type: {target_type}. Must be one of: "
-                f"{', '.join(DistributionTargetWrapper.CLASS_MAP.keys())}",
+                f"{', '.join(DistributionTargetWrapper.CLASS_MAP.keys())}"
+            )
+            raise DistributionTargetWrapper.InvalidConfigError(
+                msg,
             )
 
         target_args = self.config.get("config", None)
         if target_args is None:
+            msg = "The distribution target configuration must specify a 'config'."
             raise DistributionTargetWrapper.InvalidConfigError(
-                "The distribution target configuration must specify a 'config'.",
+                msg,
             )
 
     def _load_config(self) -> None:

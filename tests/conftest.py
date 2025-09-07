@@ -315,11 +315,14 @@ def assert_cli_success(result: Result, expected_message: str | None = None, cont
         error_output = (
             result.output if result.output else result.stderr if hasattr(result, "stderr") else "No output available"
         )
-        raise AssertionError(
+        msg = (
             f"CLI command failed{error_context}:\n"
             f"Exit code: {result.exit_code}\n"
             f"Output: {error_output}\n"
-            f"Expected: Success (exit code 0)",
+            f"Expected: Success (exit code 0)"
+        )
+        raise AssertionError(
+            msg,
         )
 
     if expected_message:

@@ -63,7 +63,8 @@ def prompt_schema(schema: dict[str, Any]) -> dict[str, Any] | None:
             elif value_type is str:
                 value = Prompt.ask(key, default=default_value)
             else:
-                raise NotImplementedError(f"Unsupported type: {value_type.__name__}")
+                msg = f"Unsupported type: {value_type.__name__}"
+                raise NotImplementedError(msg)
             if value is not None:
                 user_values[key] = value
     except KeyboardInterrupt:

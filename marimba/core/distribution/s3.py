@@ -181,16 +181,19 @@ class S3DistributionTarget(DistributionTargetBase):
                 try:
                     self._upload(path, key)
                 except S3UploadFailedError as e:
+                    msg = f"S3 upload failed while uploading {path} to {key}:\n{e}"
                     raise DistributionTargetBase.DistributionError(
-                        f"S3 upload failed while uploading {path} to {key}:\n{e}",
+                        msg,
                     ) from e
                 except ClientError as e:
+                    msg = f"AWS client error while uploading {path} to {key}:\n{e}"
                     raise DistributionTargetBase.DistributionError(
-                        f"AWS client error while uploading {path} to {key}:\n{e}",
+                        msg,
                     ) from e
                 except Exception as e:
+                    msg = f"Failed to upload {path} to {key}:\n{e}"
                     raise DistributionTargetBase.DistributionError(
-                        f"Failed to upload {path} to {key}:\n{e}",
+                        msg,
                     ) from e
 
                 progress.update(task, advance=file_bytes)
@@ -208,6 +211,7 @@ class S3DistributionTarget(DistributionTargetBase):
         try:
             return self._distribute(dataset_wrapper)
         except Exception as e:
+            msg = f"Distribution error:\n{e}"
             raise DistributionTargetBase.DistributionError(
-                f"Distribution error:\n{e}",
+                msg,
             ) from e

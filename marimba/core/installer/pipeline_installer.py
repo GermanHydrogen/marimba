@@ -133,6 +133,7 @@ class PipelineInstaller:
             PipelineWrapper.InstallError: If requirements file is not found
         """
         if not requirements_path.is_file():
+            msg = f"Requirements file not found: {requirements_path}"
             raise PipelineInstaller.InstallError(
-                f"Requirements file not found: {requirements_path}",
+                msg,
             )

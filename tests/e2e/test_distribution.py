@@ -53,8 +53,7 @@ class TestDistributionWorkflows:
         )
         assert result.exit_code in [0, 1]
 
-        dataset_dir = project / "datasets" / "test_dataset"
-        return dataset_dir
+        return project / "datasets" / "test_dataset"
 
     @pytest.fixture
     def mock_s3_target_dir(self, project: Path) -> Path:

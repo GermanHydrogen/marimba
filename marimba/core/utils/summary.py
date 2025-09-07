@@ -432,7 +432,8 @@ class ImagerySummary:
             # Check if it's a "command not found" type error
             if "not found" in result.stderr.lower() or "not recognized" in result.stderr.lower():
                 show_dependency_error_and_exit(ToolDependency.FFMPEG, result.stderr)
-            raise RuntimeError(f"FFmpeg command failed with error: {result.stderr}")
+            msg = f"FFmpeg command failed with error: {result.stderr}"
+            raise RuntimeError(msg)
         return cast("dict[str, Any]", json.loads(result.stdout))
 
     @staticmethod

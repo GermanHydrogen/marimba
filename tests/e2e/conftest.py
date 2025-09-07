@@ -8,6 +8,7 @@ including temporary directories, CLI runner, and cleanup functionality.
 import tempfile
 import weakref
 from collections.abc import Generator
+from contextlib import suppress
 from pathlib import Path
 
 import pytest
@@ -37,11 +38,9 @@ def cleanup_dataset_wrappers():
         for dataset_ref in dataset_instances:
             dataset_instance = dataset_ref()
             if dataset_instance is not None:
-                try:
-                    dataset_instance.close()
-                except Exception:
+                with suppress(Exception):
                     # Ignore cleanup errors
-                    pass
+                    dataset_instance.close()
 
         # Restore original __init__ method
         DatasetWrapper.__init__ = original_init  # type: ignore[method-assign]

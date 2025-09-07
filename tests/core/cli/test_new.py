@@ -1,4 +1,3 @@
-import os
 from pathlib import Path
 
 import pytest
@@ -151,11 +150,11 @@ def test_find_project_dir_no_read_access(tmp_path: Path) -> None:
     root_dir.mkdir()
     (root_dir / ".marimba").mkdir()
 
-    os.chmod(root_dir, 0o000)  # Remove read access
+    root_dir.chmod(0o000)  # Remove read access
     try:
         assert find_project_dir(root_dir) is None
     finally:
-        os.chmod(root_dir, 0o755)  # Restore permissions for cleanup
+        root_dir.chmod(0o755)  # Restore permissions for cleanup
 
 
 @pytest.mark.integration
@@ -312,12 +311,12 @@ def test_find_project_dir_or_exit_with_no_read_access(tmp_path: Path) -> None:
     root_dir.mkdir()
     (root_dir / ".marimba").mkdir()
 
-    os.chmod(root_dir, 0o000)  # Remove read access
+    root_dir.chmod(0o000)  # Remove read access
     try:
         with pytest.raises(typer.Exit):
             find_project_dir_or_exit(root_dir)
     finally:
-        os.chmod(root_dir, 0o755)  # Restore permissions for cleanup
+        root_dir.chmod(0o755)  # Restore permissions for cleanup
 
 
 @pytest.mark.integration

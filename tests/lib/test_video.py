@@ -1,5 +1,7 @@
 """Tests for marimba.lib.video module."""
 
+from contextlib import suppress
+
 import pytest
 
 from marimba.lib.video import (
@@ -251,10 +253,9 @@ class TestVideoUtilities:
         mock_show_error = mocker.patch("marimba.lib.video.show_dependency_error_and_exit")
         mock_av_open.side_effect = Exception("No such file or directory: ffmpeg not found")
 
-        try:
+        with suppress(Exception):
+            # We expect this to call show_dependency_error_and_exit
             generate_video_thumbnails(test_video_path, output_dir)
-        except Exception:
-            pass  # We expect this to call show_dependency_error_and_exit
 
         mock_show_error.assert_called_once()
 

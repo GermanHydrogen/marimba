@@ -40,7 +40,8 @@ def load_config(config_path: str | Path) -> dict[str, Any]:
         data = yaml.safe_load(file)
 
         if not isinstance(data, dict):
-            raise TypeError("Configuration data must be a dictionary")
+            msg = "Configuration data must be a dictionary"
+            raise TypeError(msg)
 
     return data
 

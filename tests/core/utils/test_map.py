@@ -446,7 +446,8 @@ class TestNetworkConnectionError:
     def test_network_connection_error_creation(self):
         """Test NetworkConnectionError can be created and raised."""
         with pytest.raises(NetworkConnectionError):
-            raise NetworkConnectionError("Test error message")
+            msg = "Test error message"
+            raise NetworkConnectionError(msg)
 
     @pytest.mark.unit
     def test_network_connection_error_inheritance(self):

@@ -54,7 +54,8 @@ class UvExecutor:
         """
         uv_path = shutil.which("uv")
         if uv_path is None:
-            raise cls.UvError("uv executable not found in PATH")
+            msg = "uv executable not found in PATH"
+            raise cls.UvError(msg)
 
         return cls(uv_path)
 
@@ -89,4 +90,5 @@ class UvExecutor:
             UvError: If uv pip installation fails
         """
         if return_code != 0:
-            raise self.UvError(f"uv pip install had a non-zero return code: {return_code}")
+            msg = f"uv pip install had a non-zero return code: {return_code}"
+            raise self.UvError(msg)

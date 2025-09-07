@@ -67,13 +67,15 @@ class GenericMetadata(BaseMetadata):
     def strftime(self, format_string: str) -> str:
         """Format the datetime using strftime."""
         if self.datetime is None:
-            raise ValueError("Cannot format datetime: datetime is None")
+            msg = "Cannot format datetime: datetime is None"
+            raise ValueError(msg)
         return self.datetime.strftime(format_string)
 
     def isoformat(self) -> str:
         """Format the datetime in ISO format."""
         if self.datetime is None:
-            raise ValueError("Cannot format datetime: datetime is None")
+            msg = "Cannot format datetime: datetime is None"
+            raise ValueError(msg)
         return self.datetime.isoformat()
 
     def __lt__(self, other: Union["GenericMetadata", datetime]) -> bool:

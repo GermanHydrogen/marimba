@@ -226,7 +226,8 @@ class iFDOMetadata(BaseMetadata):  # noqa: N801
         if value is None or isinstance(value, datetime):
             return value
         # If the value is not None and not a datetime, it's an error
-        raise TypeError(f"Expected datetime or None, got {type(value)}")
+        msg = f"Expected datetime or None, got {type(value)}"
+        raise TypeError(msg)
 
     @property
     def latitude(self) -> float | None:
@@ -235,7 +236,8 @@ class iFDOMetadata(BaseMetadata):  # noqa: N801
         if value is None or isinstance(value, int | float):
             return cast("float | None", value)
         # If the value is not None and not a number, it's an error
-        raise TypeError(f"Expected float or None, got {type(value)}")
+        msg = f"Expected float or None, got {type(value)}"
+        raise TypeError(msg)
 
     @property
     def longitude(self) -> float | None:
@@ -244,7 +246,8 @@ class iFDOMetadata(BaseMetadata):  # noqa: N801
         if value is None or isinstance(value, int | float):
             return cast("float | None", value)
         # If the value is not None and not a number, it's an error
-        raise TypeError(f"Expected float or None, got {type(value)}")
+        msg = f"Expected float or None, got {type(value)}"
+        raise TypeError(msg)
 
     @property
     def altitude(self) -> float | None:
@@ -253,7 +256,8 @@ class iFDOMetadata(BaseMetadata):  # noqa: N801
         if value is None or isinstance(value, int | float):
             return cast("float | None", value)
         # If the value is not None and not a number, it's an error
-        raise TypeError(f"Expected float or None, got {type(value)}")
+        msg = f"Expected float or None, got {type(value)}"
+        raise TypeError(msg)
 
     @property
     def context(self) -> str | None:
@@ -283,7 +287,8 @@ class iFDOMetadata(BaseMetadata):  # noqa: N801
         if value is None or isinstance(value, str):
             return value
         # If the value is not None and not str, it's an error
-        raise TypeError(f"Expected str or None, got {type(value)}")
+        msg = f"Expected str or None, got {type(value)}"
+        raise TypeError(msg)
 
     @hash_sha256.setter
     def hash_sha256(self, value: str) -> None:

@@ -242,9 +242,7 @@ class TestValidateDependencies:
         def mock_check_side_effect(tool):
             if tool == ToolDependency.FFMPEG:
                 return True
-            if tool == ToolDependency.FFPROBE:
-                return False
-            return True
+            return tool != ToolDependency.FFPROBE
 
         mock_check.side_effect = mock_check_side_effect
 

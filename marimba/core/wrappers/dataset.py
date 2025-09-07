@@ -325,8 +325,9 @@ class DatasetWrapper(LogMixin):
 
         def check_dir_exists(path: Path) -> None:
             if not path.is_dir():
+                msg = f'"{path}" does not exist or is not a directory'
                 raise DatasetWrapper.InvalidStructureError(
-                    f'"{path}" does not exist or is not a directory',
+                    msg,
                 )
 
         check_dir_exists(self.root_dir)
@@ -1092,8 +1093,9 @@ class DatasetWrapper(LogMixin):
         if validation_errors:
             error_message = "; ".join(validation_errors)
             self.logger.error(f"Dataset mapping validation failed: {error_message}")
+            msg = f"Dataset mapping validation failed: {error_message}"
             raise DatasetWrapper.InvalidDatasetMappingError(
-                f"Dataset mapping validation failed: {error_message}",
+                msg,
             )
 
         self.logger.info("Dataset mapping is valid")

@@ -7,7 +7,7 @@ which signals to type checkers like mypy that this package provides type informa
 
 import importlib.metadata
 import importlib.resources
-import os
+from pathlib import Path
 
 import pytest
 
@@ -21,9 +21,9 @@ class TestPyTypedMarker:
         # First check in the source directory directly
         import marimba
 
-        module_path = os.path.dirname(marimba.__file__)
-        py_typed_path = os.path.join(module_path, "py.typed")
-        assert os.path.exists(py_typed_path), f"py.typed file not found at {py_typed_path}"
+        module_path = Path(marimba.__file__).parent
+        py_typed_path = module_path / "py.typed"
+        assert py_typed_path.exists(), f"py.typed file not found at {py_typed_path}"
 
         # Then if available, check if it's in the distribution metadata
         try:
