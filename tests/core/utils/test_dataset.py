@@ -26,7 +26,7 @@ def test_get_mapping_processor_decorator():
     )
 
     with pytest.raises(TypeError):
-        get_mapping_processor_decorator("bla")  # type: ignore
+        get_mapping_processor_decorator("bla")  # type: ignore[arg-type]
 
 
 @pytest.mark.unit

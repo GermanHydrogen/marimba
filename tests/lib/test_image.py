@@ -277,7 +277,7 @@ class TestImageUtilities:
 
     @pytest.mark.integration
     @pytest.mark.parametrize(
-        "turns,expected_size,description",
+        ("turns", "expected_size", "description"),
         [
             (1, (80, 100), "90-degree turn swaps dimensions"),
             (2, (100, 80), "180-degree turn keeps same dimensions"),
@@ -421,7 +421,7 @@ class TestImageUtilities:
 
     @pytest.mark.integration
     @pytest.mark.parametrize(
-        "function_name,error_message",
+        ("function_name", "error_message"),
         [
             ("apply_clahe", "Could not read image"),
             ("gaussian_blur", "Could not read image"),

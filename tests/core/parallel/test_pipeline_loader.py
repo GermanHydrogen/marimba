@@ -214,10 +214,10 @@ class TestIsValidPipelineClass:
         """Test that non-class objects return False."""
         # These tests check the function's handling of invalid arguments
         # The function should handle these gracefully
-        result = _is_valid_pipeline_class(str)  # type: ignore
+        result = _is_valid_pipeline_class(str)  # type: ignore[arg-type]
         assert not result
 
-        result = _is_valid_pipeline_class(int)  # type: ignore
+        result = _is_valid_pipeline_class(int)  # type: ignore[arg-type]
         assert not result
 
         # Test with an actual class that's not a pipeline
@@ -243,12 +243,12 @@ class TestIsValidPipelineClass:
 
         # Create an object that raises TypeError in isinstance check
         class ProblematicClass:
-            @property  # type: ignore
+            @property  # type: ignore[misc]
             def __class__(self) -> Any:
                 msg = "Can't determine class"
                 raise TypeError(msg)
 
-        result = _is_valid_pipeline_class(ProblematicClass)  # type: ignore
+        result = _is_valid_pipeline_class(ProblematicClass)  # type: ignore[arg-type]
         assert not result
 
 
@@ -295,7 +295,7 @@ class TestFindPipelineClass:
         mock_module = NoDict()
 
         with pytest.raises(ImportError) as context:
-            _find_pipeline_class(mock_module)  # type: ignore
+            _find_pipeline_class(mock_module)  # type: ignore[arg-type]
 
         assert "module has no __dict__" in str(context.value)
 
@@ -590,7 +590,7 @@ class MockTestPipeline(BasePipeline):
         bad_pipeline_file.write_text("invalid python syntax <<<")
         pipeline_test_dirs["pipeline_file"].unlink()  # Remove good file
 
-        with pytest.raises(Exception):  # Could be SyntaxError or other execution error
+        with pytest.raises((SyntaxError, ImportError, AttributeError)):  # Could be SyntaxError or other execution error
             load_pipeline_instance(
                 pipeline_test_dirs["root_dir"],
                 pipeline_test_dirs["repo_dir"],

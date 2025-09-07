@@ -79,7 +79,7 @@ def sample_test_data_files(temp_dir: Path) -> Path:
 def mock_git_operations(mocker: pytest_mock.MockerFixture) -> dict[str, Any]:
     """Mock Git operations to avoid network dependencies in tests."""
 
-    def mock_clone_from(url: str, to_path: str, **kwargs: Any) -> Any:
+    def mock_clone_from(_url: str, to_path: str, **_kwargs: Any) -> Any:
         """Mock git clone that creates expected directory structure."""
         repo_path = Path(to_path)
         repo_path.mkdir(parents=True, exist_ok=True)

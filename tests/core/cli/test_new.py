@@ -9,7 +9,6 @@ from marimba.core.utils.paths import find_project_dir, find_project_dir_or_exit
 from marimba.core.wrappers.project import ProjectWrapper
 from marimba.main import marimba_cli
 from tests.conftest import (
-    TestDataFactory,
     assert_project_structure_complete,
     run_cli_command,
 )
@@ -358,7 +357,7 @@ def setup_test_directory(tmp_path: Path) -> Path:
 
 
 @pytest.mark.integration
-def test_project_creates_new_project(setup_test_directory: Path, test_data_factory: TestDataFactory) -> None:
+def test_project_creates_new_project(setup_test_directory: Path) -> None:
     """
     Test project creates a new Marimba project successfully with real functionality.
 

@@ -375,7 +375,7 @@ def test_create_dataset_metadata_with_metadata_name(mocker):
     """Test create_dataset_metadata with custom metadata name."""
     mock_uuid = "test-uuid"
 
-    def mock_saver(path: Path, output_name: str, data: dict[str, Any]) -> None:
+    def mock_saver(_path: Path, output_name: str, _data: dict[str, Any]) -> None:
         assert output_name == "custom.ifdo"
 
     image_data = ImageData(image_altitude_meters=0.0)
@@ -396,7 +396,7 @@ def test_create_dataset_metadata_video_file(mocker):
     """Test create_dataset_metadata handles video files correctly."""
     mock_uuid = "test-uuid"
 
-    def mock_saver(path: Path, output_name: str, data: dict[str, Any]) -> None:
+    def mock_saver(_path: Path, _output_name: str, data: dict[str, Any]) -> None:
         # Video files should create lists in image-set-items
         assert "video.mp4" in data["image-set-items"]
         assert isinstance(data["image-set-items"]["video.mp4"], list)
@@ -414,7 +414,7 @@ def test_create_dataset_metadata_video_file(mocker):
 def test_create_dataset_metadata_dry_run():
     """Test create_dataset_metadata with dry_run=True doesn't call saver."""
 
-    def mock_saver(path: Path, output_name: str, data: dict[str, Any]) -> None:
+    def mock_saver(_path: Path, _output_name: str, _data: dict[str, Any]) -> None:
         pytest.fail("Saver should not be called in dry run mode")
 
     image_data = ImageData(image_altitude_meters=0.0)

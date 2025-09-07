@@ -99,7 +99,7 @@ class TestBasePipelineInitialization:
         class CustomMetadata(BaseMetadata):
             pass
 
-        pipeline = ConcretePipeline("/test", metadata_class=CustomMetadata)  # type: ignore
+        pipeline = ConcretePipeline("/test", metadata_class=CustomMetadata)  # type: ignore[type-abstract]
 
         assert pipeline._metadata_class == CustomMetadata
 
@@ -199,7 +199,7 @@ class TestBasePipelineAbstractMethods:
     def test_abstract_pipeline_cannot_be_instantiated(self):
         """Test that BasePipeline cannot be instantiated directly."""
         with pytest.raises(TypeError) as exc_info:
-            BasePipeline("/test")  # type: ignore
+            BasePipeline("/test")  # type: ignore[abstract]
 
         assert "abstract" in str(exc_info.value).lower()
 
@@ -207,7 +207,7 @@ class TestBasePipelineAbstractMethods:
     def test_incomplete_implementation_cannot_be_instantiated(self):
         """Test that incomplete implementations cannot be instantiated."""
         with pytest.raises(TypeError) as exc_info:
-            AbstractOnlyPipeline("/test")  # type: ignore
+            AbstractOnlyPipeline("/test")  # type: ignore[abstract]
 
         assert "abstract" in str(exc_info.value).lower()
 

@@ -26,8 +26,9 @@ def temp_dir_with_requirements(temp_dir: Path) -> Generator[Path, None, None]:
 
 
 @pytest.mark.integration
-def test_installer_valid(caplog: pytest.LogCaptureFixture, temp_dir_with_requirements: Path) -> None:
-    logger = logging.Logger("test")
+@pytest.mark.usefixtures("caplog")
+def test_installer_valid(temp_dir_with_requirements: Path) -> None:
+    logger = logging.getLogger("test")
 
     def mock_executor(*args: str) -> ExecutorResult:
         assert args == (
@@ -43,10 +44,11 @@ def test_installer_valid(caplog: pytest.LogCaptureFixture, temp_dir_with_require
 
 
 @pytest.mark.integration
-def test_installer_missing_requirements_file(caplog: pytest.LogCaptureFixture, temp_dir: Path) -> None:
-    logger = logging.Logger("test")
+@pytest.mark.usefixtures("caplog")
+def test_installer_missing_requirements_file(temp_dir: Path) -> None:
+    logger = logging.getLogger("test")
 
-    def mock_executor(*args: str) -> ExecutorResult:
+    def mock_executor(*_args: str) -> ExecutorResult:
         return ExecutorResult("", "")
 
     installer = PipelineInstaller(temp_dir, logger, mock_executor)
@@ -56,10 +58,11 @@ def test_installer_missing_requirements_file(caplog: pytest.LogCaptureFixture, t
 
 
 @pytest.mark.integration
-def test_installer_executor_error(caplog: pytest.LogCaptureFixture, temp_dir_with_requirements: Path) -> None:
-    logger = logging.Logger("test")
+@pytest.mark.usefixtures("caplog")
+def test_installer_executor_error(temp_dir_with_requirements: Path) -> None:
+    logger = logging.getLogger("test")
 
-    def mock_executor(*args: str) -> ExecutorResult:
+    def mock_executor(*_args: str) -> ExecutorResult:
         msg = ""
         raise UvExecutor.UvError(msg)
 

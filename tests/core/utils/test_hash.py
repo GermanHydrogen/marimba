@@ -172,7 +172,7 @@ class TestHashUtilities:
 
     @pytest.mark.integration
     @pytest.mark.parametrize(
-        "content1,content2,should_be_equal,description",
+        ("content1", "content2", "should_be_equal", "description"),
         [
             ("Content 1", "Content 2", False, "different content produces different hashes"),
             ("Same content", "Same content", True, "same content produces same hash"),
@@ -198,7 +198,7 @@ class TestHashUtilities:
 
     @pytest.mark.integration
     @pytest.mark.parametrize(
-        "dir1_name,dir2_name,description",
+        ("dir1_name", "dir2_name", "description"),
         [
             ("dir1", "dir2", "different simple directory names"),
             ("special-dir_with@symbols", "another-special#dir", "special characters in names"),

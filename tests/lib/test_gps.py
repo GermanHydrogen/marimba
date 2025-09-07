@@ -19,7 +19,7 @@ class TestGPSUtilities:
 
     @pytest.mark.unit
     @pytest.mark.parametrize(
-        "gps_coordinate,expected,description",
+        ("gps_coordinate", "expected", "description"),
         [
             (
                 [(37, 1), (46, 1), (30, 1)],  # Basic format: 37°46'30" = 37.775°
@@ -45,7 +45,7 @@ class TestGPSUtilities:
 
     @pytest.mark.unit
     @pytest.mark.parametrize(
-        "degrees,expected_d,expected_m,expected_s_approx,description",
+        ("degrees", "expected_d", "expected_m", "expected_s_approx", "description"),
         [
             (37.775, 37, 46, 30000, "positive decimal with seconds"),  # 37°46'30"
             (-122.4194, 122, 25, None, "negative decimal (uses absolute value)"),  # Should use abs
@@ -196,7 +196,7 @@ class TestGPSUtilities:
 
     @pytest.mark.integration
     @pytest.mark.parametrize(
-        "exception,description",
+        ("exception", "description"),
         [
             (KeyError("Missing GPS data"), "missing GPS key"),
             (ValueError("Invalid coordinate format"), "invalid coordinate format"),

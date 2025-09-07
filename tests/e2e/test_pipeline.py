@@ -30,7 +30,7 @@ class TestPipelineManagement:
         assert_cli_success(result, context="Project creation for pipeline test")
 
         # Create a mock that actually creates the repo directory structure
-        def mock_clone_from(url, to_path, **kwargs):
+        def mock_clone_from(_url, to_path, **_kwargs):
             repo_path = Path(to_path)
             repo_path.mkdir(parents=True, exist_ok=True)
             # Create a basic pipeline.yml file that the system expects

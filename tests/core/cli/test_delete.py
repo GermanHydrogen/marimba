@@ -31,7 +31,7 @@ def test_batch_delete_operation_success():
     """Test batch_delete_operation with successful operations."""
     items = ["item1", "item2"]
 
-    def mock_delete_func(name: str, dry_run: bool) -> Path:
+    def mock_delete_func(name: str, _dry_run: bool) -> Path:
         return Path(f"/path/to/{name}")
 
     success_items, errors = batch_delete_operation(items, mock_delete_func, "test_entity", "Testing...", False)
@@ -47,7 +47,7 @@ def test_batch_delete_operation_with_errors():
     """Test batch_delete_operation with some errors."""
     items = ["item1", "bad_item", "item3"]
 
-    def mock_delete_func(name: str, dry_run: bool) -> Path:
+    def mock_delete_func(name: str, _dry_run: bool) -> Path:
         if name == "bad_item":
             msg = "Collection not found"
             raise ProjectWrapper.NoSuchCollectionError(msg)
@@ -79,7 +79,7 @@ def test_batch_delete_operation_handles_all_exceptions():
     for i, exception in enumerate(exception_types):
         items = [f"item_{i}"]
 
-        def mock_delete_func(name: str, dry_run: bool) -> Path:
+        def mock_delete_func(_name: str, _dry_run: bool) -> Path:
             raise exception
 
         success_items, errors = batch_delete_operation(items, mock_delete_func, "entity", "Testing...", False)
@@ -324,7 +324,7 @@ def test_delete_multiple_items_mixed_results(mocker, setup_project_dir):
     """Test deleting multiple items with mixed success/failure results."""
     pipeline_names = ["success1", "fail", "success2"]
 
-    def mock_delete_pipeline(name: str, dry_run: bool) -> Path:
+    def mock_delete_pipeline(name: str, _dry_run: bool) -> Path:
         if name == "fail":
             msg = "Pipeline not found"
             raise ProjectWrapper.NoSuchPipelineError(msg)

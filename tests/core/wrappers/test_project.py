@@ -154,7 +154,7 @@ class TestProjectWrapper:
     @pytest.mark.integration
     def test_get_pipeline_nonexistent(self, project_wrapper):
         """Test getting non-existent pipeline raises exception."""
-        with pytest.raises(Exception):
+        with pytest.raises(KeyError):
             project_wrapper._get_pipeline("nonexistent_pipeline")
 
     @pytest.mark.integration
@@ -335,7 +335,7 @@ class TestProjectWrapper:
     @pytest.mark.integration
     def test_error_handling_invalid_project_dir(self):
         """Test error handling for invalid project directory."""
-        with pytest.raises(Exception):
+        with pytest.raises((ProjectWrapper.InvalidStructureError, PermissionError, OSError)):
             ProjectWrapper("/nonexistent/path")
 
     @pytest.mark.integration
@@ -387,7 +387,7 @@ class TestProjectWrapper:
 
     @pytest.mark.unit
     @pytest.mark.parametrize(
-        "invalid_name,reason",
+        ("invalid_name", "reason"),
         [
             ("invalid name", "spaces"),
             ("invalid/name", "slash"),
@@ -475,7 +475,7 @@ class TestProjectWrapper:
 
     @pytest.mark.unit
     @pytest.mark.parametrize(
-        "method_name,args",
+        ("method_name", "args"),
         [
             ("create_pipeline", ("invalid name", "https://example.com", {})),
             ("create_collection", ("invalid name", {})),
@@ -530,7 +530,7 @@ class TestProjectWrapperExceptions:
 
     @pytest.mark.unit
     @pytest.mark.parametrize(
-        "exception_class,message",
+        ("exception_class", "message"),
         [
             (ProjectWrapper.InvalidNameError, "Invalid name"),
             (ProjectWrapper.InvalidStructureError, "Invalid structure"),
