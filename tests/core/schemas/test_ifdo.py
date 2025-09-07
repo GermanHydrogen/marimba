@@ -1,11 +1,13 @@
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, cast
+from typing import TYPE_CHECKING, Any, cast
 
 import pytest
 from ifdo.models import ImageData
 
-from marimba.core.schemas.base import BaseMetadata
+if TYPE_CHECKING:
+    from marimba.core.schemas.base import BaseMetadata
+
 from marimba.core.schemas.ifdo import iFDOMetadata
 
 

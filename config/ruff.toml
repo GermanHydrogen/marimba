@@ -72,17 +72,12 @@ lint.ignore = [
     "D107",    # Missing docstring in __init__ (test classes don't need __init__ docstrings)
     "PLC0415", # Import should be at top-level (acceptable in tests for avoiding circular imports and test-specific imports)
     "PLR2004", # Magic value used in comparison (acceptable in tests for clarity - small numbers like len() == 2 are readable)
-    "PT011",   # pytest.raises too broad (broad exceptions acceptable in some tests) TODO: Fix
     "S101",    # Use of `assert` detected (assert is standard in tests)
     "S105",    # Possible hardcoded password (test credentials are acceptable)
     "S106",    # Possible hardcoded password assigned to argument (test credentials are acceptable)
     "S108",    # Probable insecure usage of temporary file (acceptable in tests)
     "SLF001",  # Private member accessed (tests often need to access private members)
-    "RUF003",  # Comment contains ambiguous unicode (acceptable in test comments) TODO: Fix
-    "TC001",   # Move application import into type-checking block (not needed in tests) TODO: Fix
-    "TC003",   # Move standard library import into type-checking block (not needed in tests) TODO: Fix
     # Additional test-specific ignores
-    "ANN002",  # Missing type annotation for *args (test functions don't need full annotations) TODO: Fix
     "ANN003",  # Missing type annotation for **kwargs (test functions don't need full annotations) TODO: Fix
     "ANN204",  # Missing return type annotation for special method (test classes don't need annotations) TODO: Fix
     "ANN205",  # Missing return type annotation for staticmethod (test helpers don't need annotations) TODO: Fix

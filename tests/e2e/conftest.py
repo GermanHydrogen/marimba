@@ -10,6 +10,7 @@ import weakref
 from collections.abc import Generator
 from contextlib import suppress
 from pathlib import Path
+from typing import Any
 
 import pytest
 from typer.testing import CliRunner
@@ -24,7 +25,7 @@ def cleanup_dataset_wrappers():
     original_init = DatasetWrapper.__init__
     dataset_instances = []
 
-    def tracked_init(self, *args, **kwargs):
+    def tracked_init(self: DatasetWrapper, *args: Any, **kwargs: Any) -> None:
         original_init(self, *args, **kwargs)
         dataset_instances.append(weakref.ref(self))
 

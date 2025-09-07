@@ -67,7 +67,7 @@ class TestCSIRODapDistributionTarget:
         )
 
         # When there's no slash, find("/") returns -1
-        # So bucket_name would be remote_directory[:−1] (empty)
+        # So bucket_name would be remote_directory[:-1] (empty)
         # and base_prefix would be remote_directory[0:] (full string)
         # This tests the edge case behavior
         assert target._bucket_name == "bucket_nam"  # Last character removed
