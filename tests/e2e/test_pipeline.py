@@ -11,6 +11,7 @@ import pytest_mock
 from typer.testing import CliRunner
 
 from marimba.main import marimba_cli as app
+from tests.conftest import assert_cli_success, assert_project_structure_complete
 
 
 @pytest.mark.e2e
@@ -23,7 +24,7 @@ class TestPipelineManagement:
         """Test creating a project and adding a pipeline using mocked Git operations."""
         # First create the project
         result = runner.invoke(app, ["new", "project", str(temp_project_dir)])
-        assert result.exit_code == 0
+        assert_cli_success(result, context="Project creation for pipeline test")
 
         # Create a mock that actually creates the repo directory structure
         def mock_clone_from(url, to_path, **kwargs):
@@ -53,7 +54,7 @@ class TestPipelineManagement:
         )
 
         # Should succeed with mocked operations
-        assert result.exit_code == 0, f"Pipeline creation failed: {result.stdout}"
+        assert_cli_success(result, context="Pipeline creation with mocked Git operations")
 
         # Verify Git clone was called with correct parameters
         mock_clone.assert_called_once()
@@ -66,12 +67,15 @@ class TestPipelineManagement:
         assert (pipeline_dir / "repo").exists()
         assert (pipeline_dir / "repo" / "pipeline.yml").exists()
 
+        # Verify project structure remains intact
+        assert_project_structure_complete(temp_project_dir, "Post-pipeline creation")
+
     @pytest.mark.slow
     def test_new_pipeline_workflow_error_handling(self, runner: CliRunner, temp_project_dir: Path) -> None:
         """Test pipeline creation error handling with real network calls."""
         # First create the project
         result = runner.invoke(app, ["new", "project", str(temp_project_dir)])
-        assert result.exit_code == 0
+        assert_cli_success(result, context="Project creation for pipeline error handling test")
 
         # Test with a non-existent repository to test error handling
         result = runner.invoke(
@@ -97,7 +101,7 @@ class TestPipelineManagement:
         """Test comprehensive workflow that would work with a pipeline."""
         # Create project
         result = runner.invoke(app, ["new", "project", str(temp_project_dir)])
-        assert result.exit_code == 0
+        assert_cli_success(result, context="Project creation for comprehensive workflow test")
 
         # Attempt to create pipeline (will fail due to network, but tests parsing)
         result = runner.invoke(
@@ -128,7 +132,7 @@ class TestPipelineManagement:
         """Test pipeline deletion workflow using actual marimba commands."""
         # Create project
         result = runner.invoke(app, ["new", "project", str(temp_project_dir)])
-        assert result.exit_code == 0
+        assert_cli_success(result, context="Project creation for pipeline deletion test")
 
         # Try to create a pipeline using marimba new pipeline command
         result = runner.invoke(
@@ -159,7 +163,7 @@ class TestPipelineManagement:
             # Pipeline was successfully created, test deletion
             result = runner.invoke(app, ["delete", "pipeline", "test_pipeline", "--project-dir", str(temp_project_dir)])
             # Delete operation should succeed
-            assert result.exit_code == 0
+            assert_cli_success(result, context="Pipeline deletion")
             assert not pipeline_dir.exists()
         else:
             # Pipeline creation failed (expected due to non-existent repo)
@@ -179,7 +183,7 @@ class TestProcessWorkflows:
         """Test the process command workflow."""
         # Create project
         result = runner.invoke(app, ["new", "project", str(temp_project_dir)])
-        assert result.exit_code == 0
+        assert_cli_success(result, context="Project creation for process workflow test")
 
         # Create some collections using marimba import
         for collection_name in ["test_collection1", "test_collection2"]:

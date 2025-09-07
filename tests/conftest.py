@@ -7,10 +7,12 @@ including common test data, temporary directories, and testing utilities.
 
 import tempfile
 from pathlib import Path
-from typing import Any, Dict, Generator, List
+from typing import Any
+from collections.abc import Generator
 
 import pytest
 import pytest_mock
+from click.testing import Result
 from typer.testing import CliRunner
 
 
@@ -22,7 +24,7 @@ def temp_dir() -> Generator[Path, None, None]:
 
 
 @pytest.fixture
-def sample_project_config() -> Dict[str, Any]:
+def sample_project_config() -> dict[str, Any]:
     """Sample project configuration for testing."""
     return {
         "name": "test_project",
@@ -32,7 +34,7 @@ def sample_project_config() -> Dict[str, Any]:
 
 
 @pytest.fixture
-def sample_ifdo_metadata() -> Dict[str, Any]:
+def sample_ifdo_metadata() -> dict[str, Any]:
     """Sample iFDO metadata for testing."""
     return {
         "image-set-header": {
@@ -74,7 +76,7 @@ def sample_test_data_files(temp_dir: Path) -> Path:
 
 
 @pytest.fixture
-def mock_git_operations(mocker: pytest_mock.MockerFixture) -> Dict[str, Any]:
+def mock_git_operations(mocker: pytest_mock.MockerFixture) -> dict[str, Any]:
     """Mock Git operations to avoid network dependencies in tests."""
 
     def mock_clone_from(url: str, to_path: str, **kwargs: Any) -> Any:
@@ -134,7 +136,7 @@ class TestDataFactory:
     """Factory for creating consistent test data across the test suite."""
 
     @staticmethod
-    def create_project_config(**overrides: Any) -> Dict[str, Any]:
+    def create_project_config(**overrides: Any) -> dict[str, Any]:
         """Create a project configuration with optional overrides."""
         config = {
             "name": "test_project",
@@ -147,7 +149,7 @@ class TestDataFactory:
         return config
 
     @staticmethod
-    def create_pipeline_config(**overrides: Any) -> Dict[str, Any]:
+    def create_pipeline_config(**overrides: Any) -> dict[str, Any]:
         """Create a pipeline configuration with optional overrides."""
         config = {
             "name": "test_pipeline",
@@ -160,7 +162,7 @@ class TestDataFactory:
         return config
 
     @staticmethod
-    def create_collection_config(**overrides: Any) -> Dict[str, Any]:
+    def create_collection_config(**overrides: Any) -> dict[str, Any]:
         """Create a collection configuration with optional overrides."""
         config = {
             "name": "test_collection",
@@ -174,7 +176,7 @@ class TestDataFactory:
         return config
 
     @staticmethod
-    def create_ifdo_metadata(**overrides: Any) -> Dict[str, Any]:
+    def create_ifdo_metadata(**overrides: Any) -> dict[str, Any]:
         """Create iFDO metadata structure with optional overrides."""
         metadata = {
             "image-set-header": {
@@ -201,7 +203,7 @@ class TestDataFactory:
         return metadata
 
     @staticmethod
-    def create_dataset_metadata(**overrides: Any) -> Dict[str, Any]:
+    def create_dataset_metadata(**overrides: Any) -> dict[str, Any]:
         """Create dataset metadata with optional overrides."""
         metadata = {
             "name": "test_dataset",
@@ -216,7 +218,7 @@ class TestDataFactory:
         return metadata
 
     @staticmethod
-    def create_test_files(base_dir: Path, file_count: int = 3, file_size: str = "small") -> List[Path]:
+    def create_test_files(base_dir: Path, file_count: int = 3, file_size: str = "small") -> list[Path]:
         """Create test files in a directory with configurable size for performance."""
         base_dir.mkdir(parents=True, exist_ok=True)
         files = []
@@ -236,7 +238,7 @@ class TestDataFactory:
         return files
 
     @staticmethod
-    def create_test_images(base_dir: Path, image_count: int = 3, image_size: str = "minimal") -> List[Path]:
+    def create_test_images(base_dir: Path, image_count: int = 3, image_size: str = "minimal") -> list[Path]:
         """Create fake test image files with configurable size for performance."""
         base_dir.mkdir(parents=True, exist_ok=True)
         images = []
@@ -256,7 +258,7 @@ class TestDataFactory:
         return images
 
     @staticmethod
-    def _deep_update(base_dict: Dict[str, Any], update_dict: Dict[str, Any]) -> None:
+    def _deep_update(base_dict: dict[str, Any], update_dict: dict[str, Any]) -> None:
         """Deep update a dictionary with another dictionary."""
         for key, value in update_dict.items():
             if isinstance(value, dict) and key in base_dict and isinstance(base_dict[key], dict):
@@ -301,3 +303,238 @@ def create_test_project_with_cli(runner: CliRunner, project_dir: Path) -> None:
     result = runner.invoke(app, ["new", "project", str(project_dir)])
     assert result.exit_code == 0, f"Project creation should succeed: {result.stdout}"
     assert_project_structure_exists(project_dir, "Created project")
+
+
+# CLI Testing Helpers - Phase 2 Deduplication
+def assert_cli_success(result: Result, expected_message: str | None = None, context: str = "") -> None:
+    """Helper for CLI success assertions with detailed error reporting."""
+    error_context = f" ({context})" if context else ""
+
+    # Enhanced error reporting for failed commands
+    if result.exit_code != 0:
+        error_output = (
+            result.output if result.output else result.stderr if hasattr(result, "stderr") else "No output available"
+        )
+        raise AssertionError(
+            f"CLI command failed{error_context}:\n"
+            f"Exit code: {result.exit_code}\n"
+            f"Output: {error_output}\n"
+            f"Expected: Success (exit code 0)"
+        )
+
+    if expected_message:
+        assert (
+            expected_message in result.output
+        ), f"Expected message '{expected_message}' not found in CLI output{error_context}:\n{result.output}"
+
+
+def assert_cli_failure(
+    result: Result, expected_error: str | None = None, expected_exit_code: int | None = None, context: str = ""
+) -> None:
+    """Helper for CLI failure assertions with detailed validation."""
+    error_context = f" ({context})" if context else ""
+
+    if expected_exit_code is not None:
+        assert (
+            result.exit_code == expected_exit_code
+        ), f"Expected exit code {expected_exit_code}, got {result.exit_code}{error_context}:\n{result.output}"
+    else:
+        assert (
+            result.exit_code != 0
+        ), f"CLI command should have failed{error_context}, but got exit code 0:\n{result.output}"
+
+    if expected_error:
+        output_to_check = result.output or (result.stderr if hasattr(result, "stderr") else "")
+        assert (
+            expected_error in output_to_check
+        ), f"Expected error '{expected_error}' not found in CLI output{error_context}:\n{output_to_check}"
+
+
+def run_cli_command(
+    runner: CliRunner,
+    command_args: list[str],
+    expected_success: bool = True,
+    expected_message: str | None = None,
+    context: str = "",
+) -> Result:
+    """Run a CLI command with automatic success/failure validation."""
+    from marimba.main import marimba_cli as app
+
+    result = runner.invoke(app, command_args)
+
+    if expected_success:
+        assert_cli_success(result, expected_message, context or f"Command: {' '.join(command_args)}")
+    else:
+        assert_cli_failure(result, expected_message, context=context or f"Command: {' '.join(command_args)}")
+
+    return result
+
+
+def assert_project_structure_complete(project_dir: Path, message_prefix: str = "") -> None:
+    """Validate complete Marimba project structure with enhanced checking."""
+    prefix = f"{message_prefix}: " if message_prefix else ""
+
+    # Basic structure
+    assert project_dir.exists(), f"{prefix}Project directory should exist"
+    assert project_dir.is_dir(), f"{prefix}Project path should be a directory"
+
+    # Core directories
+    marimba_dir = project_dir / ".marimba"
+    assert marimba_dir.exists(), f"{prefix}Marimba config directory should exist"
+    assert marimba_dir.is_dir(), f"{prefix}.marimba should be a directory"
+
+    pipelines_dir = project_dir / "pipelines"
+    assert pipelines_dir.exists(), f"{prefix}Pipelines directory should exist"
+    assert pipelines_dir.is_dir(), f"{prefix}Pipelines should be a directory"
+
+    collections_dir = project_dir / "collections"
+    assert collections_dir.exists(), f"{prefix}Collections directory should exist"
+    assert collections_dir.is_dir(), f"{prefix}Collections should be a directory"
+
+    datasets_dir = project_dir / "datasets"
+    assert datasets_dir.exists(), f"{prefix}Datasets directory should exist"
+    assert datasets_dir.is_dir(), f"{prefix}Datasets should be a directory"
+
+    targets_dir = project_dir / "targets"
+    assert targets_dir.exists(), f"{prefix}Targets directory should exist"
+    assert targets_dir.is_dir(), f"{prefix}Targets should be a directory"
+
+
+# Mock Structure Helpers - Phase 2 Enhancements
+def create_mock_pipeline_structure(
+    base_path: Path, pipeline_name: str = "test_pipeline", config_overrides: dict[str, Any] | None = None
+) -> Path:
+    """Create standardized mock pipeline structure for testing."""
+    pipeline_dir = base_path / "pipelines" / pipeline_name
+    pipeline_dir.mkdir(parents=True, exist_ok=True)
+
+    # Create pipeline repository structure
+    repo_dir = pipeline_dir / "repo"
+    repo_dir.mkdir(exist_ok=True)
+
+    # Create pipeline configuration
+    config = TestDataFactory.create_pipeline_config(name=pipeline_name)
+    if config_overrides:
+        config.update(config_overrides)
+
+    config_file = pipeline_dir / "pipeline.yml"
+    config_content = f"""name: {config['name']}
+version: {config['version']}
+description: {config['description']}
+requirements:
+  - python>=3.8
+parameters:
+  threshold: {config['parameters']['threshold']}
+  max_depth: {config['parameters']['max_depth']}
+  site_id: {config['parameters']['site_id']}
+"""
+    config_file.write_text(config_content)
+
+    # Create main script
+    main_script = repo_dir / "main.py"
+    main_script.write_text(f"# Main script for {pipeline_name}\nprint('Processing data...')")
+
+    # Create README
+    readme_file = repo_dir / "README.md"
+    readme_file.write_text(f"# {config['name']}\n\n{config['description']}")
+
+    return pipeline_dir
+
+
+def create_mock_collection_structure(
+    base_path: Path,
+    collection_name: str = "test_collection",
+    config_overrides: dict[str, Any] | None = None,
+    add_sample_data: bool = True,
+) -> Path:
+    """Create standardized mock collection structure for testing."""
+    collection_dir = base_path / "collections" / collection_name
+    collection_dir.mkdir(parents=True, exist_ok=True)
+
+    # Create collection configuration
+    config = TestDataFactory.create_collection_config(name=collection_name)
+    if config_overrides:
+        config.update(config_overrides)
+
+    config_file = collection_dir / "collection.yml"
+    config_content = f"""name: {config['name']}
+site_id: {config['site_id']}
+field_of_view: {config['field_of_view']}
+instrument_type: {config['instrument_type']}
+operation: {config['operation']}
+created: {config['created']}
+"""
+    config_file.write_text(config_content)
+
+    if add_sample_data:
+        # Create sample data directory
+        data_dir = collection_dir / "data"
+        data_dir.mkdir(exist_ok=True)
+
+        # Add some sample files
+        TestDataFactory.create_test_images(data_dir, image_count=3, image_size="minimal")
+        TestDataFactory.create_test_files(data_dir, file_count=2, file_size="small")
+
+    return collection_dir
+
+
+def create_mock_dataset_structure(
+    base_path: Path, dataset_name: str = "test_dataset", config_overrides: dict[str, Any] | None = None
+) -> Path:
+    """Create standardized mock dataset structure for testing."""
+    dataset_dir = base_path / "datasets" / dataset_name
+    dataset_dir.mkdir(parents=True, exist_ok=True)
+
+    # Create dataset configuration
+    config = TestDataFactory.create_dataset_metadata(name=dataset_name)
+    if config_overrides:
+        config.update(config_overrides)
+
+    config_file = dataset_dir / "dataset.yml"
+    config_content = f"""name: {config['name']}
+version: {config['version']}
+description: {config['description']}
+contact:
+  name: {config['contact']['name']}
+  email: {config['contact']['email']}
+created: {config['created']}
+format: {config['format']}
+license: {config['license']}
+"""
+    config_file.write_text(config_content)
+
+    # Create data directory
+    data_dir = dataset_dir / "data"
+    data_dir.mkdir(exist_ok=True)
+
+    # Create metadata file
+    metadata_file = dataset_dir / "metadata.json"
+    import json
+
+    metadata_file.write_text(json.dumps(TestDataFactory.create_ifdo_metadata(), indent=2))
+
+    return dataset_dir
+
+
+def create_complete_mock_project(base_path: Path, project_name: str = "test_project") -> Path:
+    """Create a complete mock project with pipelines, collections, and datasets."""
+    project_dir = base_path / project_name
+    project_dir.mkdir(exist_ok=True)
+
+    # Create basic project structure
+    (project_dir / ".marimba").mkdir(exist_ok=True)
+    (project_dir / "pipelines").mkdir(exist_ok=True)
+    (project_dir / "collections").mkdir(exist_ok=True)
+    (project_dir / "datasets").mkdir(exist_ok=True)
+    (project_dir / "targets").mkdir(exist_ok=True)
+
+    # Add sample pipeline
+    create_mock_pipeline_structure(project_dir, "sample_pipeline")
+
+    # Add sample collection
+    create_mock_collection_structure(project_dir, "sample_collection")
+
+    # Add sample dataset
+    create_mock_dataset_structure(project_dir, "sample_dataset")
+
+    return project_dir

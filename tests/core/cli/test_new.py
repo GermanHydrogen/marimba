@@ -9,7 +9,14 @@ from typer.testing import CliRunner
 from marimba.core.utils.paths import find_project_dir, find_project_dir_or_exit
 from marimba.core.wrappers.project import ProjectWrapper
 from marimba.main import marimba_cli
-from tests.conftest import TestDataFactory, assert_project_structure_exists
+from tests.conftest import (
+    TestDataFactory,
+    assert_project_structure_exists,
+    assert_project_structure_complete,
+    assert_cli_success,
+    assert_cli_failure,
+    run_cli_command,
+)
 
 runner = CliRunner()
 
@@ -374,14 +381,17 @@ def test_project_creates_new_project(setup_test_directory: Path, test_data_facto
     """
     project_dir = setup_test_directory / "new_project"
 
-    # Test real project creation without excessive mocking
-    result = runner.invoke(marimba_cli, ["new", "project", str(project_dir)])
-    print(result.output)
-    assert result.exit_code == 0
-    assert "Created new Marimba project at" in result.output
+    # Test real project creation without excessive mocking - using shared CLI helper
+    result = run_cli_command(
+        runner,
+        ["new", "project", str(project_dir)],
+        expected_success=True,
+        expected_message="Created new Marimba project at",
+        context="Project creation",
+    )
 
-    # Verify real project structure was created using helper function
-    assert_project_structure_exists(project_dir, "New project")
+    # Verify real project structure was created using enhanced helper function
+    assert_project_structure_complete(project_dir, "New project creation")
 
 
 @pytest.mark.integration
@@ -402,10 +412,15 @@ def test_project_exits_if_project_exists(mocker: pytest_mock.MockerFixture, setu
         "marimba.core.wrappers.project.ProjectWrapper.create",
         side_effect=FileExistsError,
     )
-    result = runner.invoke(marimba_cli, ["new", "project", str(project_dir)])
-    assert result.exit_code != 0
+    # Using shared CLI failure helper for consistent error checking
+    result = run_cli_command(
+        runner,
+        ["new", "project", str(project_dir)],
+        expected_success=False,
+        expected_message="A Marimba project already exists at:",
+        context="Project already exists",
+    )
     mock_create.assert_called_once_with(project_dir)
-    assert "A Marimba project already exists at:" in result.output
 
 
 @pytest.mark.integration

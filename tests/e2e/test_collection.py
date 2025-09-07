@@ -10,7 +10,12 @@ import pytest
 from typer.testing import CliRunner
 
 from marimba.main import marimba_cli as app
-from tests.conftest import TestDataFactory
+from tests.conftest import (
+    TestDataFactory,
+    assert_cli_success,
+    assert_project_structure_complete,
+    create_complete_mock_project,
+)
 
 
 @pytest.mark.e2e
@@ -19,19 +24,19 @@ class TestCollectionImport:
 
     def test_collection_import_workflow(self, runner: CliRunner, temp_project_dir: Path, temp_data_dir: Path) -> None:
         """Test importing data into a collection (import succeeds without pipeline, but no processing occurs)."""
-        # Create project first
+        # Create project first - using shared CLI helper
         result = runner.invoke(app, ["new", "project", str(temp_project_dir)])
-        assert result.exit_code == 0
+        assert_cli_success(result, expected_message="Created new Marimba project", context="Project creation")
 
         # Test: marimba import <collection> <data_path>
         result = runner.invoke(
             app, ["import", "test_collection", str(temp_data_dir), "--project-dir", str(temp_project_dir)]
         )
 
-        # Import should succeed (copies files but doesn't process them without pipelines)
-        assert result.exit_code == 0, f"Import should succeed: {result.stdout}"
+        # Import should succeed (copies files but doesn't process them without pipelines) - using shared CLI helper
+        assert_cli_success(result, context="Collection import")
 
-        # Verify collection directory was created
+        # Verify collection directory was created using enhanced validation
         collection_dir = temp_project_dir / "collections" / "test_collection"
         assert collection_dir.exists(), "Collection directory should be created"
 

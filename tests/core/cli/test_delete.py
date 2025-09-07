@@ -12,6 +12,7 @@ from marimba.core.cli.delete import (
 )
 from marimba.core.wrappers.project import ProjectWrapper
 from marimba.main import marimba_cli
+from tests.conftest import assert_cli_success, assert_cli_failure
 
 runner = CliRunner()
 
@@ -119,9 +120,8 @@ def test_delete_project_command(mocker, setup_project_dir):
     mock_delete = mocker.patch.object(ProjectWrapper, "delete_project", return_value=setup_project_dir)
     result = runner.invoke(marimba_cli, ["delete", "project", "--project-dir", str(setup_project_dir)])
 
-    assert result.exit_code == 0
+    assert_cli_success(result, expected_message="Deleted", context="Project deletion")
     mock_delete.assert_called_once()
-    assert "Deleted" in result.output
 
 
 @pytest.mark.integration
@@ -131,8 +131,9 @@ def test_delete_project_invalid_structure(mocker, setup_project_dir):
     mocker.patch.object(ProjectWrapper, "__init__", side_effect=ProjectWrapper.InvalidStructureError("Invalid"))
     result = runner.invoke(marimba_cli, ["delete", "project", "--project-dir", str(setup_project_dir)])
 
-    assert result.exit_code == 1
-    assert "not valid project" in result.output
+    assert_cli_failure(
+        result, expected_error="not valid project", expected_exit_code=1, context="Invalid project structure"
+    )
 
 
 @pytest.mark.integration
@@ -142,7 +143,7 @@ def test_delete_project_dry_run(mocker, setup_project_dir):
     mock_delete = mocker.patch.object(ProjectWrapper, "delete_project", return_value=setup_project_dir)
     result = runner.invoke(marimba_cli, ["delete", "project", "--project-dir", str(setup_project_dir), "--dry-run"])
 
-    assert result.exit_code == 0
+    assert_cli_success(result, context="Project deletion dry run")
     mock_delete.assert_called_once()
 
 
@@ -157,7 +158,7 @@ def test_delete_pipeline_command(mocker, setup_project_dir):
         marimba_cli, ["delete", "pipeline"] + pipeline_names + ["--project-dir", str(setup_project_dir)]
     )
 
-    assert result.exit_code == 0
+    assert_cli_success(result, context="Pipeline deletion batch")
     assert mock_delete.call_count == 2
     mock_delete.assert_any_call("pipeline1", False)
     mock_delete.assert_any_call("pipeline2", False)
@@ -176,8 +177,12 @@ def test_delete_pipeline_no_such_pipeline(mocker, setup_project_dir):
         marimba_cli, ["delete", "pipeline"] + pipeline_names + ["--project-dir", str(setup_project_dir)]
     )
 
-    assert result.exit_code == 1
-    assert "Failed to delete" in result.output
+    assert_cli_failure(
+        result,
+        expected_error="Failed to delete",
+        expected_exit_code=1,
+        context="Pipeline deletion with missing pipeline",
+    )
 
 
 @pytest.mark.integration
@@ -191,7 +196,7 @@ def test_delete_collection_command(mocker, setup_project_dir):
         marimba_cli, ["delete", "collection"] + collection_names + ["--project-dir", str(setup_project_dir)]
     )
 
-    assert result.exit_code == 0
+    assert_cli_success(result, context="Collection deletion batch")
     assert mock_delete.call_count == 2
     mock_delete.assert_any_call("collection1", False)
     mock_delete.assert_any_call("collection2", False)
@@ -212,7 +217,7 @@ def test_delete_collection_no_such_collection(mocker, setup_project_dir):
         marimba_cli, ["delete", "collection"] + collection_names + ["--project-dir", str(setup_project_dir)]
     )
 
-    assert result.exit_code == 1
+    assert_cli_failure(result, expected_exit_code=1, context="Collection deletion with missing collection")
     assert "Failed to delete" in result.output
 
 
@@ -225,7 +230,7 @@ def test_delete_target_command(mocker, setup_project_dir):
     mock_delete = mocker.patch.object(ProjectWrapper, "delete_target", return_value=Path("/path"))
     result = runner.invoke(marimba_cli, ["delete", "target"] + target_names + ["--project-dir", str(setup_project_dir)])
 
-    assert result.exit_code == 0
+    assert_cli_success(result, context="Target deletion batch")
     assert mock_delete.call_count == 2
     mock_delete.assert_any_call("target1", False)
     mock_delete.assert_any_call("target2", False)
@@ -242,8 +247,9 @@ def test_delete_target_no_such_target(mocker, setup_project_dir):
     )
     result = runner.invoke(marimba_cli, ["delete", "target"] + target_names + ["--project-dir", str(setup_project_dir)])
 
-    assert result.exit_code == 1
-    assert "Failed to delete" in result.output
+    assert_cli_failure(
+        result, expected_error="Failed to delete", expected_exit_code=1, context="Target deletion with missing target"
+    )
 
 
 @pytest.mark.integration
@@ -257,7 +263,7 @@ def test_delete_dataset_command(mocker, setup_project_dir):
         marimba_cli, ["delete", "dataset"] + dataset_names + ["--project-dir", str(setup_project_dir)]
     )
 
-    assert result.exit_code == 0
+    assert_cli_success(result, context="Dataset deletion batch")
     assert mock_delete.call_count == 2
     mock_delete.assert_any_call("dataset1", False)
     mock_delete.assert_any_call("dataset2", False)
@@ -274,8 +280,9 @@ def test_delete_dataset_no_such_dataset(mocker, setup_project_dir):
         marimba_cli, ["delete", "dataset"] + dataset_names + ["--project-dir", str(setup_project_dir)]
     )
 
-    assert result.exit_code == 1
-    assert "Failed to delete" in result.output
+    assert_cli_failure(
+        result, expected_error="Failed to delete", expected_exit_code=1, context="Dataset deletion with missing dataset"
+    )
 
 
 @pytest.mark.integration
@@ -288,7 +295,7 @@ def test_delete_command_with_dry_run(mocker):
     mock_delete = mocker.patch.object(ProjectWrapper, "delete_pipeline", return_value=Path("/path"))
     result = runner.invoke(marimba_cli, ["delete", "pipeline"] + pipeline_names + ["--dry-run"])
 
-    assert result.exit_code == 0
+    assert_cli_success(result, context="Pipeline deletion dry run")
     mock_delete.assert_called_once_with("pipeline1", True)
 
 
@@ -308,6 +315,6 @@ def test_delete_multiple_items_mixed_results(mocker, setup_project_dir):
         marimba_cli, ["delete", "pipeline"] + pipeline_names + ["--project-dir", str(setup_project_dir)]
     )
 
-    assert result.exit_code == 1  # Should fail due to the error
+    assert_cli_failure(result, expected_exit_code=1, context="Mixed batch operation with partial failures")
     assert "Deleted" in result.output  # Should show success messages
     assert "Failed to delete" in result.output  # Should show error message

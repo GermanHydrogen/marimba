@@ -11,6 +11,7 @@ import yaml
 from typer.testing import CliRunner
 
 from marimba.main import marimba_cli as app
+from tests.conftest import assert_cli_success, assert_cli_failure
 
 
 @pytest.mark.e2e
@@ -21,7 +22,7 @@ class TestDistributionWorkflows:
     def project(self, runner: CliRunner, temp_project_dir: Path) -> Path:
         """Create a marimba project."""
         result = runner.invoke(app, ["new", "project", str(temp_project_dir)])
-        assert result.exit_code == 0
+        assert_cli_success(result, context="Distribution test project creation")
         return temp_project_dir
 
     @pytest.fixture
@@ -29,6 +30,7 @@ class TestDistributionWorkflows:
         """Create a mock dataset directory with sample files."""
         # Import some data to create a collection
         result = runner.invoke(app, ["import", "test_collection", str(temp_data_dir), "--project-dir", str(project)])
+        # Allow success or failure since import can fail without pipelines
         assert result.exit_code in [0, 1]
 
         # Package the collection into a dataset
@@ -189,7 +191,7 @@ class TestDistributionWorkflows:
             app, ["distribute", "test_dataset", "test_target", "--project-dir", str(nonexistent_project)]
         )
         # Should fail gracefully with appropriate error
-        assert result.exit_code != 0
+        assert_cli_failure(result, context="Distribution without project")
         assert "project" in result.stdout.lower() or "not found" in result.stdout.lower()
 
     def test_distribute_workflow_argument_parsing(self, runner: CliRunner, project: Path) -> None:
@@ -236,7 +238,7 @@ class TestDistributionWorkflows:
         """Test comprehensive workflow: create -> package -> distribute."""
         # Step 1: Create project
         result = runner.invoke(app, ["new", "project", str(temp_project_dir)])
-        assert result.exit_code == 0
+        assert_cli_success(result, context="Project creation for comprehensive workflow test")
 
         # Step 2: Create target using new command (may fail, but tests argument parsing)
         result = runner.invoke(app, ["new", "target", "test_s3_target", "--project-dir", str(temp_project_dir)])
@@ -278,8 +280,7 @@ class TestDistributionWorkflows:
         """Test that distribute command help works and shows all options."""
         # Test help for distribute command
         result = runner.invoke(app, ["distribute", "--help"])
-        assert result.exit_code == 0
-        assert "distribute" in result.stdout.lower()
+        assert_cli_success(result, expected_message="distribute", context="Distribute help command")
         assert "dataset" in result.stdout.lower()
         assert "target" in result.stdout.lower()
         assert "validate" in result.stdout.lower()

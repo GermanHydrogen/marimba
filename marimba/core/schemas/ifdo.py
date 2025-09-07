@@ -27,7 +27,7 @@ import tempfile
 import uuid
 from collections.abc import Callable
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, cast
 
@@ -825,7 +825,7 @@ class iFDOMetadata(BaseMetadata):  # noqa: N801
         if image_data.image_datetime is not None:
             dt = image_data.image_datetime
             if dt.tzinfo is not None and dt.tzinfo.utcoffset(dt) is not None:
-                dt = dt.astimezone(timezone.utc)
+                dt = dt.astimezone(UTC)
                 offset_str = "+00:00"
                 exif_tags["EXIF:OffsetTime"] = offset_str
                 exif_tags["EXIF:OffsetTimeOriginal"] = offset_str

@@ -10,6 +10,7 @@ import pytest
 from typer.testing import CliRunner
 
 from marimba.main import marimba_cli as app
+from tests.conftest import assert_cli_success, assert_cli_failure
 
 
 @pytest.mark.e2e
@@ -20,7 +21,7 @@ class TestDatasetPackaging:
         """Test packaging a dataset."""
         # Create project first
         result = runner.invoke(app, ["new", "project", str(temp_project_dir)])
-        assert result.exit_code == 0
+        assert_cli_success(result, context="Project creation for dataset package workflow")
 
         # Import some data to create a collection
         result = runner.invoke(
@@ -56,7 +57,7 @@ class TestDatasetPackaging:
         """Test packaging with various metadata output options."""
         # Create project and basic dataset
         result = runner.invoke(app, ["new", "project", str(temp_project_dir)])
-        assert result.exit_code == 0
+        assert_cli_success(result, context="Project creation for metadata options test")
 
         # Import some data to create a collection
         result = runner.invoke(
@@ -96,7 +97,7 @@ class TestDatasetPackaging:
         """Test package workflow with dry run option."""
         # Create project and basic dataset
         result = runner.invoke(app, ["new", "project", str(temp_project_dir)])
-        assert result.exit_code == 0
+        assert_cli_success(result, context="Project creation for deletion workflow test")
 
         # Import some data to create a collection
         result = runner.invoke(
@@ -142,7 +143,7 @@ class TestDatasetDeletion:
             app, ["delete", "dataset", "nonexistent_dataset", "--project-dir", str(temp_project_dir)]
         )
         # Should fail gracefully for non-existent datasets
-        assert result.exit_code != 0
+        assert_cli_failure(result, context="Delete non-existent dataset")
 
         # Test batch delete dataset operation
         result = runner.invoke(app, ["delete", "dataset", "TEST_DATA", "--project-dir", str(temp_project_dir)])

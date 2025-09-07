@@ -20,6 +20,7 @@ from marimba.main import (
     version_command,
 )
 from marimba.core.utils.log import LogLevel
+from tests.conftest import assert_cli_success, assert_cli_failure
 
 
 class TestCLI:
@@ -69,16 +70,16 @@ class TestCLI:
         """Test version command when version is available."""
         mocker.patch("importlib.metadata.version", return_value="1.0.0")
         result = runner.invoke(marimba_cli, ["version"])
-        assert result.exit_code == 0
-        assert "Marimba v1.0.0" in result.stdout
+        assert_cli_success(result, expected_message="Marimba v1.0.0", context="Version command")
 
     @pytest.mark.integration
     def test_version_command_with_exception(self, mocker, runner):
         """Test version command when metadata is not available."""
         mocker.patch("importlib.metadata.version", side_effect=Exception("No metadata"))
         result = runner.invoke(marimba_cli, ["version"])
-        assert result.exit_code == 0
-        assert "unknown (not installed as package)" in result.stdout
+        assert_cli_success(
+            result, expected_message="unknown (not installed as package)", context="Version command without metadata"
+        )
 
     @pytest.mark.unit
     def test_global_options_with_debug(self, mocker):
@@ -148,12 +149,7 @@ class TestCLI:
             marimba_cli, ["import", "test_collection", str(source_path), "--project-dir", str(mock_project_dir)]
         )
 
-        if result.exit_code != 0:
-            print(f"Exit code: {result.exit_code}")
-            print(f"Output: {result.stdout}")
-            print(f"Exception: {result.exception}")
-
-        assert result.exit_code == 0
+        assert_cli_success(result, context="Basic import command")
         mock_find_project.assert_called_once()
         mock_project_wrapper.assert_called_once()
         mock_project.run_import.assert_called_once()
@@ -189,7 +185,7 @@ class TestCLI:
             ],
         )
 
-        assert result.exit_code == 0
+        assert_cli_success(result, context="Import command with options")
         mock_project.run_import.assert_called_once()
 
     @pytest.mark.integration
@@ -217,7 +213,7 @@ class TestCLI:
             ],
         )
 
-        assert result.exit_code == 0
+        assert_cli_success(result, context="Basic process command")
         mock_project_wrapper.assert_called_once()
         mock_project.run_process.assert_called_once()
 
@@ -247,7 +243,7 @@ class TestCLI:
             ],
         )
 
-        assert result.exit_code == 0
+        assert_cli_success(result, context="Process command with options")
         mock_project.run_process.assert_called_once()
 
     @pytest.mark.integration
@@ -269,7 +265,7 @@ class TestCLI:
             ["package", "test_dataset", "--collection-name", "test_collection", "--project-dir", str(mock_project_dir)],
         )
 
-        assert result.exit_code == 0
+        assert_cli_success(result, context="Basic package command")
         mock_project_wrapper.assert_called_once()
         mock_project.compose.assert_called_once()
         mock_project.create_dataset.assert_called_once()
@@ -302,7 +298,7 @@ class TestCLI:
             ],
         )
 
-        assert result.exit_code == 0
+        assert_cli_success(result, context="Package command with options")
         mock_project.compose.assert_called_once()
         mock_project.create_dataset.assert_called_once()
 
@@ -320,7 +316,7 @@ class TestCLI:
             marimba_cli, ["distribute", "test_dataset", "test_target", "--project-dir", str(mock_project_dir)]
         )
 
-        assert result.exit_code == 0
+        assert_cli_success(result, context="Basic distribute command")
         mock_project_wrapper.assert_called_once()
         mock_project.distribute.assert_called_once()
 
@@ -336,7 +332,7 @@ class TestCLI:
 
         result = runner.invoke(marimba_cli, ["update", "--project-dir", str(mock_project_dir)])
 
-        assert result.exit_code == 0
+        assert_cli_success(result, context="Basic update command")
         mock_project_wrapper.assert_called_once()
         mock_project.update_pipelines.assert_called_once()
 
@@ -352,7 +348,7 @@ class TestCLI:
 
         result = runner.invoke(marimba_cli, ["install", "--project-dir", str(mock_project_dir)])
 
-        assert result.exit_code == 0
+        assert_cli_success(result, context="Basic install command")
         mock_project_wrapper.assert_called_once()
         mock_project.install_pipelines.assert_called_once()
 
@@ -368,15 +364,14 @@ class TestCLI:
 
         result = runner.invoke(marimba_cli, ["install", "--project-dir", str(mock_project_dir)])
 
-        assert result.exit_code == 0
+        assert_cli_success(result, context="Install command with pipeline")
         mock_project.install_pipelines.assert_called_once()
 
     @pytest.mark.integration
     def test_cli_help(self, runner):
         """Test CLI help output."""
         result = runner.invoke(marimba_cli, ["--help"])
-        assert result.exit_code == 0
-        assert "Marimba" in result.stdout
+        assert_cli_success(result, expected_message="Marimba", context="CLI help")
         assert "FAIR scientific" in result.stdout
         assert "image datasets" in result.stdout
 
@@ -394,41 +389,41 @@ class TestCLI:
     def test_import_command_help(self, runner):
         """Test import command help."""
         result = runner.invoke(marimba_cli, ["import", "--help"])
-        assert result.exit_code == 0
+        assert_cli_success(result, context="Import command help")
         assert "source-path" in result.stdout or "SOURCE_PATH" in result.stdout
 
     @pytest.mark.integration
     def test_process_command_help(self, runner):
         """Test process command help."""
         result = runner.invoke(marimba_cli, ["process", "--help"])
-        assert result.exit_code == 0
+        assert_cli_success(result, context="Process command help")
         assert "collection-name" in result.stdout or "COLLECTION_NAME" in result.stdout
 
     @pytest.mark.integration
     def test_package_command_help(self, runner):
         """Test package command help."""
         result = runner.invoke(marimba_cli, ["package", "--help"])
-        assert result.exit_code == 0
+        assert_cli_success(result, context="Package command help")
         assert "collection-name" in result.stdout or "COLLECTION_NAME" in result.stdout
 
     @pytest.mark.integration
     def test_distribute_command_help(self, runner):
         """Test distribute command help."""
         result = runner.invoke(marimba_cli, ["distribute", "--help"])
-        assert result.exit_code == 0
+        assert_cli_success(result, context="Distribute command help")
         assert "dataset-name" in result.stdout or "DATASET_NAME" in result.stdout
 
     @pytest.mark.integration
     def test_update_command_help(self, runner):
         """Test update command help."""
         result = runner.invoke(marimba_cli, ["update", "--help"])
-        assert result.exit_code == 0
+        assert_cli_success(result, context="Update command help")
 
     @pytest.mark.integration
     def test_install_command_help(self, runner):
         """Test install command help."""
         result = runner.invoke(marimba_cli, ["install", "--help"])
-        assert result.exit_code == 0
+        assert_cli_success(result, context="Install command help")
 
 
 class TestCommandErrorHandling:
@@ -460,7 +455,7 @@ class TestCommandErrorHandling:
             marimba_cli, ["import", "test_collection", str(source_path), "--project-dir", str(mock_project_dir)]
         )
 
-        assert result.exit_code == 1
+        assert_cli_failure(result, expected_exit_code=1, context="Import command with project error")
 
     @pytest.mark.integration
     def test_process_command_processing_error(self, mocker, runner, mock_project_dir):
@@ -507,7 +502,7 @@ class TestCommandErrorHandling:
             ["package", "test_dataset", "--collection-name", "test_collection", "--project-dir", str(mock_project_dir)],
         )
 
-        assert result.exit_code == 1
+        assert_cli_failure(result, expected_exit_code=1, context="Package command with packaging error")
 
     @pytest.mark.integration
     def test_distribute_command_distribution_error(self, mocker, runner, mock_project_dir):
@@ -523,7 +518,7 @@ class TestCommandErrorHandling:
             marimba_cli, ["distribute", "test_dataset", "test_target", "--project-dir", str(mock_project_dir)]
         )
 
-        assert result.exit_code == 1
+        assert_cli_failure(result, expected_exit_code=1, context="Distribute command with distribution error")
 
 
 class TestCLIIntegration:
@@ -539,8 +534,7 @@ class TestCLIIntegration:
         """Test --version flag in global options."""
         mocker.patch("importlib.metadata.version", return_value="1.0.0")
         result = runner.invoke(marimba_cli, ["--version"])
-        assert result.exit_code == 0
-        assert "Marimba v1.0.0" in result.stdout
+        assert_cli_success(result, expected_message="Marimba v1.0.0", context="Version flag in global options")
 
     @pytest.mark.integration
     def test_debug_flag(self, mocker, runner):
@@ -589,7 +583,7 @@ class TestCLIIntegration:
         result1 = runner.invoke(
             marimba_cli, ["import", "test_collection", str(source_path), "--project-dir", str(project_dir)]
         )
-        assert result1.exit_code == 0
+        assert_cli_success(result1, context="End-to-end workflow import")
 
         # After import, collection should exist for process/package commands
         mock_project.collection_wrappers = {"test_collection": mocker.Mock()}
@@ -607,14 +601,14 @@ class TestCLIIntegration:
                 str(project_dir),
             ],
         )
-        assert result2.exit_code == 0
+        assert_cli_success(result2, context="End-to-end workflow process")
 
         # Package
         result3 = runner.invoke(
             marimba_cli,
             ["package", "test_dataset", "--collection-name", "test_collection", "--project-dir", str(project_dir)],
         )
-        assert result3.exit_code == 0
+        assert_cli_success(result3, context="End-to-end workflow package")
 
         # Verify all operations were called
         mock_project.run_import.assert_called()
