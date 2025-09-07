@@ -121,7 +121,10 @@ class TestCSIRODapDistributionTarget:
         remote_dir = "test-bucket/data/experiment"
 
         target = CSIRODapDistributionTarget(
-            endpoint_url=endpoint, access_key=access_key, secret_access_key=secret_key, remote_directory=remote_dir
+            endpoint_url=endpoint,
+            access_key=access_key,
+            secret_access_key=secret_key,
+            remote_directory=remote_dir,
         )
 
         # Verify parameters were processed correctly

@@ -5,9 +5,9 @@ This test verifies that the py.typed file exists in the installed package,
 which signals to type checkers like mypy that this package provides type information.
 """
 
-import os
 import importlib.metadata
 import importlib.resources
+import os
 
 import pytest
 
@@ -43,9 +43,9 @@ class TestPyTypedMarker:
     def test_importable_with_types(self) -> None:
         """Verify that modules can be imported with type information."""
         # Import a few key modules that should have type information
-        from marimba.core.wrappers.project import ProjectWrapper
-        from marimba.core.wrappers.dataset import DatasetWrapper
         from marimba.core.schemas.base import BaseMetadata
+        from marimba.core.wrappers.dataset import DatasetWrapper
+        from marimba.core.wrappers.project import ProjectWrapper
 
         # Basic type assertion checks that would fail if typing wasn't working
         assert hasattr(ProjectWrapper, "__annotations__"), "ProjectWrapper should have type annotations"

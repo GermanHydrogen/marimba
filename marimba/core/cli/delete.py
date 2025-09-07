@@ -62,7 +62,7 @@ app = typer.Typer(
 T = TypeVar("T")
 
 
-def batch_delete_operation(
+def batch_delete_operation[T](
     items: list[str],
     delete_func: Callable[[str, bool], T],
     entity_type: str,

@@ -15,13 +15,12 @@ import logging
 import shutil
 import tempfile
 from pathlib import Path
+
 import pytest
 
-from git import Repo
-
-from marimba.core.wrappers.pipeline import PipelineWrapper
 from marimba.core.pipeline import BasePipeline
 from marimba.core.schemas.base import BaseMetadata
+from marimba.core.wrappers.pipeline import PipelineWrapper
 
 
 class MockTestPipeline(BasePipeline):
@@ -111,7 +110,8 @@ class TestPipelineWrapperFileStructureValidation:
         mocker.patch("marimba.core.installer.pipeline_installer.PipelineInstaller.create")
 
         with pytest.raises(
-            PipelineWrapper.InvalidStructureError, match='".*nonexistent" does not exist or is not a directory'
+            PipelineWrapper.InvalidStructureError,
+            match='".*nonexistent" does not exist or is not a directory',
         ):
             PipelineWrapper(missing_dir)
 
@@ -126,7 +126,8 @@ class TestPipelineWrapperFileStructureValidation:
         mocker.patch("marimba.core.installer.pipeline_installer.PipelineInstaller.create")
 
         with pytest.raises(
-            PipelineWrapper.InvalidStructureError, match='".*repo" does not exist or is not a directory'
+            PipelineWrapper.InvalidStructureError,
+            match='".*repo" does not exist or is not a directory',
         ):
             PipelineWrapper(tmp_path)
 
@@ -141,7 +142,8 @@ class TestPipelineWrapperFileStructureValidation:
         mocker.patch("marimba.core.installer.pipeline_installer.PipelineInstaller.create")
 
         with pytest.raises(
-            PipelineWrapper.InvalidStructureError, match='".*pipeline.yml" does not exist or is not a file'
+            PipelineWrapper.InvalidStructureError,
+            match='".*pipeline.yml" does not exist or is not a file',
         ):
             PipelineWrapper(tmp_path)
 
@@ -157,7 +159,8 @@ class TestPipelineWrapperFileStructureValidation:
         mocker.patch("marimba.core.installer.pipeline_installer.PipelineInstaller.create")
 
         with pytest.raises(
-            PipelineWrapper.InvalidStructureError, match='".*repo" does not exist or is not a directory'
+            PipelineWrapper.InvalidStructureError,
+            match='".*repo" does not exist or is not a directory',
         ):
             PipelineWrapper(tmp_path)
 
@@ -173,7 +176,8 @@ class TestPipelineWrapperFileStructureValidation:
         mocker.patch("marimba.core.installer.pipeline_installer.PipelineInstaller.create")
 
         with pytest.raises(
-            PipelineWrapper.InvalidStructureError, match='".*pipeline.yml" does not exist or is not a file'
+            PipelineWrapper.InvalidStructureError,
+            match='".*pipeline.yml" does not exist or is not a file',
         ):
             PipelineWrapper(tmp_path)
 
@@ -251,7 +255,8 @@ class TestPipelineWrapperCreate:
 
         # Verify git clone was called
         mock_repo_class.clone_from.assert_called_once_with(
-            "https://github.com/example/pipeline.git", pipeline_dir / "repo"
+            "https://github.com/example/pipeline.git",
+            pipeline_dir / "repo",
         )
 
         # Verify config file was created

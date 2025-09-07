@@ -4,13 +4,13 @@ import pytest
 from rich.panel import Panel
 
 from marimba.core.utils.rich import (
-    success_panel,
-    warning_panel,
+    MARIMBA,
     error_panel,
     format_command,
     format_entity,
     get_default_columns,
-    MARIMBA,
+    success_panel,
+    warning_panel,
 )
 
 

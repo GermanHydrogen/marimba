@@ -19,7 +19,10 @@ class TestPipelineManagement:
     """Test pipeline creation and management workflows."""
 
     def test_new_pipeline_workflow_with_mocking(
-        self, runner: CliRunner, temp_project_dir: Path, mocker: pytest_mock.MockerFixture
+        self,
+        runner: CliRunner,
+        temp_project_dir: Path,
+        mocker: pytest_mock.MockerFixture,
     ) -> None:
         """Test creating a project and adding a pipeline using mocked Git operations."""
         # First create the project
@@ -169,7 +172,8 @@ class TestPipelineManagement:
             # Pipeline creation failed (expected due to non-existent repo)
             # Test deleting non-existent pipeline
             result = runner.invoke(
-                app, ["delete", "pipeline", "nonexistent_pipeline", "--project-dir", str(temp_project_dir)]
+                app,
+                ["delete", "pipeline", "nonexistent_pipeline", "--project-dir", str(temp_project_dir)],
             )
             # Should fail gracefully for non-existent pipelines
             assert result.exit_code != 0
@@ -188,7 +192,8 @@ class TestProcessWorkflows:
         # Create some collections using marimba import
         for collection_name in ["test_collection1", "test_collection2"]:
             result = runner.invoke(
-                app, ["import", collection_name, str(temp_data_dir), "--project-dir", str(temp_project_dir)]
+                app,
+                ["import", collection_name, str(temp_data_dir), "--project-dir", str(temp_project_dir)],
             )
             # Import may fail without pipeline, but that's expected for this test
 

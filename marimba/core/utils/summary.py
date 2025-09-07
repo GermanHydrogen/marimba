@@ -165,8 +165,7 @@ class ImagerySummary:
             ]
             probe_result = subprocess.run(
                 probe_cmd,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
+                capture_output=True,
                 check=False,
             )
             if probe_result.returncode != 0:
@@ -191,8 +190,7 @@ class ImagerySummary:
                 ]
                 seek_result = subprocess.run(
                     seek_cmd,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE,
+                    capture_output=True,
                     check=False,
                 )
                 if seek_result.returncode != 0:
@@ -426,8 +424,7 @@ class ImagerySummary:
 
         result = subprocess.run(
             command,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+            capture_output=True,
             text=True,
             check=False,
         )

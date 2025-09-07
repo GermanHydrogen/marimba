@@ -13,12 +13,12 @@ from typing import Any
 import pytest
 
 from marimba.core.parallel.pipeline_loader import (
-    _find_pipeline_module_path,
-    _log_empty_repo_warning,
-    _load_pipeline_module,
-    _is_valid_pipeline_class,
-    _find_pipeline_class,
     _configure_pipeline_logging,
+    _find_pipeline_class,
+    _find_pipeline_module_path,
+    _is_valid_pipeline_class,
+    _load_pipeline_module,
+    _log_empty_repo_warning,
     load_pipeline_instance,
 )
 from marimba.core.pipeline import BasePipeline
@@ -46,7 +46,10 @@ class MockTestPipeline(BasePipeline):
         pass
 
     def _package(
-        self, data_dir: Path, config: dict[str, Any], **kwargs: Any
+        self,
+        data_dir: Path,
+        config: dict[str, Any],
+        **kwargs: Any,
     ) -> dict[Path, tuple[Path, list[BaseMetadata] | None, dict[str, Any] | None]]:
         return {}
 
@@ -315,7 +318,10 @@ class TestFindPipelineClass:
                 pass
 
             def _package(
-                self, data_dir: Path, config: dict[str, Any], **kwargs: Any
+                self,
+                data_dir: Path,
+                config: dict[str, Any],
+                **kwargs: Any,
             ) -> dict[Path, tuple[Path, list[BaseMetadata] | None, dict[str, Any] | None]]:
                 return {}
 
@@ -493,7 +499,11 @@ class MockTestPipeline(BasePipeline):
 
         # Check that logging was configured
         mock_configure_logging.assert_called_once_with(
-            result, pipeline_test_dirs["root_dir"], "test_pipeline", False, "LOG_PREFIX"
+            result,
+            pipeline_test_dirs["root_dir"],
+            "test_pipeline",
+            False,
+            "LOG_PREFIX",
         )
 
     @pytest.mark.integration

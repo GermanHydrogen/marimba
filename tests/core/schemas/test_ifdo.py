@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, cast
 
@@ -16,7 +16,7 @@ class TestiFDOMetadataProperties:
     def sample_image_data(self) -> ImageData:
         """Create a sample ImageData for testing."""
         return ImageData(
-            image_datetime=datetime(2023, 1, 1, 12, 0, 0, tzinfo=timezone.utc),
+            image_datetime=datetime(2023, 1, 1, 12, 0, 0, tzinfo=UTC),
             image_latitude=45.0,
             image_longitude=-123.0,
             image_altitude_meters=100.0,
@@ -31,7 +31,7 @@ class TestiFDOMetadataProperties:
     @pytest.mark.unit
     def test_datetime_property(self, ifdo_metadata: iFDOMetadata) -> None:
         """Test datetime property returns correct value."""
-        assert ifdo_metadata.datetime == datetime(2023, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
+        assert ifdo_metadata.datetime == datetime(2023, 1, 1, 12, 0, 0, tzinfo=UTC)
 
     @pytest.mark.unit
     def test_datetime_property_none(self):
@@ -365,7 +365,7 @@ def test_create_dataset_metadata(mocker):
 
     data_setname = "TestDataSet"
     root_dir = Path("/tmp")
-    items = {"image.jpg": [cast(BaseMetadata, iFDOMetadata(image_data=ImageData(image_altitude_meters=0.0)))]}
+    items = {"image.jpg": [cast("BaseMetadata", iFDOMetadata(image_data=ImageData(image_altitude_meters=0.0)))]}
     mocker.patch("uuid.uuid4", mocker.MagicMock(return_value=mock_uuid))
     iFDOMetadata.create_dataset_metadata(data_setname, root_dir, items, saver_overwrite=mock_saver)
 
@@ -379,11 +379,15 @@ def test_create_dataset_metadata_with_metadata_name(mocker):
         assert output_name == "custom.ifdo"
 
     image_data = ImageData(image_altitude_meters=0.0)
-    items = {"image.jpg": [cast(BaseMetadata, iFDOMetadata(image_data))]}
+    items = {"image.jpg": [cast("BaseMetadata", iFDOMetadata(image_data))]}
 
     mocker.patch("uuid.uuid4", mocker.MagicMock(return_value=mock_uuid))
     iFDOMetadata.create_dataset_metadata(
-        "TestDataSet", Path("/tmp"), items, metadata_name="custom", saver_overwrite=mock_saver
+        "TestDataSet",
+        Path("/tmp"),
+        items,
+        metadata_name="custom",
+        saver_overwrite=mock_saver,
     )
 
 
@@ -400,7 +404,7 @@ def test_create_dataset_metadata_video_file(mocker):
     # Create video metadata (list of ImageData)
     image_data_list = [ImageData(image_altitude_meters=100.0), ImageData(image_altitude_meters=200.0)]
     video_metadata = iFDOMetadata(image_data_list)
-    items = {"video.mp4": [cast(BaseMetadata, video_metadata)]}
+    items = {"video.mp4": [cast("BaseMetadata", video_metadata)]}
 
     mocker.patch("uuid.uuid4", mocker.MagicMock(return_value=mock_uuid))
     iFDOMetadata.create_dataset_metadata("TestDataSet", Path("/tmp"), items, saver_overwrite=mock_saver)
@@ -414,7 +418,7 @@ def test_create_dataset_metadata_dry_run():
         pytest.fail("Saver should not be called in dry run mode")
 
     image_data = ImageData(image_altitude_meters=0.0)
-    items = {"image.jpg": [cast(BaseMetadata, iFDOMetadata(image_data))]}
+    items = {"image.jpg": [cast("BaseMetadata", iFDOMetadata(image_data))]}
 
     # Should not call saver
     iFDOMetadata.create_dataset_metadata("TestDataSet", Path("/tmp"), items, dry_run=True, saver_overwrite=mock_saver)

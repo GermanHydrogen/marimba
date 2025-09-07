@@ -1,7 +1,5 @@
 """Tests for marimba.lib.exif module."""
 
-from pathlib import Path
-
 import pytest
 from exiftool.exceptions import ExifToolException
 

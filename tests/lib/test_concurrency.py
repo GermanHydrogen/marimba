@@ -1,7 +1,5 @@
 """Tests for marimba.lib.concurrency module."""
 
-from pathlib import Path
-
 import pytest
 
 from marimba.lib.concurrency import (
@@ -59,7 +57,11 @@ class TestConcurrencyUtilities:
 
     @pytest.mark.integration
     def test_multithreaded_generate_image_thumbnails_with_logger(
-        self, mocker, mock_pipeline, test_image_paths, tmp_path
+        self,
+        mocker,
+        mock_pipeline,
+        test_image_paths,
+        tmp_path,
     ):
         """Test multithreaded image thumbnail generation with logger."""
         mock_generate_thumbnail = mocker.patch("marimba.lib.concurrency.generate_image_thumbnail")
@@ -69,7 +71,11 @@ class TestConcurrencyUtilities:
         mock_generate_thumbnail.return_value = tmp_path / "thumb.jpg"
 
         result = multithreaded_generate_image_thumbnails(
-            mock_pipeline, test_image_paths, output_dir, logger=mock_logger, max_workers=2
+            mock_pipeline,
+            test_image_paths,
+            output_dir,
+            logger=mock_logger,
+            max_workers=2,
         )
 
         assert isinstance(result, list)
@@ -89,7 +95,11 @@ class TestConcurrencyUtilities:
         ]
 
         result = multithreaded_generate_video_thumbnails(
-            mock_pipeline, test_video_paths, output_dir, interval=5, suffix="_TEST"
+            mock_pipeline,
+            test_video_paths,
+            output_dir,
+            interval=5,
+            suffix="_TEST",
         )
 
         assert len(result) == 2
@@ -98,7 +108,11 @@ class TestConcurrencyUtilities:
 
     @pytest.mark.integration
     def test_multithreaded_generate_video_thumbnails_with_options(
-        self, mocker, mock_pipeline, test_video_paths, tmp_path
+        self,
+        mocker,
+        mock_pipeline,
+        test_video_paths,
+        tmp_path,
     ):
         """Test multithreaded video thumbnail generation with various options."""
         mock_generate_thumbnails = mocker.patch("marimba.lib.concurrency.generate_video_thumbnails")

@@ -9,16 +9,16 @@ from collections import defaultdict
 from collections.abc import Callable
 from functools import reduce
 from pathlib import Path
-from typing import Any, TypeAlias, TypeVar
+from typing import Any, TypeVar
 
 from marimba.core.schemas.base import BaseMetadata
 from marimba.core.utils.constants import MetadataGenerationLevelOptions
 
-PIPELINE_DATASET_MAPPING_TYPE: TypeAlias = dict[
+type PIPELINE_DATASET_MAPPING_TYPE = dict[
     str,
     dict[Path, tuple[Path, list[BaseMetadata] | None, dict[str, Any] | None]],
 ]
-DATASET_MAPPING_TYPE: TypeAlias = dict[str, PIPELINE_DATASET_MAPPING_TYPE]
+type DATASET_MAPPING_TYPE = dict[str, PIPELINE_DATASET_MAPPING_TYPE]
 
 PIPELINE_MAPPED_DATASET_ITEMS = dict[str, dict[str, list[BaseMetadata]]]
 MAPPED_DATASET_ITEMS = dict[str, PIPELINE_MAPPED_DATASET_ITEMS]
@@ -26,18 +26,18 @@ MAPPED_DATASET_ITEMS = dict[str, PIPELINE_MAPPED_DATASET_ITEMS]
 PIPLINE_MAPPED_GROUPED_ITEMS = dict[str, dict[type[BaseMetadata], dict[str, list[BaseMetadata]]]]
 MAPPED_GROUPED_ITEMS = dict[str, PIPLINE_MAPPED_GROUPED_ITEMS]
 
-MAPPING_PROCESSOR_TYPE: TypeAlias = Callable[
+type MAPPING_PROCESSOR_TYPE = Callable[
     [dict[type[BaseMetadata], dict[str, list[BaseMetadata]]], str | None],
     None,
 ]
-DECORATOR_TYPE: TypeAlias = Callable[[MAPPING_PROCESSOR_TYPE, MAPPED_GROUPED_ITEMS], None]
+type DECORATOR_TYPE = Callable[[MAPPING_PROCESSOR_TYPE, MAPPED_GROUPED_ITEMS], None]
 
 T = TypeVar("T")
 S = TypeVar("S")
 R = TypeVar("R")
 
 
-def flatten_middle_mapping(mapping: dict[str, dict[str, dict[T, S]]]) -> dict[str, dict[T, S]]:
+def flatten_middle_mapping[T, S](mapping: dict[str, dict[str, dict[T, S]]]) -> dict[str, dict[T, S]]:
     """
     Flattens the middle level of a mapping structure.
 
@@ -50,7 +50,7 @@ def flatten_middle_mapping(mapping: dict[str, dict[str, dict[T, S]]]) -> dict[st
     return {pipeline_name: flatten_mapping(pipeline_data) for pipeline_name, pipeline_data in mapping.items()}
 
 
-def flatten_mapping(mapping: dict[str, dict[T, S]]) -> dict[T, S]:
+def flatten_mapping[T, S](mapping: dict[str, dict[T, S]]) -> dict[T, S]:
     """
     Flattens a mapping structure for one level.
 
@@ -63,7 +63,9 @@ def flatten_mapping(mapping: dict[str, dict[T, S]]) -> dict[T, S]:
     return reduce(lambda x, y: x | y, mapping.values(), {})
 
 
-def flatten_middle_list_mapping(mapping: dict[str, dict[str, dict[T, dict[S, R]]]]) -> dict[str, dict[T, dict[S, R]]]:
+def flatten_middle_list_mapping[T, S, R](
+    mapping: dict[str, dict[str, dict[T, dict[S, R]]]],
+) -> dict[str, dict[T, dict[S, R]]]:
     """
     Flattens the middle level of a mapping structure.
 
@@ -76,7 +78,7 @@ def flatten_middle_list_mapping(mapping: dict[str, dict[str, dict[T, dict[S, R]]
     return {pipeline_name: flatten_list_mapping(pipeline_data) for pipeline_name, pipeline_data in mapping.items()}
 
 
-def flatten_list_mapping(mapping: dict[str, dict[T, dict[S, R]]]) -> dict[T, dict[S, R]]:
+def flatten_list_mapping[T, S, R](mapping: dict[str, dict[T, dict[S, R]]]) -> dict[T, dict[S, R]]:
     """
     Flattens the middle level of a mapping structure.
 

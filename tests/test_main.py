@@ -1,26 +1,16 @@
 """Tests for marimba.main CLI module."""
 
-import importlib.metadata
-from pathlib import Path
-
 import pytest
 import typer
 from typer.testing import CliRunner
 
-from marimba.main import (
-    distribute_command,
-    global_options,
-    import_command,
-    install_command,
-    marimba_cli,
-    package_command,
-    process_command,
-    update_command,
-    version_callback,
-    version_command,
-)
 from marimba.core.utils.log import LogLevel
-from tests.conftest import assert_cli_success, assert_cli_failure
+from marimba.main import (
+    global_options,
+    marimba_cli,
+    version_callback,
+)
+from tests.conftest import assert_cli_failure, assert_cli_success
 
 
 class TestCLI:
@@ -78,7 +68,9 @@ class TestCLI:
         mocker.patch("importlib.metadata.version", side_effect=Exception("No metadata"))
         result = runner.invoke(marimba_cli, ["version"])
         assert_cli_success(
-            result, expected_message="unknown (not installed as package)", context="Version command without metadata"
+            result,
+            expected_message="unknown (not installed as package)",
+            context="Version command without metadata",
         )
 
     @pytest.mark.unit
@@ -146,7 +138,8 @@ class TestCLI:
         source_path.mkdir()
 
         result = runner.invoke(
-            marimba_cli, ["import", "test_collection", str(source_path), "--project-dir", str(mock_project_dir)]
+            marimba_cli,
+            ["import", "test_collection", str(source_path), "--project-dir", str(mock_project_dir)],
         )
 
         assert_cli_success(result, context="Basic import command")
@@ -313,7 +306,8 @@ class TestCLI:
         mock_find_project.return_value = mock_project_dir
 
         result = runner.invoke(
-            marimba_cli, ["distribute", "test_dataset", "test_target", "--project-dir", str(mock_project_dir)]
+            marimba_cli,
+            ["distribute", "test_dataset", "test_target", "--project-dir", str(mock_project_dir)],
         )
 
         assert_cli_success(result, context="Basic distribute command")
@@ -452,7 +446,8 @@ class TestCommandErrorHandling:
         source_path.mkdir(parents=True)
 
         result = runner.invoke(
-            marimba_cli, ["import", "test_collection", str(source_path), "--project-dir", str(mock_project_dir)]
+            marimba_cli,
+            ["import", "test_collection", str(source_path), "--project-dir", str(mock_project_dir)],
         )
 
         assert_cli_failure(result, expected_exit_code=1, context="Import command with project error")
@@ -515,7 +510,8 @@ class TestCommandErrorHandling:
         mock_find_project.return_value = mock_project_dir
 
         result = runner.invoke(
-            marimba_cli, ["distribute", "test_dataset", "test_target", "--project-dir", str(mock_project_dir)]
+            marimba_cli,
+            ["distribute", "test_dataset", "test_target", "--project-dir", str(mock_project_dir)],
         )
 
         assert_cli_failure(result, expected_exit_code=1, context="Distribute command with distribution error")
@@ -581,7 +577,8 @@ class TestCLIIntegration:
         # Simulate workflow: import -> process -> package
         # Import
         result1 = runner.invoke(
-            marimba_cli, ["import", "test_collection", str(source_path), "--project-dir", str(project_dir)]
+            marimba_cli,
+            ["import", "test_collection", str(source_path), "--project-dir", str(project_dir)],
         )
         assert_cli_success(result1, context="End-to-end workflow import")
 

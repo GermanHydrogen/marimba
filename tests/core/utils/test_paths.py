@@ -1,8 +1,5 @@
 """Tests for marimba.core.utils.paths module."""
 
-import os
-import shutil
-import stat
 from pathlib import Path
 
 import pytest

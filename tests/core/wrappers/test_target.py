@@ -257,8 +257,8 @@ class TestDistributionTargetWrapper:
         assert "dap" in DistributionTargetWrapper.CLASS_MAP
 
         # Verify the classes are correct
-        from marimba.core.distribution.s3 import S3DistributionTarget
         from marimba.core.distribution.dap import CSIRODapDistributionTarget
+        from marimba.core.distribution.s3 import S3DistributionTarget
 
         assert DistributionTargetWrapper.CLASS_MAP["s3"] == S3DistributionTarget
         assert DistributionTargetWrapper.CLASS_MAP["dap"] == CSIRODapDistributionTarget

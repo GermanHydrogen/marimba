@@ -1,7 +1,5 @@
 """Tests for marimba.core.utils.map module."""
 
-import math
-
 import pytest
 
 from marimba.core.utils.map import (
@@ -170,7 +168,7 @@ class TestGridCalculations:
         assert len(positions) == 4
         assert positions[0] == -5.0
         assert positions[-1] == -2.0
-        assert all(p1 < p2 for p1, p2 in zip(positions[:-1], positions[1:]))
+        assert all(p1 < p2 for p1, p2 in zip(positions[:-1], positions[1:], strict=False))
 
 
 class TestVisibleBounds:

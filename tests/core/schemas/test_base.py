@@ -1,9 +1,6 @@
 """Tests for marimba.core.schemas.base module."""
 
-import logging
 from datetime import datetime
-from pathlib import Path
-from typing import Any
 
 import pytest
 
@@ -83,7 +80,14 @@ class TestBaseMetadata:
 
             @classmethod
             def create_dataset_metadata(
-                cls, dataset_name, root_dir, items, metadata_name=None, *, dry_run=False, saver_overwrite=None
+                cls,
+                dataset_name,
+                root_dir,
+                items,
+                metadata_name=None,
+                *,
+                dry_run=False,
+                saver_overwrite=None,
             ):
                 pass
 
@@ -246,7 +250,14 @@ class TestBaseMetadata:
 
             @classmethod
             def create_dataset_metadata(
-                cls, dataset_name, root_dir, items, metadata_name=None, *, dry_run=False, saver_overwrite=None
+                cls,
+                dataset_name,
+                root_dir,
+                items,
+                metadata_name=None,
+                *,
+                dry_run=False,
+                saver_overwrite=None,
             ):
                 pass
 

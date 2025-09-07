@@ -1,7 +1,5 @@
 """Tests for marimba.lib.gps module."""
 
-from pathlib import Path
-
 import pytest
 
 from marimba.lib.gps import (
@@ -64,12 +62,11 @@ class TestGPSUtilities:
 
         if expected_s_approx is None:
             assert s > 0, f"Expected positive seconds for {description}"
+        elif expected_s_approx == 0:
+            assert s == 0, f"Expected zero seconds for {description}"
         else:
-            if expected_s_approx == 0:
-                assert s == 0, f"Expected zero seconds for {description}"
-            else:
-                # Allow for small floating point precision differences
-                assert abs(s - expected_s_approx) <= 1, f"Seconds precision issue for {description}"
+            # Allow for small floating point precision differences
+            assert abs(s - expected_s_approx) <= 1, f"Seconds precision issue for {description}"
 
     @pytest.mark.integration
     def test_read_exif_location_with_coordinates(self, mocker, test_image_path):

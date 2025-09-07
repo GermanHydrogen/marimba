@@ -4,13 +4,13 @@ from marimba.core.schemas.base import BaseMetadata
 from marimba.core.schemas.generic import GenericMetadata
 from marimba.core.utils.constants import MetadataGenerationLevelOptions
 from marimba.core.utils.dataset import (
+    MAPPED_GROUPED_ITEMS,
     _run_mapping_processor,
     _run_mapping_processor_per_pipeline,
     _run_mapping_processor_per_pipline_and_collection,
-    get_mapping_processor_decorator,
-    flatten_middle_mapping,
-    MAPPED_GROUPED_ITEMS,
     flatten_mapping,
+    flatten_middle_mapping,
+    get_mapping_processor_decorator,
 )
 
 
@@ -44,12 +44,13 @@ def test_flatten_mapping():
 @pytest.mark.unit
 def test_run_mapping_processor():
     def dataset_mapping_processor(
-        dataset_mapping: dict[type[BaseMetadata], dict[str, list[BaseMetadata]]], _: str | None
+        dataset_mapping: dict[type[BaseMetadata], dict[str, list[BaseMetadata]]],
+        _: str | None,
     ) -> None:
         assert dataset_mapping == {GenericMetadata: {"a": [], "b": []}}
 
     dataset_mapping: MAPPED_GROUPED_ITEMS = {
-        "pipeline": {"collection": {GenericMetadata: {"a": []}}, "another": {GenericMetadata: {"b": []}}}
+        "pipeline": {"collection": {GenericMetadata: {"a": []}}, "another": {GenericMetadata: {"b": []}}},
     }
     _run_mapping_processor(dataset_mapping_processor, dataset_mapping)
 
@@ -57,13 +58,14 @@ def test_run_mapping_processor():
 @pytest.mark.unit
 def test_run_mapping_processor_per_pipeline():
     def dataset_mapping_processor(
-        dataset_mapping: dict[type[BaseMetadata], dict[str, list[BaseMetadata]]], collection_name: str | None
+        dataset_mapping: dict[type[BaseMetadata], dict[str, list[BaseMetadata]]],
+        collection_name: str | None,
     ) -> None:
         assert dataset_mapping == {GenericMetadata: {"a": [], "b": []}}
         assert collection_name == "pipeline"
 
     dataset_mapping: MAPPED_GROUPED_ITEMS = {
-        "pipeline": {"collection": {GenericMetadata: {"a": []}}, "another": {GenericMetadata: {"b": []}}}
+        "pipeline": {"collection": {GenericMetadata: {"a": []}}, "another": {GenericMetadata: {"b": []}}},
     }
     _run_mapping_processor_per_pipeline(dataset_mapping_processor, dataset_mapping)
 
@@ -71,7 +73,8 @@ def test_run_mapping_processor_per_pipeline():
 @pytest.mark.unit
 def test_run_mapping_processor_per_pipline_and_collection():
     def dataset_mapping_processor(
-        dataset_mapping: dict[type[BaseMetadata], dict[str, list[BaseMetadata]]], collection_name: str | None
+        dataset_mapping: dict[type[BaseMetadata], dict[str, list[BaseMetadata]]],
+        collection_name: str | None,
     ) -> None:
         assert dataset_mapping == {GenericMetadata: {"a": []}}
         assert collection_name == "collection.pipeline"

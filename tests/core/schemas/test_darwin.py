@@ -2,8 +2,8 @@
 
 import pytest
 
-from marimba.core.schemas.darwin import DarwinCoreMetadata
 from marimba.core.schemas.base import BaseMetadata
+from marimba.core.schemas.darwin import DarwinCoreMetadata
 
 
 class TestDarwinCoreMetadata:

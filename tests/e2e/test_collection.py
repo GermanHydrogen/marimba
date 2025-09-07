@@ -13,8 +13,6 @@ from marimba.main import marimba_cli as app
 from tests.conftest import (
     TestDataFactory,
     assert_cli_success,
-    assert_project_structure_complete,
-    create_complete_mock_project,
 )
 
 
@@ -30,7 +28,8 @@ class TestCollectionImport:
 
         # Test: marimba import <collection> <data_path>
         result = runner.invoke(
-            app, ["import", "test_collection", str(temp_data_dir), "--project-dir", str(temp_project_dir)]
+            app,
+            ["import", "test_collection", str(temp_data_dir), "--project-dir", str(temp_project_dir)],
         )
 
         # Import should succeed (copies files but doesn't process them without pipelines) - using shared CLI helper
@@ -48,7 +47,11 @@ class TestCollectionImport:
         # without proper pipeline configuration, so we just verify the basic structure
 
     def test_import_with_config_options(
-        self, runner: CliRunner, temp_project_dir: Path, temp_data_dir: Path, test_data_factory: TestDataFactory
+        self,
+        runner: CliRunner,
+        temp_project_dir: Path,
+        temp_data_dir: Path,
+        test_data_factory: TestDataFactory,
     ) -> None:
         """Test import with configuration options (should succeed and properly parse config)."""
         # Create project first
@@ -57,10 +60,11 @@ class TestCollectionImport:
 
         # Use factory to generate test config instead of hard-coded values
         collection_config_data = test_data_factory.create_collection_config(
-            site_id="FACTORY_SITE_01", field_of_view="1500"
+            site_id="FACTORY_SITE_01",
+            field_of_view="1500",
         )
         config_json = str(
-            {"site_id": collection_config_data["site_id"], "field_of_view": collection_config_data["field_of_view"]}
+            {"site_id": collection_config_data["site_id"], "field_of_view": collection_config_data["field_of_view"]},
         ).replace("'", '"')
 
         # Test import with config options
@@ -94,7 +98,10 @@ class TestCollectionImport:
         assert "1500" in config_content, "Config should contain factory-generated field_of_view value"
 
     def test_import_with_overwrite_and_operations(
-        self, runner: CliRunner, temp_project_dir: Path, temp_data_dir: Path
+        self,
+        runner: CliRunner,
+        temp_project_dir: Path,
+        temp_data_dir: Path,
     ) -> None:
         """Test import with overwrite and different operations."""
         # Create project
@@ -103,7 +110,8 @@ class TestCollectionImport:
 
         # First import
         result = runner.invoke(
-            app, ["import", "test_collection", str(temp_data_dir), "--project-dir", str(temp_project_dir)]
+            app,
+            ["import", "test_collection", str(temp_data_dir), "--project-dir", str(temp_project_dir)],
         )
 
         # Second import with overwrite flag (should succeed)
@@ -209,7 +217,8 @@ class TestCollectionDeletion:
 
         # Test deleting non-existent structures (should fail gracefully)
         result = runner.invoke(
-            app, ["delete", "collection", "nonexistent_collection", "--project-dir", str(temp_project_dir)]
+            app,
+            ["delete", "collection", "nonexistent_collection", "--project-dir", str(temp_project_dir)],
         )
         # Should fail gracefully for non-existent collections
         assert result.exit_code != 0
@@ -247,7 +256,8 @@ class TestCollectionDeletion:
 
         if existing_to_delete:
             result = runner.invoke(
-                app, ["delete", "collection"] + existing_to_delete + ["--project-dir", str(temp_project_dir)]
+                app,
+                ["delete", "collection"] + existing_to_delete + ["--project-dir", str(temp_project_dir)],
             )
             assert result.exit_code == 0
 
@@ -285,7 +295,8 @@ class TestCollectionDeletion:
 
         # Step 4: Test batch delete multiple collections
         result = runner.invoke(
-            app, ["delete", "collection"] + collection_names + ["--project-dir", str(temp_project_dir)]
+            app,
+            ["delete", "collection"] + collection_names + ["--project-dir", str(temp_project_dir)],
         )
         assert result.exit_code == 0, f"Batch collection deletion failed: {result.stdout}"
 
@@ -320,7 +331,10 @@ class TestCollectionWorkflows:
     """Test complex collection workflows and simulations."""
 
     def test_full_demo_workflow_simulation(
-        self, runner: CliRunner, temp_project_dir: Path, temp_data_dir: Path
+        self,
+        runner: CliRunner,
+        temp_project_dir: Path,
+        temp_data_dir: Path,
     ) -> None:
         """Test a simulation of the demo workflow without external dependencies."""
         # Step 1: Create project
@@ -331,7 +345,8 @@ class TestCollectionWorkflows:
         imported_collections = []
         for collection_name in ["test_025", "test_026", "test_045"]:
             result = runner.invoke(
-                app, ["import", collection_name, str(temp_data_dir), "--project-dir", str(temp_project_dir)]
+                app,
+                ["import", collection_name, str(temp_data_dir), "--project-dir", str(temp_project_dir)],
             )
             # All imports should succeed
             assert result.exit_code == 0, f"Import {collection_name} should succeed: {result.stdout}"
@@ -344,7 +359,8 @@ class TestCollectionWorkflows:
         # Step 3: Test batch delete collections (should succeed now that collections exist)
         collection_names = ["test_025", "test_026", "test_045"]
         result = runner.invoke(
-            app, ["delete", "collection"] + collection_names + ["--project-dir", str(temp_project_dir)]
+            app,
+            ["delete", "collection"] + collection_names + ["--project-dir", str(temp_project_dir)],
         )
         # Should succeed because collections now exist
         assert result.exit_code == 0, f"Delete should succeed for existing collections: {result.stdout}"

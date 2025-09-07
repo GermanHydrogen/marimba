@@ -2,7 +2,10 @@
 line-length = 120
 
 # Target Python Version
-target-version = "py310"
+target-version = "py312"
+
+# Output configuration
+output-format = "concise"
 
 # Exclude directories and files
 exclude = [
@@ -67,4 +70,68 @@ lint.ignore = [
 
     # UP - pyupgrade
     "UP022",  # Prefer `capture_output` over sending `stdout` and `stderr` to `PIPE` for subprocess.run() calls
+]
+
+# Per-file ignores
+[lint.per-file-ignores]
+"tests/**" = [
+    "ANN001",  # Missing type annotation for function argument (test functions don't need full annotations)
+    "ANN201",  # Missing return type annotation for public function (test functions don't need return annotations)
+    "ANN202",  # Missing return type annotation for private function (test helpers don't need annotations)
+    "ANN401",  # Dynamically typed expressions (Any) are acceptable in test mocks
+    "ARG001",  # Unused function argument (test fixtures may have unused args)
+    "ARG002",  # Unused method argument (test mocks may have unused args)
+    "B017",    # Assert blind exception (acceptable in tests)
+    "D100",    # Missing docstring in public module (test modules don't need docstrings)
+    "D102",    # Missing docstring in public method (test methods don't need docstrings)
+    "D103",    # Missing docstring in public function (test functions don't need docstrings)
+    "D107",    # Missing docstring in __init__ (test classes don't need __init__ docstrings)
+    "DTZ001",  # datetime without tzinfo (acceptable in tests)
+    "E712",    # Avoid equality comparisons to True/False (acceptable in tests for clarity))
+    "F841",    # Local variable assigned but never used (common in test setups)
+    "LOG001",  # Use logging.getLogger() (direct Logger instantiation is fine in tests)
+    "PGH003",  # Use specific rule codes when ignoring type issues (generic ignores acceptable in tests)
+    "PLC0415", # Import should be at top-level (conditional imports acceptable in tests)
+    "PLR2004", # Magic value used in comparison (acceptable in tests for clarity)
+    "PT006",   # Wrong type passed to pytest.mark.parametrize (may be intentional)
+    "PT011",   # pytest.raises too broad (broad exceptions acceptable in some tests)
+    "RET504",  # Unnecessary assignment before return (acceptable in tests for clarity)
+    "RUF007",  # Prefer itertools.pairwise() (zip() is clearer in tests)
+    "S101",    # Use of `assert` detected (assert is standard in tests)
+    "S105",    # Possible hardcoded password (test credentials are acceptable)
+    "S106",    # Possible hardcoded password assigned to argument (test credentials are acceptable)
+    "S108",    # Probable insecure usage of temporary file (acceptable in tests)
+    "SIM103",  # Return condition directly (explicit conditions may be clearer in tests)
+    "SLF001",  # Private member accessed (tests often need to access private members)
+    "RUF003",  # Comment contains ambiguous unicode (acceptable in test comments)
+    "TC001",   # Move application import into type-checking block (not needed in tests)
+    "TC003",   # Move standard library import into type-checking block (not needed in tests)
+    # Additional test-specific ignores
+    "ANN002",  # Missing type annotation for *args (test functions don't need full annotations)
+    "ANN003",  # Missing type annotation for **kwargs (test functions don't need full annotations)
+    "ANN204",  # Missing return type annotation for special method (test classes don't need annotations)
+    "ANN205",  # Missing return type annotation for staticmethod (test helpers don't need annotations) 
+    "ANN206",  # Missing return type annotation for classmethod (test helpers don't need annotations)
+    "B023",    # Function definition does not bind loop variable (acceptable in test generators)
+    "BLE001",  # Do not catch blind exception (acceptable in test cleanup)
+    "C901",    # Function is too complex (test functions can be complex)
+    "D417",    # Missing argument description in docstring (test functions don't need full docstrings)
+    "E501",    # Line too long (test assertions can be long)
+    "ERA001",  # Found commented-out code (acceptable in tests for examples)
+    "FBT002",  # Boolean default positional argument (acceptable in test helpers)
+    "PERF401", # Use list comprehension (explicit loops may be clearer in tests)
+    "PT018",   # Assertion should be broken down (complex assertions acceptable in tests)
+    "PTH101",  # os.chmod should be replaced by Path.chmod (os functions acceptable in tests)
+    "PTH120",  # os.path.dirname should be replaced by Path.parent (os.path acceptable in tests)
+    "PTH123",  # open() should be replaced by Path.open() (builtin open acceptable in tests)
+    "RUF005",  # Consider iterable unpacking instead of concatenation (concatenation clearer in tests)
+    "S103",    # os.chmod setting permissive mask (acceptable in tests)
+    "S110",    # try-except-pass detected (acceptable in test cleanup)
+    "SIM105",  # Use contextlib.suppress instead of try-except-pass (explicit try-except clearer in tests)
+    "T201",    # print found (acceptable in tests for debugging)
+    "DTZ005",  # datetime.now() without tz argument (acceptable in tests)
+    "INP001",  # File is part of implicit namespace package (tests don't need __init__.py)
+    "PTH110",  # os.path.exists should be replaced by Path.exists (os.path acceptable in tests)
+    "PTH118",  # os.path.join should be replaced by Path (os.path acceptable in tests)
+    "W293",    # Blank line contains whitespace (acceptable in tests)
 ]

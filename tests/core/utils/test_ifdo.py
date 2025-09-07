@@ -1,10 +1,9 @@
 import tempfile
+from collections.abc import Generator
 from pathlib import Path
-from typing import Generator
 from uuid import uuid4
 
 import pytest
-
 from ifdo import iFDO
 from ifdo.models import ImageSetHeader
 

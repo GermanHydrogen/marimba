@@ -1,8 +1,5 @@
 """Tests for marimba.lib.video module."""
 
-import tempfile
-from pathlib import Path
-
 import pytest
 
 from marimba.lib.video import (
@@ -292,12 +289,20 @@ class TestVideoUtilities:
         mock_filter.return_value = []
 
         result_video, result_paths = generate_video_thumbnails(
-            test_video_path, output_dir, interval=5, suffix="_CUSTOM", overwrite=True
+            test_video_path,
+            output_dir,
+            interval=5,
+            suffix="_CUSTOM",
+            overwrite=True,
         )
 
         # Check that custom parameters were passed through
         mock_generate_filenames.assert_called_once_with(
-            test_video_path, output_dir, 750, 125, "_CUSTOM"  # 25 fps * 5 seconds = 125 frame interval
+            test_video_path,
+            output_dir,
+            750,
+            125,
+            "_CUSTOM",  # 25 fps * 5 seconds = 125 frame interval
         )
         mock_filter.assert_called_once_with({}, True)  # overwrite=True
 

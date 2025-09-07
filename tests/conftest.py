@@ -6,9 +6,9 @@ including common test data, temporary directories, and testing utilities.
 """
 
 import tempfile
+from collections.abc import Generator
 from pathlib import Path
 from typing import Any
-from collections.abc import Generator
 
 import pytest
 import pytest_mock
@@ -92,7 +92,7 @@ version: 1.0.0
 description: Test pipeline for unit testing
 requirements:
   - python>=3.8
-"""
+""",
         )
         (repo_path / "main.py").write_text("# Test pipeline main script")
 
@@ -319,7 +319,7 @@ def assert_cli_success(result: Result, expected_message: str | None = None, cont
             f"CLI command failed{error_context}:\n"
             f"Exit code: {result.exit_code}\n"
             f"Output: {error_output}\n"
-            f"Expected: Success (exit code 0)"
+            f"Expected: Success (exit code 0)",
         )
 
     if expected_message:
@@ -329,7 +329,10 @@ def assert_cli_success(result: Result, expected_message: str | None = None, cont
 
 
 def assert_cli_failure(
-    result: Result, expected_error: str | None = None, expected_exit_code: int | None = None, context: str = ""
+    result: Result,
+    expected_error: str | None = None,
+    expected_exit_code: int | None = None,
+    context: str = "",
 ) -> None:
     """Helper for CLI failure assertions with detailed validation."""
     error_context = f" ({context})" if context else ""
@@ -402,7 +405,9 @@ def assert_project_structure_complete(project_dir: Path, message_prefix: str = "
 
 # Mock Structure Helpers - Phase 2 Enhancements
 def create_mock_pipeline_structure(
-    base_path: Path, pipeline_name: str = "test_pipeline", config_overrides: dict[str, Any] | None = None
+    base_path: Path,
+    pipeline_name: str = "test_pipeline",
+    config_overrides: dict[str, Any] | None = None,
 ) -> Path:
     """Create standardized mock pipeline structure for testing."""
     pipeline_dir = base_path / "pipelines" / pipeline_name
@@ -479,7 +484,9 @@ created: {config['created']}
 
 
 def create_mock_dataset_structure(
-    base_path: Path, dataset_name: str = "test_dataset", config_overrides: dict[str, Any] | None = None
+    base_path: Path,
+    dataset_name: str = "test_dataset",
+    config_overrides: dict[str, Any] | None = None,
 ) -> Path:
     """Create standardized mock dataset structure for testing."""
     dataset_dir = base_path / "datasets" / dataset_name

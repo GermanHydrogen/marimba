@@ -1,7 +1,6 @@
 """Tests for marimba.core.utils.metadata module."""
 
 import json
-from pathlib import Path
 
 import pytest
 import yaml
@@ -80,7 +79,7 @@ class TestYamlSaver:
     def test_yaml_saver_with_nested_data(self, tmp_path):
         """Test yaml_saver handles nested data structures."""
         test_data = {
-            "dataset": {"name": "complex_test", "nested": {"deep": {"values": [1, 2, 3], "strings": ["a", "b", "c"]}}}
+            "dataset": {"name": "complex_test", "nested": {"deep": {"values": [1, 2, 3], "strings": ["a", "b", "c"]}}},
         }
 
         yaml_saver(tmp_path, "nested_test", test_data)

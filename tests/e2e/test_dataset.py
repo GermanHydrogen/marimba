@@ -10,7 +10,7 @@ import pytest
 from typer.testing import CliRunner
 
 from marimba.main import marimba_cli as app
-from tests.conftest import assert_cli_success, assert_cli_failure
+from tests.conftest import assert_cli_failure, assert_cli_success
 
 
 @pytest.mark.e2e
@@ -25,7 +25,8 @@ class TestDatasetPackaging:
 
         # Import some data to create a collection
         result = runner.invoke(
-            app, ["import", "test_collection", str(temp_data_dir), "--project-dir", str(temp_project_dir)]
+            app,
+            ["import", "test_collection", str(temp_data_dir), "--project-dir", str(temp_project_dir)],
         )
         assert result.exit_code in [0, 1]  # May fail without pipeline
 
@@ -52,7 +53,10 @@ class TestDatasetPackaging:
         assert result.exit_code in [0, 1], f"Package command crashed unexpectedly: {result.stdout}"
 
     def test_package_workflow_with_metadata_options(
-        self, runner: CliRunner, temp_project_dir: Path, temp_data_dir: Path
+        self,
+        runner: CliRunner,
+        temp_project_dir: Path,
+        temp_data_dir: Path,
     ) -> None:
         """Test packaging with various metadata output options."""
         # Create project and basic dataset
@@ -61,7 +65,8 @@ class TestDatasetPackaging:
 
         # Import some data to create a collection
         result = runner.invoke(
-            app, ["import", "test_collection", str(temp_data_dir), "--project-dir", str(temp_project_dir)]
+            app,
+            ["import", "test_collection", str(temp_data_dir), "--project-dir", str(temp_project_dir)],
         )
         assert result.exit_code in [0, 1]
 
@@ -101,7 +106,8 @@ class TestDatasetPackaging:
 
         # Import some data to create a collection
         result = runner.invoke(
-            app, ["import", "test_collection", str(temp_data_dir), "--project-dir", str(temp_project_dir)]
+            app,
+            ["import", "test_collection", str(temp_data_dir), "--project-dir", str(temp_project_dir)],
         )
         assert result.exit_code in [0, 1]
 
@@ -140,7 +146,8 @@ class TestDatasetDeletion:
 
         # Test deleting non-existent dataset (should fail gracefully)
         result = runner.invoke(
-            app, ["delete", "dataset", "nonexistent_dataset", "--project-dir", str(temp_project_dir)]
+            app,
+            ["delete", "dataset", "nonexistent_dataset", "--project-dir", str(temp_project_dir)],
         )
         # Should fail gracefully for non-existent datasets
         assert_cli_failure(result, context="Delete non-existent dataset")

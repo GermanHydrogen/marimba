@@ -132,7 +132,7 @@ class TestDatasetWrapper:
             simple_mapping: dict[str, dict[Path, tuple[Path, list[Any] | None, dict[str, Any] | None]]] = {
                 "test": {
                     temp_file: (Path("simple_destination.txt"), None, None),  # Valid destination
-                }
+                },
             }
             # Should not raise an exception
             self.dataset_wrapper.check_dataset_mapping(simple_mapping)

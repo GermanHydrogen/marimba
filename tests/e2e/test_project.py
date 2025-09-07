@@ -10,7 +10,7 @@ import pytest
 from typer.testing import CliRunner
 
 from marimba.main import marimba_cli as app
-from tests.conftest import assert_cli_success, assert_cli_failure, assert_project_structure_complete
+from tests.conftest import assert_cli_failure, assert_cli_success, assert_project_structure_complete
 
 
 @pytest.mark.e2e

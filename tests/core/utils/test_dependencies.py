@@ -1,7 +1,5 @@
 """Tests for marimba.core.utils.dependencies module."""
 
-import platform
-
 import pytest
 import typer
 
@@ -231,7 +229,8 @@ class TestValidateDependencies:
 
         mock_check.assert_called_once_with(ToolDependency.EXIFTOOL)
         mock_show_error_exit.assert_called_once_with(
-            ToolDependency.EXIFTOOL, "Required dependency 'exiftool' is not available"
+            ToolDependency.EXIFTOOL,
+            "Required dependency 'exiftool' is not available",
         )
 
     @pytest.mark.unit
@@ -243,7 +242,7 @@ class TestValidateDependencies:
         def mock_check_side_effect(tool):
             if tool == ToolDependency.FFMPEG:
                 return True
-            elif tool == ToolDependency.FFPROBE:
+            if tool == ToolDependency.FFPROBE:
                 return False
             return True
 

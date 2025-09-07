@@ -7,8 +7,8 @@ including temporary directories, CLI runner, and cleanup functionality.
 
 import tempfile
 import weakref
+from collections.abc import Generator
 from pathlib import Path
-from typing import Generator
 
 import pytest
 from typer.testing import CliRunner
@@ -28,7 +28,7 @@ def cleanup_dataset_wrappers():
         dataset_instances.append(weakref.ref(self))
 
     # Use setattr to avoid mypy method assignment error
-    setattr(DatasetWrapper, "__init__", tracked_init)
+    DatasetWrapper.__init__ = tracked_init  # type: ignore[method-assign]
 
     try:
         yield
@@ -44,7 +44,7 @@ def cleanup_dataset_wrappers():
                     pass
 
         # Restore original __init__ method
-        setattr(DatasetWrapper, "__init__", original_init)
+        DatasetWrapper.__init__ = original_init  # type: ignore[method-assign]
 
 
 @pytest.fixture

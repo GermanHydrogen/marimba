@@ -11,7 +11,7 @@ repos:
         language: system
         types: [ python ]
         args: [ "--fix", "--config=config/ruff.toml" ]
-        exclude: ^tests/|^docs/
+        exclude: ^docs/
 
       - id: black
         name: Black

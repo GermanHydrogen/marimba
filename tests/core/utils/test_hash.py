@@ -1,7 +1,6 @@
 """Tests for marimba.core.utils.hash module."""
 
 import hashlib
-from pathlib import Path
 
 import pytest
 

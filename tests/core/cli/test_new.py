@@ -11,10 +11,7 @@ from marimba.core.wrappers.project import ProjectWrapper
 from marimba.main import marimba_cli
 from tests.conftest import (
     TestDataFactory,
-    assert_project_structure_exists,
     assert_project_structure_complete,
-    assert_cli_success,
-    assert_cli_failure,
     run_cli_command,
 )
 
@@ -382,7 +379,7 @@ def test_project_creates_new_project(setup_test_directory: Path, test_data_facto
     project_dir = setup_test_directory / "new_project"
 
     # Test real project creation without excessive mocking - using shared CLI helper
-    result = run_cli_command(
+    run_cli_command(
         runner,
         ["new", "project", str(project_dir)],
         expected_success=True,
@@ -413,7 +410,7 @@ def test_project_exits_if_project_exists(mocker: pytest_mock.MockerFixture, setu
         side_effect=FileExistsError,
     )
     # Using shared CLI failure helper for consistent error checking
-    result = run_cli_command(
+    run_cli_command(
         runner,
         ["new", "project", str(project_dir)],
         expected_success=False,
@@ -723,7 +720,8 @@ def test_collection_invalid_name_error(mocker: pytest_mock.MockerFixture, setup_
 
 @pytest.mark.integration
 def test_collection_no_such_parent_collection_error(
-    mocker: pytest_mock.MockerFixture, setup_test_directory: Path
+    mocker: pytest_mock.MockerFixture,
+    setup_test_directory: Path,
 ) -> None:
     """
     Test collection command exits with an error if the specified parent collection does not exist.

@@ -11,7 +11,7 @@ import yaml
 from typer.testing import CliRunner
 
 from marimba.main import marimba_cli as app
-from tests.conftest import assert_cli_success, assert_cli_failure
+from tests.conftest import assert_cli_failure, assert_cli_success
 
 
 @pytest.mark.e2e
@@ -108,7 +108,8 @@ class TestDistributionWorkflows:
 
         # Test distribute command with dry run (should not fail on network)
         result = runner.invoke(
-            app, ["distribute", "test_dataset", "test_s3_target", "--project-dir", str(project), "--dry-run"]
+            app,
+            ["distribute", "test_dataset", "test_s3_target", "--project-dir", str(project), "--dry-run"],
         )
         # In dry run mode, should parse everything correctly without network calls
         assert result.exit_code in [0, 1]  # May fail due to missing target/dataset, but should handle gracefully
@@ -126,7 +127,8 @@ class TestDistributionWorkflows:
 
         # Test distribute command with dry run
         result = runner.invoke(
-            app, ["distribute", "test_dataset", "test_dap_target", "--project-dir", str(project), "--dry-run"]
+            app,
+            ["distribute", "test_dataset", "test_dap_target", "--project-dir", str(project), "--dry-run"],
         )
         # Should handle dry run gracefully
         assert result.exit_code in [0, 1]
@@ -165,7 +167,8 @@ class TestDistributionWorkflows:
 
         # Test distribute non-existent dataset
         result = runner.invoke(
-            app, ["distribute", "nonexistent_dataset", "test_s3_target", "--project-dir", str(project)]
+            app,
+            ["distribute", "nonexistent_dataset", "test_s3_target", "--project-dir", str(project)],
         )
         # Should fail gracefully with appropriate error
         # Note: CLI may return 0 but should show error in output
@@ -188,7 +191,8 @@ class TestDistributionWorkflows:
 
         # Test distribute from non-existent project
         result = runner.invoke(
-            app, ["distribute", "test_dataset", "test_target", "--project-dir", str(nonexistent_project)]
+            app,
+            ["distribute", "test_dataset", "test_target", "--project-dir", str(nonexistent_project)],
         )
         # Should fail gracefully with appropriate error
         assert_cli_failure(result, context="Distribution without project")
@@ -246,7 +250,8 @@ class TestDistributionWorkflows:
 
         # Step 3: Import some data (may fail without pipeline)
         result = runner.invoke(
-            app, ["import", "test_collection", str(temp_data_dir), "--project-dir", str(temp_project_dir)]
+            app,
+            ["import", "test_collection", str(temp_data_dir), "--project-dir", str(temp_project_dir)],
         )
         # Import may fail without pipeline
 
@@ -271,7 +276,8 @@ class TestDistributionWorkflows:
 
         # Step 5: Attempt distribution (should fail gracefully)
         result = runner.invoke(
-            app, ["distribute", "test_dataset", "test_s3_target", "--project-dir", str(temp_project_dir), "--dry-run"]
+            app,
+            ["distribute", "test_dataset", "test_s3_target", "--project-dir", str(temp_project_dir), "--dry-run"],
         )
         # Distribution should fail gracefully due to missing components
         assert result.exit_code in [0, 1]

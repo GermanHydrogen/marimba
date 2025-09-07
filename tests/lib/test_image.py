@@ -1,9 +1,5 @@
 """Tests for marimba.lib.image module."""
 
-import tempfile
-from pathlib import Path
-
-import cv2
 import numpy as np
 import pytest
 from PIL import Image
@@ -743,7 +739,10 @@ class TestGridClasses:
 
         # Use reasonable constraints that should work
         created_files = create_grid_image(
-            test_images[:3], output_path, columns=2, max_height=400  # Use fewer images  # Reasonable height
+            test_images[:3],
+            output_path,
+            columns=2,
+            max_height=400,  # Use fewer images  # Reasonable height
         )
 
         # Should create at least one grid image

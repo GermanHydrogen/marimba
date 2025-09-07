@@ -42,7 +42,10 @@ class ConcretePipeline(BasePipeline):
         self.last_process_args = (data_dir, config, kwargs)
 
     def _package(
-        self, data_dir: Path, config: dict[str, Any], **kwargs: Any
+        self,
+        data_dir: Path,
+        config: dict[str, Any],
+        **kwargs: Any,
     ) -> dict[Path, tuple[Path, list[BaseMetadata] | None, dict[str, Any] | None]]:
         self.package_called = True
         self.last_package_args = (data_dir, config, kwargs)
@@ -59,8 +62,6 @@ class ConcretePipeline(BasePipeline):
 
 class AbstractOnlyPipeline(BasePipeline):
     """Pipeline that doesn't implement abstract methods for testing."""
-
-    pass
 
 
 class TestBasePipelineInitialization:
@@ -252,10 +253,10 @@ class TestRunImportCommand:
         assert mock_logger.info.call_count == 2
         mock_logger.info.assert_any_call(
             "Started [steel_blue3]import[/steel_blue3] command for pipeline [light_pink3]ConcretePipeline[/light_pink3] with args "
-            "data_dir=formatted/path, source_path=%s, config={'test': 'config'}, kwargs={'extra': 'args'}" % source_dir
+            f"data_dir=formatted/path, source_path={source_dir}, config={{'test': 'config'}}, kwargs={{'extra': 'args'}}",
         )
         mock_logger.info.assert_any_call(
-            "Completed [steel_blue3]import[/steel_blue3] command for pipeline [light_pink3]ConcretePipeline[/light_pink3]"
+            "Completed [steel_blue3]import[/steel_blue3] command for pipeline [light_pink3]ConcretePipeline[/light_pink3]",
         )
 
     @pytest.mark.integration
@@ -343,10 +344,10 @@ class TestRunProcessCommand:
             assert mock_logger.info.call_count == 2
             mock_logger.info.assert_any_call(
                 "Started [steel_blue3]process[/steel_blue3] command for pipeline [light_pink3]ConcretePipeline[/light_pink3] with args "
-                "data_dir=formatted/path, config={'process': 'config'}, kwargs={'additional': 'parameters'}"
+                "data_dir=formatted/path, config={'process': 'config'}, kwargs={'additional': 'parameters'}",
             )
             mock_logger.info.assert_any_call(
-                "Completed [steel_blue3]process[/steel_blue3] command for pipeline [light_pink3]ConcretePipeline[/light_pink3]"
+                "Completed [steel_blue3]process[/steel_blue3] command for pipeline [light_pink3]ConcretePipeline[/light_pink3]",
             )
 
 
@@ -390,10 +391,10 @@ class TestRunPackageCommand:
             assert mock_logger.info.call_count == 2
             mock_logger.info.assert_any_call(
                 "Started [steel_blue3]package[/steel_blue3] command for pipeline [light_pink3]ConcretePipeline[/light_pink3] with args "
-                "data_dir=formatted/path, config={'package': 'config'}, kwargs={'extra': 'options'}"
+                "data_dir=formatted/path, config={'package': 'config'}, kwargs={'extra': 'options'}",
             )
             mock_logger.info.assert_any_call(
-                "Completed [steel_blue3]package[/steel_blue3] command for pipeline [light_pink3]ConcretePipeline[/light_pink3]"
+                "Completed [steel_blue3]package[/steel_blue3] command for pipeline [light_pink3]ConcretePipeline[/light_pink3]",
             )
 
 
@@ -432,10 +433,10 @@ class TestRunPostPackageCommand:
             assert mock_logger.info.call_count == 2
             mock_logger.info.assert_any_call(
                 "Started [steel_blue3]post package[/steel_blue3] command for pipeline [light_pink3]ConcretePipeline[/light_pink3] with args "
-                "dataset_dir=formatted/path"
+                "dataset_dir=formatted/path",
             )
             mock_logger.info.assert_any_call(
-                "Completed [steel_blue3]post package[/steel_blue3] command for pipeline [light_pink3]ConcretePipeline[/light_pink3]"
+                "Completed [steel_blue3]post package[/steel_blue3] command for pipeline [light_pink3]ConcretePipeline[/light_pink3]",
             )
 
 
@@ -449,7 +450,10 @@ class TestDefaultImplementations:
         # Create a pipeline that uses the default _import method
         class DefaultImportPipeline(BasePipeline):
             def _package(
-                self, data_dir: Path, config: dict[str, Any], **kwargs: Any
+                self,
+                data_dir: Path,
+                config: dict[str, Any],
+                **kwargs: Any,
             ) -> dict[Path, tuple[Path, list[BaseMetadata] | None, dict[str, Any] | None]]:
                 return {}
 
@@ -461,7 +465,7 @@ class TestDefaultImplementations:
         pipeline._import(Path("/data"), Path("/source"), {})
 
         mock_logger.warning.assert_called_once_with(
-            "There is no Marimba [steel_blue3]import[/steel_blue3] command implemented for pipeline [light_pink3]DefaultImportPipeline[/light_pink3]"
+            "There is no Marimba [steel_blue3]import[/steel_blue3] command implemented for pipeline [light_pink3]DefaultImportPipeline[/light_pink3]",
         )
 
     @pytest.mark.unit
@@ -471,7 +475,10 @@ class TestDefaultImplementations:
         # Create a pipeline that uses the default _process method
         class DefaultProcessPipeline(BasePipeline):
             def _package(
-                self, data_dir: Path, config: dict[str, Any], **kwargs: Any
+                self,
+                data_dir: Path,
+                config: dict[str, Any],
+                **kwargs: Any,
             ) -> dict[Path, tuple[Path, list[BaseMetadata] | None, dict[str, Any] | None]]:
                 return {}
 
@@ -483,7 +490,7 @@ class TestDefaultImplementations:
         pipeline._process(Path("/data"), {})
 
         mock_logger.warning.assert_called_once_with(
-            "There is no Marimba [steel_blue3]process[/steel_blue3] command implemented for pipeline [light_pink3]DefaultProcessPipeline[/light_pink3]"
+            "There is no Marimba [steel_blue3]process[/steel_blue3] command implemented for pipeline [light_pink3]DefaultProcessPipeline[/light_pink3]",
         )
 
     @pytest.mark.unit
@@ -539,7 +546,7 @@ class TestErrorHandlingAndEdgeCases:
         # Should not raise an exception and should log correctly
         mock_logger.info.assert_any_call(
             "Started [steel_blue3]process[/steel_blue3] command for pipeline [light_pink3]ConcretePipeline[/light_pink3] with args "
-            "data_dir=formatted/path, config={}, kwargs={}"
+            "data_dir=formatted/path, config={}, kwargs={}",
         )
 
     @pytest.mark.integration

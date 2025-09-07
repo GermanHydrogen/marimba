@@ -1,12 +1,13 @@
 """Tests for marimba.core.schemas.generic module."""
 
-import pytest
 from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from marimba.core.schemas.generic import GenericMetadata
+import pytest
+
 from marimba.core.schemas.base import BaseMetadata
+from marimba.core.schemas.generic import GenericMetadata
 
 
 class TestGenericMetadata:
@@ -215,12 +216,15 @@ class TestGenericMetadata:
     def test_create_dataset_metadata_dry_run(self, tmp_path, sample_datetime):
         """Test create_dataset_metadata with dry_run=True."""
         items: dict[str, list[BaseMetadata]] = {
-            "file1.jpg": [GenericMetadata(datetime_=sample_datetime, latitude=37.7749)]
+            "file1.jpg": [GenericMetadata(datetime_=sample_datetime, latitude=37.7749)],
         }
 
         # Should not raise error and not create files
         GenericMetadata.create_dataset_metadata(
-            dataset_name="test_dataset", root_dir=tmp_path, items=items, dry_run=True
+            dataset_name="test_dataset",
+            root_dir=tmp_path,
+            items=items,
+            dry_run=True,
         )
 
         # No metadata file should be created in dry run
@@ -232,11 +236,14 @@ class TestGenericMetadata:
         """Test create_dataset_metadata with custom saver."""
         mock_saver = mocker.Mock()
         items: dict[str, list[BaseMetadata]] = {
-            "file1.jpg": [GenericMetadata(datetime_=sample_datetime, latitude=37.7749)]
+            "file1.jpg": [GenericMetadata(datetime_=sample_datetime, latitude=37.7749)],
         }
 
         GenericMetadata.create_dataset_metadata(
-            dataset_name="test_dataset", root_dir=tmp_path, items=items, saver_overwrite=mock_saver
+            dataset_name="test_dataset",
+            root_dir=tmp_path,
+            items=items,
+            saver_overwrite=mock_saver,
         )
 
         # Custom saver should be called
@@ -249,7 +256,10 @@ class TestGenericMetadata:
 
         mock_saver = mocker.patch("marimba.core.schemas.generic.yaml_saver")
         GenericMetadata.create_dataset_metadata(
-            dataset_name="test_dataset", root_dir=tmp_path, items=items, metadata_name="custom_metadata"
+            dataset_name="test_dataset",
+            root_dir=tmp_path,
+            items=items,
+            metadata_name="custom_metadata",
         )
 
         # Should use custom name
@@ -285,5 +295,9 @@ class TestGenericMetadata:
 
         # Should not raise error
         GenericMetadata.process_files(
-            dataset_mapping=dataset_mapping, max_workers=1, logger=None, dry_run=True, chunk_size=10
+            dataset_mapping=dataset_mapping,
+            max_workers=1,
+            logger=None,
+            dry_run=True,
+            chunk_size=10,
         )

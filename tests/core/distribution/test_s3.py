@@ -1,7 +1,5 @@
 """Tests for marimba.core.distribution.s3 module."""
 
-from pathlib import Path
-
 import pytest
 from boto3.exceptions import S3UploadFailedError
 from botocore.exceptions import ClientError
@@ -104,7 +102,8 @@ class TestS3DistributionTarget:
         mock_s3 = mocker.Mock()
         mock_client = mocker.Mock()
         mock_client.head_bucket.side_effect = ClientError(
-            {"Error": {"Code": "404", "Message": "Not Found"}}, "HeadBucket"
+            {"Error": {"Code": "404", "Message": "Not Found"}},
+            "HeadBucket",
         )
         mock_s3.meta.client = mock_client
         mock_resource.return_value = mock_s3
