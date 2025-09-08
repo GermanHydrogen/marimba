@@ -379,160 +379,155 @@ def test_print_results_with_errors():
     assert exc_info.value.exit_code == 1
 
 
-@pytest.mark.integration
-def test_delete_project_command(
-    mocker: pytest_mock.MockerFixture,
-    setup_project_dir: Path,
-) -> None:
-    """Test successful deletion of a Marimba project via CLI command.
+class TestDeleteProjectCommand:
+    """Test CLI delete project command integration."""
 
-    This integration test verifies that the delete project CLI command correctly:
-    - Finds the project directory using the provided path
-    - Creates a ProjectWrapper instance with correct parameters
-    - Calls the delete_project method on the wrapper
-    - Displays success message with the deleted project path
-    - Exits with code 0 on successful completion
-    """
-    # Arrange
-    expected_deleted_path = setup_project_dir
+    @pytest.mark.integration
+    def test_delete_project_command(
+        self,
+        mocker: pytest_mock.MockerFixture,
+        setup_project_dir: Path,
+    ) -> None:
+        """Test successful deletion of a Marimba project via CLI command.
 
-    mocker.patch("marimba.core.cli.delete.find_project_dir_or_exit", return_value=setup_project_dir)
-    mock_delete = mocker.patch.object(ProjectWrapper, "delete_project", return_value=expected_deleted_path)
+        This integration test verifies that the delete project CLI command correctly:
+        - Finds the project directory using the provided path
+        - Creates a ProjectWrapper instance with correct parameters
+        - Calls the delete_project method on the wrapper
+        - Displays success message with the deleted project path
+        - Exits with code 0 on successful completion
+        """
+        # Arrange
+        expected_deleted_path = setup_project_dir
 
-    # Act
-    result = runner.invoke(
-        marimba_cli,
-        ["delete", "project", "--project-dir", str(setup_project_dir)],
-    )
+        mocker.patch("marimba.core.cli.delete.find_project_dir_or_exit", return_value=setup_project_dir)
+        mock_delete = mocker.patch.object(ProjectWrapper, "delete_project", return_value=expected_deleted_path)
 
-    # Assert
-    # Verify CLI execution succeeded
-    assert result.exit_code == 0, f"CLI command should succeed, got: {result.output}"
+        # Act
+        result = runner.invoke(
+            marimba_cli,
+            ["delete", "project", "--project-dir", str(setup_project_dir)],
+        )
 
-    # Verify delete_project was called
-    mock_delete.assert_called_once()
+        # Assert
+        # Use the established helper function for CLI success assertions
+        assert_cli_success(result, context="Project deletion command")
 
-    # Verify CLI output contains success message and project path
-    assert "Deleted" in result.output, "Should display success message"
-    assert str(expected_deleted_path) in result.output, "Should show the deleted project path"
+        # Verify delete_project was called
+        mock_delete.assert_called_once()
 
+        # Verify CLI output contains success message and project path
+        assert "Deleted" in result.output, "Should display success message"
+        assert str(expected_deleted_path) in result.output, "Should show the deleted project path"
 
-@pytest.mark.integration
-def test_delete_project_invalid_structure(
-    mocker: pytest_mock.MockerFixture,
-    setup_project_dir: Path,
-) -> None:
-    """Test delete project command properly handles InvalidStructureError.
+    @pytest.mark.integration
+    def test_delete_project_invalid_structure(
+        self,
+        mocker: pytest_mock.MockerFixture,
+        setup_project_dir: Path,
+    ) -> None:
+        """Test delete project command properly handles InvalidStructureError.
 
-    This integration test verifies that when attempting to delete a project
-    with an invalid directory structure, the CLI command:
-    - Catches the InvalidStructureError from ProjectWrapper initialization
-    - Displays appropriate error message indicating the project is not valid
-    - Exits with error code 1
-    - Shows the specific error context about invalid structure
-    - Does not display any success messages for the failed operation
-    """
-    # Arrange
-    expected_error_message = "Invalid project structure detected"
+        This integration test verifies that when attempting to delete a project
+        with an invalid directory structure, the CLI command:
+        - Catches the InvalidStructureError from ProjectWrapper initialization
+        - Displays appropriate error message indicating the project is not valid
+        - Exits with error code 1
+        - Shows the specific error context about invalid structure
+        - Does not display any success messages for the failed operation
 
-    mocker.patch("marimba.core.cli.delete.find_project_dir_or_exit", return_value=setup_project_dir)
-    mock_project_wrapper_init = mocker.patch.object(
-        ProjectWrapper,
-        "__init__",
-        side_effect=ProjectWrapper.InvalidStructureError(expected_error_message),
-    )
+        Uses focused mocking to test the exception handling path without over-mocking business logic.
+        """
+        # Arrange
+        expected_error_message = "Invalid project structure detected"
 
-    # Act
-    result = runner.invoke(
-        marimba_cli,
-        ["delete", "project", "--project-dir", str(setup_project_dir)],
-    )
+        mocker.patch("marimba.core.cli.delete.find_project_dir_or_exit", return_value=setup_project_dir)
 
-    # Assert
-    # Verify CLI execution failed with correct exit code
-    assert result.exit_code == 1, f"CLI should exit with code 1 for invalid structure, got: {result.output}"
+        # Mock only the specific method that would detect invalid structure
+        # This allows testing the error handling path without over-mocking
+        mocker.patch.object(
+            ProjectWrapper,
+            "_check_file_structure",
+            side_effect=ProjectWrapper.InvalidStructureError(expected_error_message),
+        )
 
-    # Verify ProjectWrapper.__init__ was called (and failed as expected)
-    mock_project_wrapper_init.assert_called_once_with(setup_project_dir, dry_run=False)
+        # Act
+        result = runner.invoke(
+            marimba_cli,
+            ["delete", "project", "--project-dir", str(setup_project_dir)],
+        )
 
-    # Verify that exactly one call was made to ProjectWrapper.__init__
-    assert mock_project_wrapper_init.call_count == 1, "Should call ProjectWrapper.__init__ exactly once"
+        # Assert
+        # Use the established helper function for CLI failure assertions
+        assert_cli_failure(
+            result,
+            expected_error="not valid project",
+            expected_exit_code=1,
+            context="Project deletion with invalid structure",
+        )
 
-    # Verify CLI output contains appropriate error messages
-    assert "not valid project" in result.output, "Should display error message about invalid project"
-    assert "Marimba" in result.output, "Should mention Marimba in the error message"
+        # Verify CLI output contains specific error messages
+        assert "Marimba" in result.output, "Should mention Marimba in the error message"
+        assert setup_project_dir.name in result.output, "Should mention the project directory name"
 
-    # Verify that no success messages are shown for failed operation
-    assert "Deleted" not in result.output, "Should not display success message for failed operation"
-    assert "Success" not in result.output, "Should not display success indicators for failed operation"
+        # Verify that no success messages are shown for failed operation
+        assert "Deleted" not in result.output, "Should not display success message for failed operation"
 
-    # Verify error message contains project path information (in log or error panel)
-    assert setup_project_dir.name in result.output, "Should mention the project directory name in output"
+    @pytest.mark.integration
+    def test_delete_project_dry_run(
+        self,
+        mocker: pytest_mock.MockerFixture,
+        setup_project_dir: Path,
+    ) -> None:
+        """Test delete project command with dry-run flag passes correct parameter.
 
+        This integration test verifies that the delete project CLI command correctly:
+        - Parses the --dry-run flag from command line arguments
+        - Passes dry_run=True to the ProjectWrapper constructor
+        - Still calls the delete_project method (dry-run behavior is handled within ProjectWrapper)
+        - Displays success message as if the operation completed
+        - Exits with success code 0
+        - Shows no error messages for successful dry-run operations
+        - Displays properly formatted success message with project path
+        """
+        # Arrange
+        expected_deleted_path = setup_project_dir
 
-@pytest.mark.integration
-def test_delete_project_dry_run(
-    mocker: pytest_mock.MockerFixture,
-    setup_project_dir: Path,
-) -> None:
-    """Test delete project command with dry-run flag passes correct parameter.
+        mocker.patch("marimba.core.cli.delete.find_project_dir_or_exit", return_value=setup_project_dir)
 
-    This integration test verifies that the delete project CLI command correctly:
-    - Parses the --dry-run flag from command line arguments
-    - Passes dry_run=True to the ProjectWrapper constructor
-    - Still calls the delete_project method (dry-run behavior is handled within ProjectWrapper)
-    - Displays success message as if the operation completed
-    - Exits with success code 0
-    - Shows no error messages for successful dry-run operations
-    - Displays properly formatted success message with project path
-    """
-    # Arrange
-    expected_deleted_path = setup_project_dir
+        # Mock ProjectWrapper class to capture initialization arguments
+        mock_project_wrapper_class = mocker.patch("marimba.core.cli.delete.ProjectWrapper")
+        mock_project_wrapper_instance = mocker.MagicMock()
+        mock_project_wrapper_instance.root_dir = setup_project_dir
+        mock_project_wrapper_instance.delete_project.return_value = expected_deleted_path
+        mock_project_wrapper_class.return_value = mock_project_wrapper_instance
 
-    mocker.patch("marimba.core.cli.delete.find_project_dir_or_exit", return_value=setup_project_dir)
+        # Act
+        result = runner.invoke(
+            marimba_cli,
+            ["delete", "project", "--project-dir", str(setup_project_dir), "--dry-run"],
+        )
 
-    # Mock ProjectWrapper class to capture initialization arguments
-    mock_project_wrapper_class = mocker.patch("marimba.core.cli.delete.ProjectWrapper")
-    mock_project_wrapper_instance = mocker.MagicMock()
-    mock_project_wrapper_instance.root_dir = setup_project_dir
-    mock_project_wrapper_instance.delete_project.return_value = expected_deleted_path
-    mock_project_wrapper_class.return_value = mock_project_wrapper_instance
+        # Assert
+        # Use the established helper function for CLI success assertions
+        assert_cli_success(result, context="Project deletion with dry-run flag")
 
-    # Act
-    result = runner.invoke(
-        marimba_cli,
-        ["delete", "project", "--project-dir", str(setup_project_dir), "--dry-run"],
-    )
+        # Verify ProjectWrapper was initialized with dry_run=True (most important assertion for dry-run test)
+        mock_project_wrapper_class.assert_called_once_with(setup_project_dir, dry_run=True)
 
-    # Assert
-    # Verify CLI execution succeeded
-    assert result.exit_code == 0, f"CLI command should succeed with dry-run, got: {result.output}"
+        # Verify delete_project was called exactly once (dry-run logic is handled within the ProjectWrapper)
+        mock_project_wrapper_instance.delete_project.assert_called_once()
 
-    # Verify ProjectWrapper was initialized with dry_run=True (most important assertion for dry-run test)
-    mock_project_wrapper_class.assert_called_once_with(setup_project_dir, dry_run=True)
+        # Verify CLI output contains success message and project details
+        assert "Deleted" in result.output, "Should display success message even in dry-run mode"
+        assert str(expected_deleted_path) in result.output, "Should show the project path"
 
-    # Verify that exactly one call was made to ProjectWrapper constructor
-    assert mock_project_wrapper_class.call_count == 1, "Should call ProjectWrapper constructor exactly once"
+        # Verify no error messages appear for successful dry-run operation
+        assert "Failed" not in result.output, "Should not display error messages for successful dry-run"
+        assert "Error" not in result.output, "Should not display error messages for successful dry-run"
 
-    # Verify delete_project was called exactly once (dry-run logic is handled within the ProjectWrapper)
-    mock_project_wrapper_instance.delete_project.assert_called_once()
-    assert mock_project_wrapper_instance.delete_project.call_count == 1, "Should call delete_project exactly once"
-
-    # Verify CLI output contains success message and project details
-    assert "Deleted" in result.output, "Should display success message even in dry-run mode"
-    assert str(expected_deleted_path) in result.output, "Should show the project path"
-
-    # Verify no error messages appear for successful dry-run operation
-    assert "Failed" not in result.output, "Should not display error messages for successful dry-run"
-    assert "Error" not in result.output, "Should not display error messages for successful dry-run"
-
-    # Verify specific success message format
-    assert "Marimba project" in result.output, "Should display formatted success message with project identifier"
-
-    # Verify that all expected output elements are present for complete dry-run verification
-    expected_elements = ["Deleted", "project", str(expected_deleted_path)]
-    for element in expected_elements:
-        assert element in result.output, f"Dry-run output should contain '{element}' for complete verification"
+        # Verify specific success message format
+        assert "Marimba project" in result.output, "Should display formatted success message with project identifier"
 
 
 class TestDeleteCollectionCommand:
