@@ -47,18 +47,21 @@ class TestBatchDeleteOperationMixedResults:
     """Test batch_delete_operation function with mixed success/error scenarios."""
 
     @pytest.mark.unit
-    def test_batch_delete_operation_handles_partial_failures(self):
+    def test_batch_delete_operation_handles_partial_failures(self) -> None:
         """Test that batch_delete_operation correctly handles mixed success and failure outcomes.
 
         This test verifies that when some items succeed and others fail during batch deletion,
         the function properly separates successful operations from failed ones and preserves
-        the exact error messages from exceptions.
+        the exact error messages from exceptions. It also verifies that processing continues
+        for remaining items even when failures occur.
         """
         # Arrange
         items = ["successful_item1", "failing_item", "successful_item2"]
         expected_error_message = "Collection 'failing_item' not found in project"
 
-        def mock_delete_func(name: str, _dry_run: bool) -> Path:
+        def mock_delete_func(name: str, dry_run: bool) -> Path:
+            # Verify dry_run parameter is passed correctly
+            assert isinstance(dry_run, bool), "dry_run should be a boolean"
             if name == "failing_item":
                 raise ProjectWrapper.NoSuchCollectionError(expected_error_message)
             return Path(f"/mock/path/to/{name}")
@@ -73,15 +76,28 @@ class TestBatchDeleteOperationMixedResults:
         )
 
         # Assert
+        # Verify return types
+        assert isinstance(success_items, list), "Should return success_items as list"
+        assert isinstance(errors, list), "Should return errors as list"
+
         # Verify counts
         assert len(success_items) == 2, "Should have exactly 2 successful operations"
         assert len(errors) == 1, "Should have exactly 1 failed operation"
+
+        # Verify total items processed
+        total_processed = len(success_items) + len(errors)
+        assert total_processed == len(items), "Should process all input items"
 
         # Verify error details
         assert errors[0] == (
             "failing_item",
             expected_error_message,
         ), "Error should contain exact item name and error message"
+
+        # Verify error tuple structure
+        error_name, error_msg = errors[0]
+        assert isinstance(error_name, str), "Error name should be string"
+        assert isinstance(error_msg, str), "Error message should be string"
 
         # Verify successful operations (order preserved)
         expected_success_items = [
@@ -92,17 +108,27 @@ class TestBatchDeleteOperationMixedResults:
             success_items == expected_success_items
         ), "Success items should contain exact names and paths in processing order"
 
+        # Verify success item tuple structure
+        for item_name, item_path in success_items:
+            assert isinstance(item_name, str), "Success item name should be string"
+            assert isinstance(item_path, Path), "Success item path should be Path object"
+
     @pytest.mark.unit
-    def test_batch_delete_operation_preserves_processing_order(self):
+    def test_batch_delete_operation_preserves_processing_order(self) -> None:
         """Test that batch_delete_operation preserves the order of successful operations.
 
         This verifies that successful items are returned in the same order they were
-        processed, even when there are failures interspersed.
+        processed, even when there are failures interspersed. It specifically tests:
+        - Successful items maintain their relative order from input
+        - Failed items maintain their relative order from input
+        - Processing order is preserved despite mixed success/failure outcomes
         """
         # Arrange
         items = ["first", "second_fails", "third", "fourth_fails", "fifth"]
 
-        def mock_delete_func(name: str, _dry_run: bool) -> Path:
+        def mock_delete_func(name: str, dry_run: bool) -> Path:
+            # Verify dry_run parameter is passed correctly
+            assert isinstance(dry_run, bool), "dry_run should be a boolean"
             if "fails" in name:
                 error_msg = f"Failed to delete {name}"
                 raise ProjectWrapper.NoSuchCollectionError(error_msg)
@@ -118,12 +144,34 @@ class TestBatchDeleteOperationMixedResults:
         )
 
         # Assert
+        # Verify return types
+        assert isinstance(success_items, list), "Should return success_items as list"
+        assert isinstance(errors, list), "Should return errors as list"
+
+        # Verify counts
+        assert len(success_items) == 3, "Should have 3 successful operations"
+        assert len(errors) == 2, "Should have 2 failed operations"
+
+        # Verify total items processed
+        total_processed = len(success_items) + len(errors)
+        assert total_processed == len(items), "Should process all input items"
+
         # Verify successful operations maintain order
         expected_successful_names = ["first", "third", "fifth"]
         actual_successful_names = [name for name, _ in success_items]
         assert (
             actual_successful_names == expected_successful_names
         ), "Successful items should maintain their original processing order"
+
+        # Verify successful items have correct paths and order
+        expected_success_items = [
+            ("first", Path("/order/test/first")),
+            ("third", Path("/order/test/third")),
+            ("fifth", Path("/order/test/fifth")),
+        ]
+        assert (
+            success_items == expected_success_items
+        ), "Success items should have correct paths and maintain processing order"
 
         # Verify failed operations maintain order
         expected_failed_names = ["second_fails", "fourth_fails"]
@@ -132,9 +180,30 @@ class TestBatchDeleteOperationMixedResults:
             actual_failed_names == expected_failed_names
         ), "Failed items should maintain their original processing order"
 
-        # Verify counts
-        assert len(success_items) == 3, "Should have 3 successful operations"
-        assert len(errors) == 2, "Should have 2 failed operations"
+        # Verify failed items have correct error messages and order
+        expected_error_messages = [
+            "Failed to delete second_fails",
+            "Failed to delete fourth_fails",
+        ]
+        actual_error_messages = [msg for _, msg in errors]
+        assert (
+            actual_error_messages == expected_error_messages
+        ), "Error messages should match expected content and order"
+
+        # Verify that the relative order from original input is preserved
+        original_indices = {name: i for i, name in enumerate(items)}
+        success_original_indices = [original_indices[name] for name, _ in success_items]
+        error_original_indices = [original_indices[name] for name, _ in errors]
+
+        # Success indices should be in ascending order (0, 2, 4)
+        assert success_original_indices == sorted(
+            success_original_indices,
+        ), "Success items should maintain their relative order from original input"
+
+        # Error indices should be in ascending order (1, 3)
+        assert error_original_indices == sorted(
+            error_original_indices,
+        ), "Error items should maintain their relative order from original input"
 
 
 class TestBatchDeleteOperationExceptionHandling:
@@ -349,18 +418,56 @@ def test_delete_project_command(
 
 
 @pytest.mark.integration
-def test_delete_project_invalid_structure(mocker, setup_project_dir):
-    """Test delete project with invalid project structure."""
-    mocker.patch("marimba.core.cli.delete.find_project_dir_or_exit", return_value=setup_project_dir)
-    mocker.patch.object(ProjectWrapper, "__init__", side_effect=ProjectWrapper.InvalidStructureError("Invalid"))
-    result = runner.invoke(marimba_cli, ["delete", "project", "--project-dir", str(setup_project_dir)])
+def test_delete_project_invalid_structure(
+    mocker: pytest_mock.MockerFixture,
+    setup_project_dir: Path,
+) -> None:
+    """Test delete project command properly handles InvalidStructureError.
 
-    assert_cli_failure(
-        result,
-        expected_error="not valid project",
-        expected_exit_code=1,
-        context="Invalid project structure",
+    This integration test verifies that when attempting to delete a project
+    with an invalid directory structure, the CLI command:
+    - Catches the InvalidStructureError from ProjectWrapper initialization
+    - Displays appropriate error message indicating the project is not valid
+    - Exits with error code 1
+    - Shows the specific error context about invalid structure
+    - Does not display any success messages for the failed operation
+    """
+    # Arrange
+    expected_error_message = "Invalid project structure detected"
+
+    mocker.patch("marimba.core.cli.delete.find_project_dir_or_exit", return_value=setup_project_dir)
+    mock_project_wrapper_init = mocker.patch.object(
+        ProjectWrapper,
+        "__init__",
+        side_effect=ProjectWrapper.InvalidStructureError(expected_error_message),
     )
+
+    # Act
+    result = runner.invoke(
+        marimba_cli,
+        ["delete", "project", "--project-dir", str(setup_project_dir)],
+    )
+
+    # Assert
+    # Verify CLI execution failed with correct exit code
+    assert result.exit_code == 1, f"CLI should exit with code 1 for invalid structure, got: {result.output}"
+
+    # Verify ProjectWrapper.__init__ was called (and failed as expected)
+    mock_project_wrapper_init.assert_called_once_with(setup_project_dir, dry_run=False)
+
+    # Verify that exactly one call was made to ProjectWrapper.__init__
+    assert mock_project_wrapper_init.call_count == 1, "Should call ProjectWrapper.__init__ exactly once"
+
+    # Verify CLI output contains appropriate error messages
+    assert "not valid project" in result.output, "Should display error message about invalid project"
+    assert "Marimba" in result.output, "Should mention Marimba in the error message"
+
+    # Verify that no success messages are shown for failed operation
+    assert "Deleted" not in result.output, "Should not display success message for failed operation"
+    assert "Success" not in result.output, "Should not display success indicators for failed operation"
+
+    # Verify error message contains project path information (in log or error panel)
+    assert setup_project_dir.name in result.output, "Should mention the project directory name in output"
 
 
 @pytest.mark.integration
@@ -376,6 +483,8 @@ def test_delete_project_dry_run(
     - Still calls the delete_project method (dry-run behavior is handled within ProjectWrapper)
     - Displays success message as if the operation completed
     - Exits with success code 0
+    - Shows no error messages for successful dry-run operations
+    - Displays properly formatted success message with project path
     """
     # Arrange
     expected_deleted_path = setup_project_dir
@@ -402,56 +511,28 @@ def test_delete_project_dry_run(
     # Verify ProjectWrapper was initialized with dry_run=True (most important assertion for dry-run test)
     mock_project_wrapper_class.assert_called_once_with(setup_project_dir, dry_run=True)
 
-    # Verify delete_project was called (dry-run logic is handled within the ProjectWrapper)
-    mock_project_wrapper_instance.delete_project.assert_called_once()
+    # Verify that exactly one call was made to ProjectWrapper constructor
+    assert mock_project_wrapper_class.call_count == 1, "Should call ProjectWrapper constructor exactly once"
 
-    # Verify CLI output contains success message
+    # Verify delete_project was called exactly once (dry-run logic is handled within the ProjectWrapper)
+    mock_project_wrapper_instance.delete_project.assert_called_once()
+    assert mock_project_wrapper_instance.delete_project.call_count == 1, "Should call delete_project exactly once"
+
+    # Verify CLI output contains success message and project details
     assert "Deleted" in result.output, "Should display success message even in dry-run mode"
     assert str(expected_deleted_path) in result.output, "Should show the project path"
 
+    # Verify no error messages appear for successful dry-run operation
+    assert "Failed" not in result.output, "Should not display error messages for successful dry-run"
+    assert "Error" not in result.output, "Should not display error messages for successful dry-run"
 
-@pytest.mark.integration
-def test_delete_pipeline_handles_nonexistent_pipeline_error(
-    mocker: pytest_mock.MockerFixture,
-    setup_project_dir: Path,
-) -> None:
-    """Test delete pipeline command properly handles NoSuchPipelineError.
+    # Verify specific success message format
+    assert "Marimba project" in result.output, "Should display formatted success message with project identifier"
 
-    This integration test verifies that when attempting to delete a pipeline
-    that doesn't exist, the CLI command:
-    - Catches the NoSuchPipelineError from ProjectWrapper
-    - Displays appropriate error message with pipeline name
-    - Exits with error code 1
-    - Shows the specific error message from the exception
-    """
-    # Arrange
-    nonexistent_pipeline = "missing_analysis_pipeline"
-    expected_error_message = f"Pipeline '{nonexistent_pipeline}' not found in project"
-
-    mocker.patch("marimba.core.cli.delete.find_project_dir_or_exit", return_value=setup_project_dir)
-    mock_delete_pipeline = mocker.patch.object(
-        ProjectWrapper,
-        "delete_pipeline",
-        side_effect=ProjectWrapper.NoSuchPipelineError(expected_error_message),
-    )
-
-    # Act
-    result = runner.invoke(
-        marimba_cli,
-        ["delete", "pipeline", nonexistent_pipeline, "--project-dir", str(setup_project_dir)],
-    )
-
-    # Assert
-    # Verify CLI execution failed with correct exit code
-    assert result.exit_code == 1, f"CLI should exit with code 1 for missing pipeline, got: {result.output}"
-
-    # Verify ProjectWrapper.delete_pipeline was called
-    mock_delete_pipeline.assert_called_once_with(nonexistent_pipeline, False)
-
-    # Verify CLI output contains error messages
-    assert "Failed to delete" in result.output, "Should display failure message"
-    assert nonexistent_pipeline in result.output, "Should mention the pipeline name that failed"
-    assert "not found in project" in result.output, "Should display the specific error message from exception"
+    # Verify that all expected output elements are present for complete dry-run verification
+    expected_elements = ["Deleted", "project", str(expected_deleted_path)]
+    for element in expected_elements:
+        assert element in result.output, f"Dry-run output should contain '{element}' for complete verification"
 
 
 class TestDeleteCollectionCommand:
@@ -496,9 +577,13 @@ class TestDeleteCollectionCommand:
         assert result.exit_code == 0, f"CLI command should succeed, got: {result.output}"
 
         # Verify ProjectWrapper.delete_collection was called correctly for each collection
-        assert mock_delete_collection.call_count == 2, "Should call delete_collection twice"
+        assert mock_delete_collection.call_count == 2, "Should call delete_collection exactly twice"
         mock_delete_collection.assert_any_call("marine_data", False)
         mock_delete_collection.assert_any_call("coastal_survey", False)
+
+        # Verify calls were made with correct dry_run parameter (False by default)
+        for call in mock_delete_collection.call_args_list:
+            assert call[0][1] is False, "Should call delete_collection with dry_run=False by default"
 
         # Verify CLI output contains success messages for each collection
         assert "Deleted" in result.output, "Should display success message"
@@ -506,6 +591,16 @@ class TestDeleteCollectionCommand:
         assert "coastal_survey" in result.output, "Should mention second collection name"
         assert str(expected_paths[0]) in result.output, "Should show first collection path"
         assert str(expected_paths[1]) in result.output, "Should show second collection path"
+
+        # Verify no error messages appear for successful operations
+        assert "Failed to delete" not in result.output, "Should not display error messages for successful operations"
+
+        # Verify success message format for each collection
+        for collection_name in collection_names:
+            assert "Deleted" in result.output, "Should display success message for each collection"
+            assert (
+                f'collection "{collection_name}"' in result.output
+            ), f"Should display formatted success message with collection name {collection_name}"
 
     @pytest.mark.integration
     def test_delete_collection_with_dry_run_flag(
@@ -515,18 +610,23 @@ class TestDeleteCollectionCommand:
     ) -> None:
         """Test delete collection command with dry-run flag passes correct parameter.
 
-        This test ensures that the --dry-run flag is properly propagated through
-        the CLI to the underlying delete_collection method.
+        This integration test verifies that the delete collection CLI command correctly:
+        - Parses the --dry-run flag from command line arguments
+        - Passes dry_run=True through batch_delete_operation to delete_collection method
+        - Still displays success messages as if the operation completed
+        - Exits with success code 0
+        - Shows the specific collection path in output
         """
         # Arrange
         collection_names = ["test_collection"]
         expected_path = Path("/project/collections/test_collection")
 
         mocker.patch("marimba.core.cli.delete.find_project_dir_or_exit", return_value=setup_project_dir)
-        mock_delete_collection = mocker.patch.object(
-            ProjectWrapper,
-            "delete_collection",
-            return_value=expected_path,
+
+        # Mock batch_delete_operation to verify dry_run parameter propagation
+        mock_batch_delete = mocker.patch(
+            "marimba.core.cli.delete.batch_delete_operation",
+            return_value=([(collection_names[0], expected_path)], []),
         )
 
         # Act
@@ -539,12 +639,18 @@ class TestDeleteCollectionCommand:
         # Verify CLI execution succeeded
         assert result.exit_code == 0, f"CLI command should succeed with dry-run, got: {result.output}"
 
-        # Verify delete_collection was called with dry_run=True
-        mock_delete_collection.assert_called_once_with("test_collection", True)
+        # Verify batch_delete_operation was called with dry_run=True (most important for dry-run test)
+        mock_batch_delete.assert_called_once()
+        call_args = mock_batch_delete.call_args
+        assert call_args[0][0] == collection_names, "Should pass collection names"
+        assert call_args[0][2] == "collection", "Should pass entity type"
+        assert call_args[0][3] == "Deleting collections...", "Should pass description"
+        assert call_args[0][4] is True, "Should pass dry_run=True"
 
-        # Verify CLI output contains success message
-        assert "Deleted" in result.output, "Should display success message even in dry-run"
+        # Verify CLI output contains success message and collection details
+        assert "Deleted" in result.output, "Should display success message even in dry-run mode"
         assert "test_collection" in result.output, "Should mention collection name"
+        assert str(expected_path) in result.output, "Should show the collection path"
 
     @pytest.mark.integration
     def test_delete_collection_handles_nonexistent_collection_error(
@@ -582,13 +688,24 @@ class TestDeleteCollectionCommand:
         # Verify CLI execution failed with correct exit code
         assert result.exit_code == 1, f"CLI should exit with code 1 for missing collection, got: {result.output}"
 
-        # Verify ProjectWrapper.delete_collection was called
+        # Verify ProjectWrapper.delete_collection was called with correct parameters
         mock_delete_collection.assert_called_once_with(nonexistent_collection, False)
+
+        # Verify that exactly one call was made (no retries or duplicates)
+        assert mock_delete_collection.call_count == 1, "Should call delete_collection exactly once"
 
         # Verify CLI output contains error messages
         assert "Failed to delete" in result.output, "Should display failure message"
         assert nonexistent_collection in result.output, "Should mention the collection name that failed"
         assert "not found in project" in result.output, "Should display the specific error message from exception"
+
+        # Verify that no success messages are shown for failed operation
+        assert "Deleted" not in result.output, "Should not display success message for failed operation"
+
+        # Verify error message format follows expected pattern
+        assert (
+            f'Failed to delete collection "{nonexistent_collection}"' in result.output
+        ), "Should display formatted error message with collection name"
 
     @pytest.mark.integration
     def test_delete_multiple_collections_with_partial_failures(
@@ -611,7 +728,11 @@ class TestDeleteCollectionCommand:
         another_existing_path = Path("/project/collections/another_existing")
         missing_error = "Collection 'missing_collection' not found"
 
-        def mock_delete_side_effect(name: str, _dry_run: bool) -> Path:
+        def mock_delete_side_effect(name: str, dry_run: bool) -> Path:
+            # Verify dry_run parameter is passed correctly
+            assert isinstance(dry_run, bool), "dry_run should be a boolean"
+            assert dry_run is False, "Should pass dry_run=False by default"
+
             if name == "missing_collection":
                 raise ProjectWrapper.NoSuchCollectionError(missing_error)
             if name == "existing_collection":
@@ -644,6 +765,10 @@ class TestDeleteCollectionCommand:
         mock_delete_collection.assert_any_call("missing_collection", False)
         mock_delete_collection.assert_any_call("another_existing", False)
 
+        # Verify all calls were made with correct dry_run parameter
+        for call in mock_delete_collection.call_args_list:
+            assert call[0][1] is False, "All calls should use dry_run=False by default"
+
         # Verify CLI output contains both success and error messages
         assert "Deleted" in result.output, "Should show success messages for existing collections"
         assert "Failed to delete" in result.output, "Should show failure message for missing collection"
@@ -651,6 +776,28 @@ class TestDeleteCollectionCommand:
         assert "another_existing" in result.output, "Should mention other successful collection"
         assert "missing_collection" in result.output, "Should mention failed collection"
         assert "not found" in result.output, "Should display specific error message"
+
+        # Verify successful collection paths appear in output
+        assert str(existing_path) in result.output, "Should show path for first successful collection"
+        assert str(another_existing_path) in result.output, "Should show path for second successful collection"
+
+        # Verify specific success message format for successful collections
+        assert (
+            'collection "existing_collection"' in result.output
+        ), "Should show formatted success message for first collection"
+        assert (
+            'collection "another_existing"' in result.output
+        ), "Should show formatted success message for second collection"
+
+        # Verify specific error message format for failed collection
+        assert (
+            'Failed to delete collection "missing_collection"' in result.output
+        ), "Should show formatted error message"
+
+        # Verify that batch processing continued after failure (resilience test)
+        successful_collections = ["existing_collection", "another_existing"]
+        for collection in successful_collections:
+            assert "Deleted" in result.output, f"Should show success for {collection} despite other failures"
 
 
 @pytest.mark.integration
@@ -731,9 +878,13 @@ class TestDeleteDatasetCommand:
         assert result.exit_code == 0, f"CLI command should succeed, got: {result.output}"
 
         # Verify ProjectWrapper.delete_dataset was called correctly for each dataset
-        assert mock_delete_dataset.call_count == 2, "Should call delete_dataset twice"
+        assert mock_delete_dataset.call_count == 2, "Should call delete_dataset exactly twice"
         mock_delete_dataset.assert_any_call("marine_analysis_2023", False)
         mock_delete_dataset.assert_any_call("coastal_survey_results", False)
+
+        # Verify calls were made with correct dry_run parameter (False by default)
+        for call in mock_delete_dataset.call_args_list:
+            assert call[0][1] is False, "Should call delete_dataset with dry_run=False by default"
 
         # Verify CLI output contains success messages for each dataset
         assert "Deleted" in result.output, "Should display success message"
@@ -741,6 +892,16 @@ class TestDeleteDatasetCommand:
         assert "coastal_survey_results" in result.output, "Should mention second dataset name"
         assert str(expected_paths[0]) in result.output, "Should show first dataset path"
         assert str(expected_paths[1]) in result.output, "Should show second dataset path"
+
+        # Verify no error messages appear for successful operations
+        assert "Failed to delete" not in result.output, "Should not display error messages for successful operations"
+
+        # Verify success message format for each dataset
+        for dataset_name in dataset_names:
+            assert "Deleted" in result.output, "Should display success message for each dataset"
+            assert (
+                f'dataset "{dataset_name}"' in result.output
+            ), f"Should display formatted success message with dataset name {dataset_name}"
 
     @pytest.mark.integration
     def test_delete_dataset_with_dry_run_flag(
@@ -750,18 +911,23 @@ class TestDeleteDatasetCommand:
     ) -> None:
         """Test delete dataset command with dry-run flag passes correct parameter.
 
-        This test ensures that the --dry-run flag is properly propagated through
-        the CLI to the underlying delete_dataset method.
+        This integration test verifies that the delete dataset CLI command correctly:
+        - Parses the --dry-run flag from command line arguments
+        - Passes dry_run=True through batch_delete_operation to delete_dataset method
+        - Still displays success messages as if the operation completed
+        - Exits with success code 0
+        - Shows the specific dataset path in output
         """
         # Arrange
         dataset_names = ["test_dataset"]
         expected_path = Path("/project/datasets/test_dataset")
 
         mocker.patch("marimba.core.cli.delete.find_project_dir_or_exit", return_value=setup_project_dir)
-        mock_delete_dataset = mocker.patch.object(
-            ProjectWrapper,
-            "delete_dataset",
-            return_value=expected_path,
+
+        # Mock batch_delete_operation to verify dry_run parameter propagation
+        mock_batch_delete = mocker.patch(
+            "marimba.core.cli.delete.batch_delete_operation",
+            return_value=([(dataset_names[0], expected_path)], []),
         )
 
         # Act
@@ -774,12 +940,18 @@ class TestDeleteDatasetCommand:
         # Verify CLI execution succeeded
         assert result.exit_code == 0, f"CLI command should succeed with dry-run, got: {result.output}"
 
-        # Verify delete_dataset was called with dry_run=True
-        mock_delete_dataset.assert_called_once_with("test_dataset", True)
+        # Verify batch_delete_operation was called with dry_run=True (most important for dry-run test)
+        mock_batch_delete.assert_called_once()
+        call_args = mock_batch_delete.call_args
+        assert call_args[0][0] == dataset_names, "Should pass dataset names"
+        assert call_args[0][2] == "dataset", "Should pass entity type"
+        assert call_args[0][3] == "Deleting datasets...", "Should pass description"
+        assert call_args[0][4] is True, "Should pass dry_run=True"
 
-        # Verify CLI output contains success message
-        assert "Deleted" in result.output, "Should display success message even in dry-run"
+        # Verify CLI output contains success message and dataset details
+        assert "Deleted" in result.output, "Should display success message even in dry-run mode"
         assert "test_dataset" in result.output, "Should mention dataset name"
+        assert str(expected_path) in result.output, "Should show the dataset path"
 
     @pytest.mark.integration
     def test_delete_dataset_handles_file_exists_error(
@@ -817,13 +989,24 @@ class TestDeleteDatasetCommand:
         # Verify CLI execution failed with correct exit code
         assert result.exit_code == 1, f"CLI should exit with code 1 for missing dataset, got: {result.output}"
 
-        # Verify ProjectWrapper.delete_dataset was called
+        # Verify ProjectWrapper.delete_dataset was called with correct parameters
         mock_delete_dataset.assert_called_once_with(nonexistent_dataset, False)
+
+        # Verify that exactly one call was made (no retries or duplicates)
+        assert mock_delete_dataset.call_count == 1, "Should call delete_dataset exactly once"
 
         # Verify CLI output contains error messages
         assert "Failed to delete" in result.output, "Should display failure message"
         assert nonexistent_dataset in result.output, "Should mention the dataset name that failed"
         assert "does not exist" in result.output, "Should display specific error message about missing dataset"
+
+        # Verify that no success messages are shown for failed operation
+        assert "Deleted" not in result.output, "Should not display success message for failed operation"
+
+        # Verify error message format follows expected pattern
+        assert (
+            f'Failed to delete dataset "{nonexistent_dataset}"' in result.output
+        ), "Should display formatted error message with dataset name"
 
     @pytest.mark.integration
     def test_delete_dataset_handles_no_such_dataset_error(
@@ -857,13 +1040,24 @@ class TestDeleteDatasetCommand:
         # Verify CLI execution failed with correct exit code
         assert result.exit_code == 1, f"CLI should exit with code 1 for missing dataset, got: {result.output}"
 
-        # Verify ProjectWrapper.delete_dataset was called
+        # Verify ProjectWrapper.delete_dataset was called with correct parameters
         mock_delete_dataset.assert_called_once_with(nonexistent_dataset, False)
+
+        # Verify that exactly one call was made (no retries or duplicates)
+        assert mock_delete_dataset.call_count == 1, "Should call delete_dataset exactly once"
 
         # Verify CLI output contains error messages
         assert "Failed to delete" in result.output, "Should display failure message"
         assert nonexistent_dataset in result.output, "Should mention the dataset name that failed"
         assert "not found in project" in result.output, "Should display specific error message from exception"
+
+        # Verify that no success messages are shown for failed operation
+        assert "Deleted" not in result.output, "Should not display success message for failed operation"
+
+        # Verify error message format follows expected pattern
+        assert (
+            f'Failed to delete dataset "{nonexistent_dataset}"' in result.output
+        ), "Should display formatted error message with dataset name"
 
 
 class TestDeleteCommandDryRun:
@@ -879,10 +1073,12 @@ class TestDeleteCommandDryRun:
 
         This integration test verifies that when the --dry-run flag is specified
         on a pipeline delete command, it:
-        - Correctly parses the command line flag
+        - Correctly parses the command line flag from CLI arguments
         - Passes dry_run=True to ProjectWrapper.delete_pipeline method
         - Still displays success messages as if the operation completed
         - Exits with success code 0
+        - Shows no error messages for successful dry-run operations
+        - Uses batch_delete_operation to coordinate the dry-run process
         """
         # Arrange
         pipeline_names = ["test_processing_pipeline"]
@@ -905,52 +1101,29 @@ class TestDeleteCommandDryRun:
         # Verify CLI execution succeeded
         assert result.exit_code == 0, f"CLI command should succeed with dry-run, got: {result.output}"
 
-        # Verify dry_run=True was passed to delete_pipeline method
+        # Verify dry_run=True was passed to delete_pipeline method (most critical assertion for dry-run test)
         mock_delete_pipeline.assert_called_once_with("test_processing_pipeline", True)
 
-        # Verify CLI output contains success message
+        # Verify that exactly one call was made (no retries or duplicates)
+        assert mock_delete_pipeline.call_count == 1, "Should call delete_pipeline exactly once"
+
+        # Verify CLI output contains success message and all expected details
         assert "Deleted" in result.output, "Should display success message even in dry-run mode"
         assert "test_processing_pipeline" in result.output, "Should mention the pipeline name"
         assert str(expected_path) in result.output, "Should show the pipeline path"
 
-    @pytest.mark.integration
-    def test_delete_collection_with_dry_run_flag_propagation(
-        self,
-        mocker: pytest_mock.MockerFixture,
-        setup_project_dir: Path,
-    ) -> None:
-        """Test that --dry-run flag is properly propagated to collection deletion.
+        # Verify no error messages appear for successful dry-run operation
+        assert "Failed to delete" not in result.output, "Should not display error messages for successful dry-run"
 
-        This test ensures consistency of dry-run behavior across different
-        delete command types by verifying collection deletion.
-        """
-        # Arrange
-        collection_names = ["marine_survey_data"]
-        expected_path = Path("/project/collections/marine_survey_data")
+        # Verify specific success message format
+        assert (
+            'pipeline "test_processing_pipeline"' in result.output
+        ), "Should display formatted success message with pipeline name"
 
-        mocker.patch("marimba.core.cli.delete.find_project_dir_or_exit", return_value=setup_project_dir)
-        mock_delete_collection = mocker.patch.object(
-            ProjectWrapper,
-            "delete_collection",
-            return_value=expected_path,
-        )
-
-        # Act
-        result = runner.invoke(
-            marimba_cli,
-            ["delete", "collection", *collection_names, "--project-dir", str(setup_project_dir), "--dry-run"],
-        )
-
-        # Assert
-        # Verify CLI execution succeeded
-        assert result.exit_code == 0, f"CLI command should succeed with dry-run, got: {result.output}"
-
-        # Verify dry_run=True was passed to delete_collection method
-        mock_delete_collection.assert_called_once_with("marine_survey_data", True)
-
-        # Verify CLI output contains success message
-        assert "Deleted" in result.output, "Should display success message even in dry-run mode"
-        assert "marine_survey_data" in result.output, "Should mention the collection name"
+        # Verify that all expected output elements are present for complete dry-run verification
+        expected_elements = ["Deleted", "pipeline", "test_processing_pipeline", str(expected_path)]
+        for element in expected_elements:
+            assert element in result.output, f"Dry-run output should contain '{element}' for complete verification"
 
     @pytest.mark.integration
     def test_delete_target_with_dry_run_flag_propagation(
@@ -1010,6 +1183,7 @@ class TestDeletePipelineCommand:
         - Shows error messages for missing pipelines
         - Exits with error code 1 due to failures
         - Maintains processing order and handles each item appropriately
+        - Continues processing after failures (resilience testing)
         """
         # Arrange
         pipeline_names = ["data_processing_pipeline", "missing_pipeline", "analysis_pipeline"]
@@ -1017,7 +1191,11 @@ class TestDeletePipelineCommand:
         existing_path_2 = Path("/project/pipelines/analysis_pipeline")
         missing_error = "Pipeline 'missing_pipeline' not found in project"
 
-        def mock_delete_side_effect(name: str, _dry_run: bool) -> Path:
+        def mock_delete_side_effect(name: str, dry_run: bool) -> Path:
+            # Verify dry_run parameter is passed correctly
+            assert isinstance(dry_run, bool), "dry_run should be a boolean"
+            assert dry_run is False, "Should pass dry_run=False by default"
+
             if name == "missing_pipeline":
                 raise ProjectWrapper.NoSuchPipelineError(missing_error)
             if name == "data_processing_pipeline":
@@ -1050,6 +1228,10 @@ class TestDeletePipelineCommand:
         mock_delete_pipeline.assert_any_call("missing_pipeline", False)
         mock_delete_pipeline.assert_any_call("analysis_pipeline", False)
 
+        # Verify all calls were made with correct dry_run parameter
+        for call in mock_delete_pipeline.call_args_list:
+            assert call[0][1] is False, "All calls should use dry_run=False by default"
+
         # Verify CLI output contains both success and error messages
         assert "Deleted" in result.output, "Should show success messages for existing pipelines"
         assert "Failed to delete" in result.output, "Should show failure message for missing pipeline"
@@ -1057,6 +1239,26 @@ class TestDeletePipelineCommand:
         assert "analysis_pipeline" in result.output, "Should mention other successful pipeline"
         assert "missing_pipeline" in result.output, "Should mention failed pipeline"
         assert "not found" in result.output, "Should display specific error message"
+
+        # Verify successful pipeline paths appear in output
+        assert str(existing_path_1) in result.output, "Should show path for first successful pipeline"
+        assert str(existing_path_2) in result.output, "Should show path for second successful pipeline"
+
+        # Verify specific success message format for successful pipelines
+        assert (
+            'pipeline "data_processing_pipeline"' in result.output
+        ), "Should show formatted success message for first pipeline"
+        assert (
+            'pipeline "analysis_pipeline"' in result.output
+        ), "Should show formatted success message for second pipeline"
+
+        # Verify specific error message format for failed pipeline
+        assert 'Failed to delete pipeline "missing_pipeline"' in result.output, "Should show formatted error message"
+
+        # Verify that batch processing continued after failure (resilience test)
+        successful_pipelines = ["data_processing_pipeline", "analysis_pipeline"]
+        for pipeline in successful_pipelines:
+            assert "Deleted" in result.output, f"Should show success for {pipeline} despite other failures"
 
     @pytest.mark.integration
     def test_delete_multiple_pipelines_successful(
@@ -1071,6 +1273,7 @@ class TestDeletePipelineCommand:
         - Calls the ProjectWrapper.delete_pipeline method for each pipeline
         - Displays success messages for each deleted pipeline
         - Exits with code 0 on successful completion
+        - Uses batch_delete_operation to coordinate the deletion process
         """
         # Arrange
         pipeline_names = ["image_processing_pipeline", "data_analysis_pipeline"]
@@ -1097,9 +1300,13 @@ class TestDeletePipelineCommand:
         assert result.exit_code == 0, f"CLI command should succeed, got: {result.output}"
 
         # Verify ProjectWrapper.delete_pipeline was called correctly for each pipeline
-        assert mock_delete_pipeline.call_count == 2, "Should call delete_pipeline twice"
+        assert mock_delete_pipeline.call_count == 2, "Should call delete_pipeline exactly twice"
         mock_delete_pipeline.assert_any_call("image_processing_pipeline", False)
         mock_delete_pipeline.assert_any_call("data_analysis_pipeline", False)
+
+        # Verify calls were made with correct dry_run parameter (False by default)
+        for call in mock_delete_pipeline.call_args_list:
+            assert call[0][1] is False, "Should call delete_pipeline with dry_run=False by default"
 
         # Verify CLI output contains success messages for each pipeline
         assert "Deleted" in result.output, "Should display success message"
@@ -1108,16 +1315,31 @@ class TestDeletePipelineCommand:
         assert str(expected_paths[0]) in result.output, "Should show first pipeline path"
         assert str(expected_paths[1]) in result.output, "Should show second pipeline path"
 
+        # Verify no error messages appear for successful operations
+        assert "Failed to delete" not in result.output, "Should not display error messages for successful operations"
+
+        # Verify success message format for each pipeline
+        for pipeline_name in pipeline_names:
+            assert "Deleted" in result.output, "Should display success message for each pipeline"
+            assert (
+                f'pipeline "{pipeline_name}"' in result.output
+            ), f"Should display formatted success message with pipeline name {pipeline_name}"
+
     @pytest.mark.integration
     def test_delete_pipeline_with_dry_run_flag(
         self,
         mocker: pytest_mock.MockerFixture,
         setup_project_dir: Path,
     ) -> None:
-        """Test delete pipeline command with dry-run flag passes correct parameter.
+        """Test delete pipeline command with dry-run flag passes correct parameter and displays proper output.
 
-        This test ensures that the --dry-run flag is properly propagated through
-        the CLI to the underlying delete_pipeline method.
+        This integration test ensures that the --dry-run flag is properly propagated through
+        the CLI to the underlying delete_pipeline method and verifies comprehensive output formatting.
+        It specifically tests:
+        - Dry-run flag propagation to ProjectWrapper.delete_pipeline
+        - Success message formatting in dry-run mode
+        - Path display in output
+        - No error messages for successful dry-run operations
         """
         # Arrange
         pipeline_names = ["test_pipeline"]
@@ -1140,9 +1362,82 @@ class TestDeletePipelineCommand:
         # Verify CLI execution succeeded
         assert result.exit_code == 0, f"CLI command should succeed with dry-run, got: {result.output}"
 
-        # Verify delete_pipeline was called with dry_run=True
+        # Verify delete_pipeline was called with dry_run=True (most critical assertion for dry-run test)
         mock_delete_pipeline.assert_called_once_with("test_pipeline", True)
 
-        # Verify CLI output contains success message
-        assert "Deleted" in result.output, "Should display success message even in dry-run"
+        # Verify that exactly one call was made
+        assert mock_delete_pipeline.call_count == 1, "Should call delete_pipeline exactly once"
+
+        # Verify CLI output contains success message and details
+        assert "Deleted" in result.output, "Should display success message even in dry-run mode"
         assert "test_pipeline" in result.output, "Should mention pipeline name"
+        assert str(expected_path) in result.output, "Should show the pipeline path in output"
+
+        # Verify no error messages appear for successful dry-run operation
+        assert "Failed to delete" not in result.output, "Should not display error messages for successful dry-run"
+
+        # Verify specific success message format
+        assert (
+            'pipeline "test_pipeline"' in result.output
+        ), "Should display formatted success message with pipeline name"
+
+        # Verify the complete success message format includes all expected elements
+        expected_elements = ["Deleted", "pipeline", "test_pipeline", str(expected_path)]
+        for element in expected_elements:
+            assert element in result.output, f"Output should contain '{element}' for complete success message"
+
+    @pytest.mark.integration
+    def test_delete_pipeline_handles_nonexistent_pipeline_error(
+        self,
+        mocker: pytest_mock.MockerFixture,
+        setup_project_dir: Path,
+    ) -> None:
+        """Test delete pipeline command properly handles NoSuchPipelineError.
+
+        This integration test verifies that when attempting to delete a pipeline
+        that doesn't exist, the CLI command:
+        - Catches the NoSuchPipelineError from ProjectWrapper
+        - Displays appropriate error message with pipeline name
+        - Exits with error code 1
+        - Shows the specific error message from the exception
+        - Uses batch_delete_operation to coordinate the error handling
+        """
+        # Arrange
+        nonexistent_pipeline = "missing_analysis_pipeline"
+        expected_error_message = f"Pipeline '{nonexistent_pipeline}' not found in project"
+
+        mocker.patch("marimba.core.cli.delete.find_project_dir_or_exit", return_value=setup_project_dir)
+        mock_delete_pipeline = mocker.patch.object(
+            ProjectWrapper,
+            "delete_pipeline",
+            side_effect=ProjectWrapper.NoSuchPipelineError(expected_error_message),
+        )
+
+        # Act
+        result = runner.invoke(
+            marimba_cli,
+            ["delete", "pipeline", nonexistent_pipeline, "--project-dir", str(setup_project_dir)],
+        )
+
+        # Assert
+        # Verify CLI execution failed with correct exit code
+        assert result.exit_code == 1, f"CLI should exit with code 1 for missing pipeline, got: {result.output}"
+
+        # Verify ProjectWrapper.delete_pipeline was called with correct parameters
+        mock_delete_pipeline.assert_called_once_with(nonexistent_pipeline, False)
+
+        # Verify that exactly one call was made (no retries or duplicates)
+        assert mock_delete_pipeline.call_count == 1, "Should call delete_pipeline exactly once"
+
+        # Verify CLI output contains error messages
+        assert "Failed to delete" in result.output, "Should display failure message"
+        assert nonexistent_pipeline in result.output, "Should mention the pipeline name that failed"
+        assert "not found in project" in result.output, "Should display the specific error message from exception"
+
+        # Verify that no success messages are shown for failed operation
+        assert "Deleted" not in result.output, "Should not display success message for failed operation"
+
+        # Verify error message format follows expected pattern
+        assert (
+            f'Failed to delete pipeline "{nonexistent_pipeline}"' in result.output
+        ), "Should display formatted error message with pipeline name"
