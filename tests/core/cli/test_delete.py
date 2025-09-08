@@ -795,40 +795,263 @@ class TestDeleteCollectionCommand:
             assert "Deleted" in result.output, f"Should show success for {collection} despite other failures"
 
 
-@pytest.mark.integration
-def test_delete_target_command(mocker, setup_project_dir):
-    """Test delete target command."""
-    target_names = ["target1", "target2"]
+class TestDeleteTargetCommand:
+    """Test CLI delete target command integration."""
 
-    mocker.patch("marimba.core.cli.delete.find_project_dir_or_exit", return_value=setup_project_dir)
-    mock_delete = mocker.patch.object(ProjectWrapper, "delete_target", return_value=Path("/path"))
-    result = runner.invoke(marimba_cli, ["delete", "target", *target_names, "--project-dir", str(setup_project_dir)])
+    @pytest.mark.integration
+    def test_delete_multiple_targets_successful(
+        self,
+        mocker: pytest_mock.MockerFixture,
+        setup_project_dir: Path,
+    ) -> None:
+        """Test successful deletion of multiple targets via CLI command.
 
-    assert_cli_success(result, context="Target deletion batch")
-    assert mock_delete.call_count == 2
-    mock_delete.assert_any_call("target1", False)
-    mock_delete.assert_any_call("target2", False)
+        This integration test verifies that the delete target CLI command correctly:
+        - Processes multiple target names from command line arguments
+        - Calls the ProjectWrapper.delete_target method for each target
+        - Displays success messages for each deleted target
+        - Exits with code 0 on successful completion
+        """
+        # Arrange
+        target_names = ["s3_target", "dap_server_target"]
+        expected_paths = [
+            Path("/project/targets/s3_target"),
+            Path("/project/targets/dap_server_target"),
+        ]
 
+        mocker.patch("marimba.core.cli.delete.find_project_dir_or_exit", return_value=setup_project_dir)
+        mock_delete_target = mocker.patch.object(
+            ProjectWrapper,
+            "delete_target",
+            side_effect=expected_paths,
+        )
 
-@pytest.mark.integration
-def test_delete_target_no_such_target(mocker, setup_project_dir):
-    """Test delete target with non-existent target."""
-    target_names = ["nonexistent"]
+        # Act
+        result = runner.invoke(
+            marimba_cli,
+            ["delete", "target", *target_names, "--project-dir", str(setup_project_dir)],
+        )
 
-    mocker.patch("marimba.core.cli.delete.find_project_dir_or_exit", return_value=setup_project_dir)
-    mocker.patch.object(
-        ProjectWrapper,
-        "delete_target",
-        side_effect=ProjectWrapper.NoSuchTargetError("Target not found"),
-    )
-    result = runner.invoke(marimba_cli, ["delete", "target", *target_names, "--project-dir", str(setup_project_dir)])
+        # Assert
+        # Verify CLI execution succeeded
+        assert result.exit_code == 0, f"CLI command should succeed, got: {result.output}"
 
-    assert_cli_failure(
-        result,
-        expected_error="Failed to delete",
-        expected_exit_code=1,
-        context="Target deletion with missing target",
-    )
+        # Verify ProjectWrapper.delete_target was called correctly for each target
+        assert mock_delete_target.call_count == 2, "Should call delete_target exactly twice"
+        mock_delete_target.assert_any_call("s3_target", False)
+        mock_delete_target.assert_any_call("dap_server_target", False)
+
+        # Verify calls were made with correct dry_run parameter (False by default)
+        for call in mock_delete_target.call_args_list:
+            assert call[0][1] is False, "Should call delete_target with dry_run=False by default"
+
+        # Verify CLI output contains success messages for each target
+        assert "Deleted" in result.output, "Should display success message"
+        assert "s3_target" in result.output, "Should mention first target name"
+        assert "dap_server_target" in result.output, "Should mention second target name"
+        assert str(expected_paths[0]) in result.output, "Should show first target path"
+        assert str(expected_paths[1]) in result.output, "Should show second target path"
+
+        # Verify no error messages appear for successful operations
+        assert "Failed to delete" not in result.output, "Should not display error messages for successful operations"
+
+        # Verify success message format for each target
+        for target_name in target_names:
+            assert "Deleted" in result.output, "Should display success message for each target"
+            assert (
+                f'target "{target_name}"' in result.output
+            ), f"Should display formatted success message with target name {target_name}"
+
+    @pytest.mark.integration
+    def test_delete_target_handles_nonexistent_target_error(
+        self,
+        mocker: pytest_mock.MockerFixture,
+        setup_project_dir: Path,
+    ) -> None:
+        """Test delete target command properly handles NoSuchTargetError.
+
+        This integration test verifies that when attempting to delete a target
+        that doesn't exist, the CLI command:
+        - Catches the NoSuchTargetError from ProjectWrapper
+        - Displays appropriate error message with target name
+        - Exits with error code 1
+        - Shows the specific error message from the exception
+        """
+        # Arrange
+        nonexistent_target = "missing_s3_target"
+        expected_error_message = f"Target '{nonexistent_target}' not found in project"
+
+        mocker.patch("marimba.core.cli.delete.find_project_dir_or_exit", return_value=setup_project_dir)
+        mock_delete_target = mocker.patch.object(
+            ProjectWrapper,
+            "delete_target",
+            side_effect=ProjectWrapper.NoSuchTargetError(expected_error_message),
+        )
+
+        # Act
+        result = runner.invoke(
+            marimba_cli,
+            ["delete", "target", nonexistent_target, "--project-dir", str(setup_project_dir)],
+        )
+
+        # Assert
+        # Verify CLI execution failed with correct exit code
+        assert result.exit_code == 1, f"CLI should exit with code 1 for missing target, got: {result.output}"
+
+        # Verify ProjectWrapper.delete_target was called with correct parameters
+        mock_delete_target.assert_called_once_with(nonexistent_target, False)
+
+        # Verify that exactly one call was made (no retries or duplicates)
+        assert mock_delete_target.call_count == 1, "Should call delete_target exactly once"
+
+        # Verify CLI output contains error messages
+        assert "Failed to delete" in result.output, "Should display failure message"
+        assert nonexistent_target in result.output, "Should mention the target name that failed"
+        assert "not found" in result.output, "Should display the specific error message from exception"
+
+        # Verify that no success messages are shown for failed operation
+        assert "Deleted" not in result.output, "Should not display success message for failed operation"
+
+        # Verify error message format follows expected pattern
+        assert (
+            f'Failed to delete target "{nonexistent_target}"' in result.output
+        ), "Should display formatted error message with target name"
+
+    @pytest.mark.integration
+    def test_delete_target_with_dry_run_flag(
+        self,
+        mocker: pytest_mock.MockerFixture,
+        setup_project_dir: Path,
+    ) -> None:
+        """Test delete target command with dry-run flag passes correct parameter.
+
+        This integration test verifies that the delete target CLI command correctly:
+        - Parses the --dry-run flag from command line arguments
+        - Passes dry_run=True through batch_delete_operation to delete_target method
+        - Still displays success messages as if the operation completed
+        - Exits with success code 0
+        - Shows the specific target path in output
+        """
+        # Arrange
+        target_names = ["test_target"]
+        expected_path = Path("/project/targets/test_target")
+
+        mocker.patch("marimba.core.cli.delete.find_project_dir_or_exit", return_value=setup_project_dir)
+
+        # Mock batch_delete_operation to verify dry_run parameter propagation
+        mock_batch_delete = mocker.patch(
+            "marimba.core.cli.delete.batch_delete_operation",
+            return_value=([(target_names[0], expected_path)], []),
+        )
+
+        # Act
+        result = runner.invoke(
+            marimba_cli,
+            ["delete", "target", *target_names, "--project-dir", str(setup_project_dir), "--dry-run"],
+        )
+
+        # Assert
+        # Verify CLI execution succeeded
+        assert result.exit_code == 0, f"CLI command should succeed with dry-run, got: {result.output}"
+
+        # Verify batch_delete_operation was called with dry_run=True (most important for dry-run test)
+        mock_batch_delete.assert_called_once()
+        call_args = mock_batch_delete.call_args
+        assert call_args[0][0] == target_names, "Should pass target names"
+        assert call_args[0][2] == "target", "Should pass entity type"
+        assert call_args[0][3] == "Deleting targets...", "Should pass description"
+        assert call_args[0][4] is True, "Should pass dry_run=True"
+
+        # Verify CLI output contains success message and target details
+        assert "Deleted" in result.output, "Should display success message even in dry-run mode"
+        assert "test_target" in result.output, "Should mention target name"
+        assert str(expected_path) in result.output, "Should show the target path"
+
+    @pytest.mark.integration
+    def test_delete_multiple_targets_with_partial_failures(
+        self,
+        mocker: pytest_mock.MockerFixture,
+        setup_project_dir: Path,
+    ) -> None:
+        """Test delete target command with mixed success and failure results.
+
+        This test verifies that when deleting multiple targets where some exist
+        and others don't, the CLI properly:
+        - Processes all targets in the batch
+        - Shows success messages for existing targets
+        - Shows error messages for missing targets
+        - Exits with error code 1 due to failures
+        """
+        # Arrange
+        target_names = ["existing_target", "missing_target", "another_existing"]
+        existing_path = Path("/project/targets/existing_target")
+        another_existing_path = Path("/project/targets/another_existing")
+        missing_error = "Target 'missing_target' not found"
+
+        def mock_delete_side_effect(name: str, dry_run: bool) -> Path:
+            # Verify dry_run parameter is passed correctly
+            assert isinstance(dry_run, bool), "dry_run should be a boolean"
+            assert dry_run is False, "Should pass dry_run=False by default"
+
+            if name == "missing_target":
+                raise ProjectWrapper.NoSuchTargetError(missing_error)
+            if name == "existing_target":
+                return existing_path
+            if name == "another_existing":
+                return another_existing_path
+            unexpected_name_msg = f"Unexpected target name: {name}"
+            raise ValueError(unexpected_name_msg)
+
+        mocker.patch("marimba.core.cli.delete.find_project_dir_or_exit", return_value=setup_project_dir)
+        mock_delete_target = mocker.patch.object(
+            ProjectWrapper,
+            "delete_target",
+            side_effect=mock_delete_side_effect,
+        )
+
+        # Act
+        result = runner.invoke(
+            marimba_cli,
+            ["delete", "target", *target_names, "--project-dir", str(setup_project_dir)],
+        )
+
+        # Assert
+        # Verify CLI execution failed due to partial failures
+        assert result.exit_code == 1, f"CLI should exit with code 1 for partial failures, got: {result.output}"
+
+        # Verify all targets were attempted
+        assert mock_delete_target.call_count == 3, "Should attempt to delete all 3 targets"
+        mock_delete_target.assert_any_call("existing_target", False)
+        mock_delete_target.assert_any_call("missing_target", False)
+        mock_delete_target.assert_any_call("another_existing", False)
+
+        # Verify all calls were made with correct dry_run parameter
+        for call in mock_delete_target.call_args_list:
+            assert call[0][1] is False, "All calls should use dry_run=False by default"
+
+        # Verify CLI output contains both success and error messages
+        assert "Deleted" in result.output, "Should show success messages for existing targets"
+        assert "Failed to delete" in result.output, "Should show failure message for missing target"
+        assert "existing_target" in result.output, "Should mention successful target"
+        assert "another_existing" in result.output, "Should mention other successful target"
+        assert "missing_target" in result.output, "Should mention failed target"
+        assert "not found" in result.output, "Should display specific error message"
+
+        # Verify successful target paths appear in output
+        assert str(existing_path) in result.output, "Should show path for first successful target"
+        assert str(another_existing_path) in result.output, "Should show path for second successful target"
+
+        # Verify specific success message format for successful targets
+        assert 'target "existing_target"' in result.output, "Should show formatted success message for first target"
+        assert 'target "another_existing"' in result.output, "Should show formatted success message for second target"
+
+        # Verify specific error message format for failed target
+        assert 'Failed to delete target "missing_target"' in result.output, "Should show formatted error message"
+
+        # Verify that batch processing continued after failure (resilience test)
+        successful_targets = ["existing_target", "another_existing"]
+        for target in successful_targets:
+            assert "Deleted" in result.output, f"Should show success for {target} despite other failures"
 
 
 class TestDeleteDatasetCommand:
