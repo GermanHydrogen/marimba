@@ -4,6 +4,7 @@ from pathlib import Path
 
 import pytest
 import typer
+from pytest_mock import MockerFixture
 
 from marimba.core.utils.paths import (
     detect_hardlinked_files,
@@ -61,27 +62,55 @@ class TestFindProjectDir:
         assert result == project_root
 
     @pytest.mark.unit
-    def test_find_project_dir_not_found(self, tmp_path):
-        """Test finding project directory when not found."""
+    def test_find_project_dir_non_existent_path(self, tmp_path: Path) -> None:
+        """Test finding project directory when path does not exist.
+
+        This test verifies that find_project_dir returns None when called
+        with a path that doesn't exist on the filesystem, ensuring robust
+        error handling for invalid paths.
+        """
+        # Arrange
+        non_existent_path = tmp_path / "completely_non_existent_directory"
+
+        # Act
+        result = find_project_dir(non_existent_path)
+
+        # Assert
+        assert result is None, "Should return None when path doesn't exist"
+
+    @pytest.mark.unit
+    def test_find_project_dir_not_found(self, tmp_path: Path) -> None:
+        """Test finding project directory when not found in existing directory.
+
+        This test verifies that find_project_dir returns None when called
+        with a directory that exists but contains no .marimba marker directory,
+        ensuring proper project detection logic.
+        """
+        # Arrange
         non_project = tmp_path / "not_a_project"
         non_project.mkdir()
 
+        # Act
         result = find_project_dir(non_project)
 
-        assert result is None
+        # Assert
+        assert result is None, "Should return None when directory exists but is not a project"
 
     @pytest.mark.unit
-    def test_find_project_dir_no_read_access(self, mocker, tmp_path):
+    def test_find_project_dir_no_read_access(self, mocker: MockerFixture, tmp_path: Path) -> None:
         """Test finding project directory with no read access."""
+        # Arrange
         mock_access = mocker.patch("os.access")
         mock_access.return_value = False
 
+        # Act
         result = find_project_dir(tmp_path)
 
-        assert result is None
+        # Assert
+        assert result is None, "Should return None when directory has no read access"
 
     @pytest.mark.unit
-    def test_find_project_dir_marimba_is_file(self, tmp_path):
+    def test_find_project_dir_marimba_is_file(self, tmp_path: Path) -> None:
         """Test finding project directory when .marimba is a file, not directory."""
         project_dir = tmp_path / "project"
         project_dir.mkdir()
@@ -105,41 +134,77 @@ class TestFindProjectDirOrExit:
 
     @pytest.mark.unit
     def test_find_project_dir_or_exit_with_valid_dir(self, temp_project):
-        """Test find_project_dir_or_exit with valid project directory."""
-        result = find_project_dir_or_exit(temp_project)
+        """
+        Test find_project_dir_or_exit with valid project directory returns the same directory.
 
-        assert result == temp_project
+        This unit test verifies that when find_project_dir_or_exit is called with
+        a valid project directory (containing a .marimba subdirectory), it returns
+        the same directory path without modification or error. This ensures the
+        function correctly identifies and returns valid project directories.
+        """
+        # Arrange
+        project_path = temp_project
 
-    @pytest.mark.unit
-    def test_find_project_dir_or_exit_with_none_uses_cwd(self, mocker, tmp_path):
-        """Test find_project_dir_or_exit with None uses current working directory."""
+        # Act
+        result = find_project_dir_or_exit(project_path)
+
+        # Assert
+        assert result == project_path, f"Expected {project_path}, but got {result}"
+        assert (result / ".marimba").is_dir(), "Returned project should contain .marimba directory"
+
+    @pytest.mark.integration
+    def test_find_project_dir_or_exit_with_none_uses_cwd(self, mocker: MockerFixture, tmp_path: Path) -> None:
+        """
+        Test find_project_dir_or_exit with None uses current working directory to find project.
+
+        This integration test verifies that when no project_dir is provided (None),
+        the function uses the current working directory as the starting point for
+        project directory search and successfully locates a valid Marimba project.
+        """
+        # Arrange - Create a real project structure in tmp_path
+        project_root = tmp_path / "test_project"
+        project_root.mkdir()
+        marimba_dir = project_root / ".marimba"
+        marimba_dir.mkdir()
+
+        # Create a subdirectory to work from (simulating being in subdirectory)
+        work_dir = project_root / "subdir"
+        work_dir.mkdir()
+
+        # Mock only the external dependency (current working directory)
+        # but test real project directory finding logic
         mock_cwd = mocker.patch("marimba.core.utils.paths.Path.cwd")
-        mock_find = mocker.patch("marimba.core.utils.paths.find_project_dir")
-        mock_cwd.return_value = tmp_path
-        mock_find.return_value = tmp_path
+        mock_cwd.return_value = work_dir
 
+        # Act - Test real functionality with minimal mocking
         result = find_project_dir_or_exit(None)
 
-        assert result == tmp_path
-        mock_find.assert_called_once_with(tmp_path)
+        # Assert - Verify real behavior and outcomes
+        assert result == project_root, f"Should find project root from subdirectory, got {result}"
+        mock_cwd.assert_called_once(), "Should call Path.cwd() when project_dir is None"
+
+        # Verify the project structure exists as expected
+        assert (result / ".marimba").is_dir(), "Found project should have .marimba directory"
 
     @pytest.mark.unit
-    def test_find_project_dir_or_exit_not_found_exits(self, mocker, tmp_path):
+    def test_find_project_dir_or_exit_not_found_exits(self, mocker: MockerFixture, tmp_path: Path) -> None:
         """Test find_project_dir_or_exit exits when project not found."""
+        # Arrange
         mock_find = mocker.patch("marimba.core.utils.paths.find_project_dir")
         mock_find.return_value = None
 
+        # Act & Assert
         with pytest.raises(typer.Exit) as exc_info:
             find_project_dir_or_exit(tmp_path)
 
-        assert exc_info.value.exit_code == 1
+        assert exc_info.value.exit_code == 1, "Should exit with error code 1 when project not found"
 
 
 class TestRemoveDirectoryTree:
     """Test remove_directory_tree function."""
 
     @pytest.mark.unit
-    def test_remove_directory_tree_dry_run(self, tmp_path):
+    def test_remove_directory_tree_dry_run(self, tmp_path: Path) -> None:
         """Test remove_directory_tree with dry_run=True."""
         test_dir = tmp_path / "test_dir"
         test_dir.mkdir()
@@ -151,7 +216,7 @@ class TestRemoveDirectoryTree:
         assert test_dir.exists()
 
     @pytest.mark.unit
-    def test_remove_directory_tree_actual_deletion(self, mocker, tmp_path):
+    def test_remove_directory_tree_actual_deletion(self, mocker: MockerFixture, tmp_path: Path) -> None:
         """Test remove_directory_tree with actual deletion."""
         test_dir = tmp_path / "test_dir"
         test_dir.mkdir()
@@ -163,7 +228,7 @@ class TestRemoveDirectoryTree:
         mock_rmtree.assert_called_once_with(test_dir)
 
     @pytest.mark.unit
-    def test_remove_directory_tree_invalid_directory(self, tmp_path):
+    def test_remove_directory_tree_invalid_directory(self, tmp_path: Path) -> None:
         """Test remove_directory_tree with invalid directory."""
         non_existent = tmp_path / "non_existent"
 
@@ -173,7 +238,7 @@ class TestRemoveDirectoryTree:
         assert exc_info.value.exit_code == 1
 
     @pytest.mark.unit
-    def test_remove_directory_tree_deletion_error(self, mocker, tmp_path):
+    def test_remove_directory_tree_deletion_error(self, mocker: MockerFixture, tmp_path: Path) -> None:
         """Test remove_directory_tree with deletion error."""
         mock_rmtree = mocker.patch("shutil.rmtree")
         mock_rmtree.side_effect = OSError("Permission denied")
@@ -190,7 +255,7 @@ class TestHardlinkPath:
     """Test hardlink_path function."""
 
     @pytest.mark.unit
-    def test_hardlink_path_invalid_source(self, tmp_path):
+    def test_hardlink_path_invalid_source(self, tmp_path: Path) -> None:
         """Test hardlink_path with invalid source directory."""
         non_existent = tmp_path / "non_existent"
         dest = tmp_path / "dest"
@@ -201,7 +266,7 @@ class TestHardlinkPath:
         assert exc_info.value.exit_code == 1
 
     @pytest.mark.unit
-    def test_hardlink_path_source_is_file(self, tmp_path):
+    def test_hardlink_path_source_is_file(self, tmp_path: Path) -> None:
         """Test hardlink_path when source is a file instead of directory."""
         source_file = tmp_path / "source_file.txt"
         source_file.touch()
@@ -213,7 +278,7 @@ class TestHardlinkPath:
         assert exc_info.value.exit_code == 1
 
     @pytest.mark.unit
-    def test_hardlink_path_dry_run(self, tmp_path):
+    def test_hardlink_path_dry_run(self, tmp_path: Path) -> None:
         """Test hardlink_path with dry_run=True."""
         # Create source structure
         src_dir = tmp_path / "src"
@@ -231,7 +296,7 @@ class TestHardlinkPath:
         assert dest_dir.exists()
 
     @pytest.mark.unit
-    def test_hardlink_path_actual_linking(self, tmp_path):
+    def test_hardlink_path_actual_linking(self, tmp_path: Path) -> None:
         """Test hardlink_path with actual hard link creation."""
         # Create source structure
         src_dir = tmp_path / "src"
@@ -249,7 +314,7 @@ class TestHardlinkPath:
         assert dest_file.read_text() == "test content"
 
     @pytest.mark.unit
-    def test_hardlink_path_linking_error(self, mocker, tmp_path):
+    def test_hardlink_path_linking_error(self, mocker: MockerFixture, tmp_path: Path) -> None:
         """Test hardlink_path with hard link creation error."""
         # Create source structure
         src_dir = tmp_path / "src"
@@ -268,13 +333,13 @@ class TestDetectHardlinkedFiles:
     """Test detect_hardlinked_files function."""
 
     @pytest.mark.unit
-    def test_detect_hardlinked_files_empty_list(self):
+    def test_detect_hardlinked_files_empty_list(self) -> None:
         """Test detect_hardlinked_files with empty list."""
         result = detect_hardlinked_files([])
         assert result == []
 
     @pytest.mark.unit
-    def test_detect_hardlinked_files_non_existent_file(self, tmp_path):
+    def test_detect_hardlinked_files_non_existent_file(self, tmp_path: Path) -> None:
         """Test detect_hardlinked_files with non-existent file."""
         non_existent = tmp_path / "non_existent.txt"
 
@@ -283,7 +348,7 @@ class TestDetectHardlinkedFiles:
         assert result == []
 
     @pytest.mark.unit
-    def test_detect_hardlinked_files_directory(self, tmp_path):
+    def test_detect_hardlinked_files_directory(self, tmp_path: Path) -> None:
         """Test detect_hardlinked_files with directory instead of file."""
         test_dir = tmp_path / "test_dir"
         test_dir.mkdir()
@@ -293,7 +358,7 @@ class TestDetectHardlinkedFiles:
         assert result == []
 
     @pytest.mark.unit
-    def test_detect_hardlinked_files_single_link(self, tmp_path):
+    def test_detect_hardlinked_files_single_link(self, tmp_path: Path) -> None:
         """Test detect_hardlinked_files with file having single link."""
         test_file = tmp_path / "test_file.txt"
         test_file.touch()
@@ -304,7 +369,7 @@ class TestDetectHardlinkedFiles:
         assert result == []
 
     @pytest.mark.unit
-    def test_detect_hardlinked_files_multiple_links(self, tmp_path):
+    def test_detect_hardlinked_files_multiple_links(self, tmp_path: Path) -> None:
         """Test detect_hardlinked_files with file having multiple hard links."""
         test_file = tmp_path / "test_file.txt"
         test_file.write_text("test content")
@@ -321,7 +386,7 @@ class TestDetectHardlinkedFiles:
         assert hard_link in result
 
     @pytest.mark.unit
-    def test_detect_hardlinked_files_stat_error(self, tmp_path):
+    def test_detect_hardlinked_files_stat_error(self, tmp_path: Path) -> None:
         """Test detect_hardlinked_files with stat error."""
         test_file = tmp_path / "test_file.txt"
         test_file.touch()
@@ -339,13 +404,13 @@ class TestDetectReadonlyFiles:
     """Test detect_readonly_files function."""
 
     @pytest.mark.unit
-    def test_detect_readonly_files_empty_list(self):
+    def test_detect_readonly_files_empty_list(self) -> None:
         """Test detect_readonly_files with empty list."""
         result = detect_readonly_files([])
         assert result == []
 
     @pytest.mark.unit
-    def test_detect_readonly_files_non_existent_file(self, tmp_path):
+    def test_detect_readonly_files_non_existent_file(self, tmp_path: Path) -> None:
         """Test detect_readonly_files with non-existent file."""
         non_existent = tmp_path / "non_existent.txt"
 
@@ -354,7 +419,7 @@ class TestDetectReadonlyFiles:
         assert result == []
 
     @pytest.mark.unit
-    def test_detect_readonly_files_directory(self, tmp_path):
+    def test_detect_readonly_files_directory(self, tmp_path: Path) -> None:
         """Test detect_readonly_files with directory instead of file."""
         test_dir = tmp_path / "test_dir"
         test_dir.mkdir()
@@ -364,7 +429,7 @@ class TestDetectReadonlyFiles:
         assert result == []
 
     @pytest.mark.unit
-    def test_detect_readonly_files_writable_file(self, mocker, tmp_path):
+    def test_detect_readonly_files_writable_file(self, mocker: MockerFixture, tmp_path: Path) -> None:
         """Test detect_readonly_files with writable file."""
         mock_access = mocker.patch("os.access")
         mock_access.return_value = True
@@ -376,7 +441,7 @@ class TestDetectReadonlyFiles:
         assert result == []
 
     @pytest.mark.unit
-    def test_detect_readonly_files_readonly_file(self, mocker, tmp_path):
+    def test_detect_readonly_files_readonly_file(self, mocker: MockerFixture, tmp_path: Path) -> None:
         """Test detect_readonly_files with read-only file."""
         mock_access = mocker.patch("os.access")
         mock_access.return_value = False
@@ -388,7 +453,7 @@ class TestDetectReadonlyFiles:
         assert test_file in result
 
     @pytest.mark.unit
-    def test_detect_readonly_files_access_error(self, mocker, tmp_path):
+    def test_detect_readonly_files_access_error(self, mocker: MockerFixture, tmp_path: Path) -> None:
         """Test detect_readonly_files with access permission error."""
         mock_access = mocker.patch("os.access")
         mock_access.side_effect = PermissionError("Access denied")
@@ -405,7 +470,7 @@ class TestFormatPathForLogging:
     """Test format_path_for_logging function."""
 
     @pytest.mark.unit
-    def test_format_path_for_logging_with_project_dir(self, tmp_path):
+    def test_format_path_for_logging_with_project_dir(self, tmp_path: Path) -> None:
         """Test format_path_for_logging with provided project directory."""
         project_dir = tmp_path / "project"
         project_dir.mkdir()
@@ -416,7 +481,7 @@ class TestFormatPathForLogging:
         assert result == "subdir/file.txt"
 
     @pytest.mark.unit
-    def test_format_path_for_logging_string_path(self, tmp_path):
+    def test_format_path_for_logging_string_path(self, tmp_path: Path) -> None:
         """Test format_path_for_logging with string path."""
         project_dir = tmp_path / "project"
         project_dir.mkdir()
@@ -427,7 +492,7 @@ class TestFormatPathForLogging:
         assert result == "file.txt"
 
     @pytest.mark.unit
-    def test_format_path_for_logging_without_project_dir_found(self, mocker, tmp_path):
+    def test_format_path_for_logging_without_project_dir_found(self, mocker: MockerFixture, tmp_path: Path) -> None:
         """Test format_path_for_logging without project_dir, but project found."""
         project_dir = tmp_path / "project"
         project_dir.mkdir()
@@ -440,7 +505,7 @@ class TestFormatPathForLogging:
         assert result == "file.txt"
 
     @pytest.mark.unit
-    def test_format_path_for_logging_without_project_dir_not_found(self, mocker, tmp_path):
+    def test_format_path_for_logging_without_project_dir_not_found(self, mocker: MockerFixture, tmp_path: Path) -> None:
         """Test format_path_for_logging without project_dir and project not found."""
         mock_find = mocker.patch("marimba.core.utils.paths.find_project_dir")
         mock_find.return_value = None
@@ -451,7 +516,7 @@ class TestFormatPathForLogging:
         assert result == str(test_path.resolve())
 
     @pytest.mark.unit
-    def test_format_path_for_logging_path_outside_project(self, tmp_path):
+    def test_format_path_for_logging_path_outside_project(self, tmp_path: Path) -> None:
         """Test format_path_for_logging with path outside project directory."""
         project_dir = tmp_path / "project"
         project_dir.mkdir()
