@@ -5,9 +5,7 @@ This module provides common fixtures used across all e2e test modules,
 including temporary directories, CLI runner, and cleanup functionality.
 """
 
-import tempfile
 import weakref
-from collections.abc import Generator
 from contextlib import suppress
 from pathlib import Path
 from typing import Any
@@ -48,25 +46,23 @@ def cleanup_dataset_wrappers():
 
 
 @pytest.fixture
-def temp_project_dir() -> Generator[Path, None, None]:
+def temp_project_dir(tmp_path: Path) -> Path:
     """Create a temporary directory for E2E test projects."""
-    with tempfile.TemporaryDirectory() as temp_dir:
-        yield Path(temp_dir) / "test_project"
+    return tmp_path / "test_project"
 
 
 @pytest.fixture
-def temp_data_dir() -> Generator[Path, None, None]:
+def temp_data_dir(tmp_path: Path) -> Path:
     """Create a temporary directory with sample data for testing."""
-    with tempfile.TemporaryDirectory() as temp_dir:
-        data_dir = Path(temp_dir) / "sample_data"
-        data_dir.mkdir()
+    data_dir = tmp_path / "sample_data"
+    data_dir.mkdir()
 
-        # Create some sample files to import
-        (data_dir / "image1.jpg").write_text("fake image data")
-        (data_dir / "image2.jpg").write_text("fake image data 2")
-        (data_dir / "metadata.txt").write_text("sample metadata")
+    # Create some sample files to import
+    (data_dir / "image1.jpg").write_text("fake image data")
+    (data_dir / "image2.jpg").write_text("fake image data 2")
+    (data_dir / "metadata.txt").write_text("sample metadata")
 
-        yield data_dir
+    return data_dir
 
 
 @pytest.fixture
