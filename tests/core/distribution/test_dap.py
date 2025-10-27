@@ -1,15 +1,12 @@
 """Tests for marimba.core.distribution.dap module."""
 
-from typing import Any
-
 import pytest
-import pytest_mock
+from pytest_mock import MockerFixture
 
 from marimba.core.distribution.dap import CSIRODapDistributionTarget
 from marimba.core.distribution.s3 import S3DistributionTarget
 
 
-@pytest.mark.integration
 class TestCSIRODapDistributionTarget:
     """Test CSIRODapDistributionTarget functionality."""
 
@@ -22,26 +19,21 @@ class TestCSIRODapDistributionTarget:
             "secret_access_key": "test_secret",
         }
 
-    @pytest.fixture
-    def mock_s3_resource(self, mocker: pytest_mock.MockerFixture) -> tuple[Any, Any, Any]:
-        """Mock the boto3 S3 resource creation."""
-        mock_resource = mocker.patch("marimba.core.distribution.s3.resource")
-        mock_s3 = mocker.Mock()
-        mock_bucket = mocker.Mock()
-        mock_s3.Bucket.return_value = mock_bucket
-        mock_resource.return_value = mock_s3
-        return mock_resource, mock_s3, mock_bucket
-
-    def test_init_with_basic_path(
+    @pytest.mark.unit
+    def test_initialization_and_inheritance(
         self,
-        mocker: pytest_mock.MockerFixture,
         dap_credentials: dict[str, str],
-        mock_s3_resource: tuple[Any, Any, Any],
+        mocker: MockerFixture,
     ) -> None:
-        """Test initialization with a basic remote directory path."""
+        """Test basic initialization and inheritance behavior.
+
+        Verifies that the DAP target correctly inherits from S3DistributionTarget
+        and initializes with proper type hierarchy and attribute parsing.
+        """
         # Arrange
-        mock_resource, mock_s3, mock_bucket = mock_s3_resource
         remote_directory = "bucket_name/path/to/data"
+        # Mock only external S3 resource creation to avoid network calls
+        mocker.patch("marimba.core.distribution.s3.resource")
 
         # Act
         target = CSIRODapDistributionTarget(
@@ -55,168 +47,80 @@ class TestCSIRODapDistributionTarget:
         assert target._bucket_name == "bucket_name", "Bucket name should be parsed correctly"
         assert target._base_prefix == "path/to/data", "Base prefix should be parsed correctly"
 
-        # Verify S3 resource was created with correct parameters
-        mock_resource.assert_called_once_with(
-            "s3",
-            endpoint_url=dap_credentials["endpoint_url"],
-            aws_access_key_id=dap_credentials["access_key"],
-            aws_secret_access_key=dap_credentials["secret_access_key"],
-        )
-
-    def test_init_with_root_path(
+    @pytest.mark.unit
+    def test_parameter_mapping_to_parent_constructor(
         self,
-        mocker: pytest_mock.MockerFixture,
         dap_credentials: dict[str, str],
-        mock_s3_resource: tuple[Any, Any, Any],
+        mocker: MockerFixture,
     ) -> None:
-        """Test initialization with root-level remote directory."""
-        # Arrange
-        mock_resource, mock_s3, mock_bucket = mock_s3_resource
-        remote_directory = "bucket_name/"
+        """Test that DAP-style parameters are correctly mapped to parent S3 constructor parameters.
 
-        # Act
-        target = CSIRODapDistributionTarget(
-            remote_directory=remote_directory,
-            **dap_credentials,
-        )
-
-        # Assert
-        assert target._bucket_name == "bucket_name", "Bucket name should be parsed correctly"
-        assert target._base_prefix == "", "Base prefix should be empty for root path"
-
-    def test_init_with_nested_path(
-        self,
-        mocker: pytest_mock.MockerFixture,
-        dap_credentials: dict[str, str],
-        mock_s3_resource: tuple[Any, Any, Any],
-    ) -> None:
-        """Test initialization with deeply nested remote directory."""
-        # Arrange
-        mock_resource, mock_s3, mock_bucket = mock_s3_resource
-        remote_directory = "my-bucket/data/2023/project-x/results"
-
-        # Act
-        target = CSIRODapDistributionTarget(
-            remote_directory=remote_directory,
-            **dap_credentials,
-        )
-
-        # Assert
-        assert target._bucket_name == "my-bucket", "Bucket name should be parsed correctly"
-        assert target._base_prefix == "data/2023/project-x/results", "Base prefix should handle nested paths"
-
-    def test_init_with_bucket_only_no_slash(
-        self,
-        mocker: pytest_mock.MockerFixture,
-        dap_credentials: dict[str, str],
-        mock_s3_resource: tuple[Any, Any, Any],
-    ) -> None:
-        """Test initialization with bucket name only (no slash) - documents current implementation behavior.
-
-        NOTE: This test documents the current behavior where bucket names without slashes
-        get truncated. This may be unintended behavior that should be fixed.
+        Verifies that the CSIRODapDistributionTarget correctly maps DAP-style authentication
+        parameters to the expected S3DistributionTarget constructor parameters:
+        - access_key -> aws_access_key_id (parameter name transformation)
+        - secret_access_key -> aws_secret_access_key (unchanged)
+        - endpoint_url -> endpoint_url (unchanged)
         """
         # Arrange
-        mock_resource, mock_s3, mock_bucket = mock_s3_resource
-        remote_directory = "bucket_name"
+        remote_directory = "test-bucket/path/to/data"
+        mock_resource = mocker.patch("marimba.core.distribution.s3.resource")
 
         # Act
-        target = CSIRODapDistributionTarget(
+        CSIRODapDistributionTarget(
             remote_directory=remote_directory,
             **dap_credentials,
         )
 
         # Assert
-        # When find("/") returns -1, slicing [:first_slash] becomes [:-1] which removes last character
-        assert target._bucket_name == "bucket_nam", "Bucket name gets last character removed when no slash found"
-        assert target._base_prefix == "bucket_name", "Base prefix becomes the full string when no slash found"
-
-    def test_remote_directory_parsing_edge_cases(
-        self,
-        mocker: pytest_mock.MockerFixture,
-        dap_credentials: dict[str, str],
-        mock_s3_resource: tuple[Any, Any, Any],
-    ) -> None:
-        """Test edge cases in remote directory parsing."""
-        # Arrange
-        mock_resource, mock_s3, mock_bucket = mock_s3_resource
-        multiple_slash_path = "bucket/path/with/multiple/slashes"
-        leading_slash_path = "/bucket/path"
-
-        # Act
-        target1 = CSIRODapDistributionTarget(
-            endpoint_url=dap_credentials["endpoint_url"],
-            access_key=dap_credentials["access_key"],
-            secret_access_key=dap_credentials["secret_access_key"],
-            remote_directory=multiple_slash_path,
-        )
-
-        target2 = CSIRODapDistributionTarget(
-            endpoint_url=dap_credentials["endpoint_url"],
-            access_key=dap_credentials["access_key"],
-            secret_access_key=dap_credentials["secret_access_key"],
-            remote_directory=leading_slash_path,
-        )
-
-        # Assert
-        # Test with multiple slashes
-        assert target1._bucket_name == "bucket", "Should use first slash for bucket separation"
-        assert target1._base_prefix == "path/with/multiple/slashes", "Should keep remaining path as prefix"
-
-        # Test with slash at beginning - edge case
-        assert target2._bucket_name == "", "Bucket name becomes empty when path starts with slash"
-        assert target2._base_prefix == "bucket/path", "Base prefix contains everything after first slash"
-
-    def test_all_parameters_passed_to_parent(self, mocker: pytest_mock.MockerFixture) -> None:
-        """Test that all parameters are correctly passed to parent S3DistributionTarget."""
-        # Arrange
-        mock_resource = mocker.patch("marimba.core.distribution.s3.resource")
-        mock_s3 = mocker.Mock()
-        mock_bucket = mocker.Mock()
-        mock_s3.Bucket.return_value = mock_bucket
-        mock_resource.return_value = mock_s3
-
-        endpoint = "https://custom.dap.server.com"
-        access_key = "custom_access_key"
-        secret_key = "custom_secret_key"
-        remote_dir = "test-bucket/data/experiment"
-
-        # Act
-        target = CSIRODapDistributionTarget(
-            endpoint_url=endpoint,
-            access_key=access_key,
-            secret_access_key=secret_key,
-            remote_directory=remote_dir,
-        )
-
-        # Assert
-        # Verify parameters were processed correctly
-        assert target._bucket_name == "test-bucket", "Bucket name should be parsed from remote directory"
-        assert target._base_prefix == "data/experiment", "Base prefix should be parsed from remote directory"
-
-        # Verify parent constructor was called with correct parameters
         mock_resource.assert_called_once_with(
             "s3",
-            endpoint_url=endpoint,
-            aws_access_key_id=access_key,  # Note: DAP uses access_key but S3 expects access_key_id
-            aws_secret_access_key=secret_key,
+            endpoint_url=dap_credentials["endpoint_url"],
+            aws_access_key_id=dap_credentials["access_key"],  # DAP access_key mapped to aws_access_key_id
+            aws_secret_access_key=dap_credentials["secret_access_key"],  # Direct mapping
         )
 
-        # Verify S3 resource and bucket were created
-        assert hasattr(target, "_s3"), "Should have _s3 attribute from parent"
-        assert hasattr(target, "_bucket"), "Should have _bucket attribute from parent"
-        assert target._s3 is mock_s3, "Should store the mocked S3 resource"
-        assert target._bucket is mock_bucket, "Should store the mocked S3 bucket"
-
-    def test_inherits_s3_distribution_methods(
+    @pytest.mark.unit
+    @pytest.mark.parametrize(
+        ("remote_directory", "expected_bucket", "expected_prefix"),
+        [
+            ("bucket_name/", "bucket_name", ""),  # Root path with trailing slash
+            ("bucket_name", "bucket_name", ""),  # Bucket name only
+            ("my-bucket/data/2023/project-x/results", "my-bucket", "data/2023/project-x/results"),  # Nested path
+            ("bucket/path/with/multiple/slashes", "bucket", "path/with/multiple/slashes"),  # Multiple slashes
+            ("bucket//path", "bucket", "/path"),  # Double slash in middle - preserves leading slash in prefix
+            ("simple-bucket/nested/deep/path", "simple-bucket", "nested/deep/path"),  # Deeply nested structure
+        ],
+        ids=[
+            "trailing_slash",
+            "bucket_only",
+            "nested_path",
+            "multiple_slashes",
+            "double_slash",
+            "deep_nesting",
+        ],
+    )
+    def test_remote_directory_parsing_variations(
         self,
-        mocker: pytest_mock.MockerFixture,
         dap_credentials: dict[str, str],
-        mock_s3_resource: tuple[Any, Any, Any],
+        remote_directory: str,
+        expected_bucket: str,
+        expected_prefix: str,
+        mocker: MockerFixture,
     ) -> None:
-        """Test that CSIRODapDistributionTarget inherits methods from S3DistributionTarget."""
+        """Test remote directory parsing handles various path formats correctly.
+
+        This parameterized test verifies the parsing logic for different remote directory
+        formats, including edge cases like:
+        - Bucket names with trailing slashes
+        - Bucket names without any path components
+        - Deeply nested path structures
+        - Double slashes in paths (preserves leading slash in prefix)
+
+        The parsing logic splits on the first '/' character to separate bucket name from prefix.
+        """
         # Arrange
-        remote_directory = "bucket/path"
+        # Mock only external S3 resource creation to avoid network calls
+        mocker.patch("marimba.core.distribution.s3.resource")
 
         # Act
         target = CSIRODapDistributionTarget(
@@ -225,10 +129,48 @@ class TestCSIRODapDistributionTarget:
         )
 
         # Assert
-        # Check that all expected S3DistributionTarget methods are available
-        assert hasattr(target, "distribute"), "Should inherit distribute method from S3DistributionTarget"
-        assert callable(target.distribute), "distribute should be callable"
+        assert target._bucket_name == expected_bucket, (
+            f"Bucket name parsing failed for remote_directory '{remote_directory}': "
+            f"expected bucket '{expected_bucket}', but got '{target._bucket_name}'"
+        )
+        assert target._base_prefix == expected_prefix, (
+            f"Base prefix parsing failed for remote_directory '{remote_directory}': "
+            f"expected prefix '{expected_prefix}', but got '{target._base_prefix}'"
+        )
 
-        # Verify internal attributes set by parent constructor
-        assert hasattr(target, "_bucket"), "Should have _bucket attribute from parent"
-        assert hasattr(target, "_s3"), "Should have _s3 attribute from parent"
+    @pytest.mark.unit
+    def test_base_prefix_stripping_logic(
+        self,
+        dap_credentials: dict[str, str],
+        mocker: MockerFixture,
+    ) -> None:
+        """Test that base prefix trailing slashes are stripped correctly.
+
+        Verifies that the DAP target properly handles trailing slashes in the base prefix
+        by leveraging the parent S3DistributionTarget's base_prefix stripping logic.
+        This tests the integration between DAP parsing and S3 prefix normalization.
+        """
+        # Arrange
+        remote_directory = "test-bucket/data/path/"  # Note trailing slash
+        mock_resource = mocker.patch("marimba.core.distribution.s3.resource")
+
+        # Act
+        target = CSIRODapDistributionTarget(
+            remote_directory=remote_directory,
+            **dap_credentials,
+        )
+
+        # Assert
+        assert target._base_prefix == "data/path", (
+            f"Base prefix should have trailing slash stripped: "
+            f"expected 'data/path', but got '{target._base_prefix}'"
+        )
+        assert target._bucket_name == "test-bucket", "Bucket name should be parsed correctly"
+
+        # Verify that S3DistributionTarget receives the correctly transformed parameters
+        mock_resource.assert_called_once_with(
+            "s3",
+            endpoint_url=dap_credentials["endpoint_url"],
+            aws_access_key_id=dap_credentials["access_key"],  # DAP access_key mapped to aws_access_key_id
+            aws_secret_access_key=dap_credentials["secret_access_key"],  # Direct mapping
+        )

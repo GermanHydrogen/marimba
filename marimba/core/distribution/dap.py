@@ -46,15 +46,20 @@ class CSIRODapDistributionTarget(S3DistributionTarget):
 
         """
         first_slash = remote_directory.find("/")
-        bucket_name, base_prefix = (
-            remote_directory[:first_slash],
-            remote_directory[first_slash + 1 :],
-        )
+        if first_slash == -1:
+            # No slash found - entire string is bucket name, empty prefix
+            bucket_name, base_prefix = remote_directory, ""
+        else:
+            # Slash found - split at first slash
+            bucket_name, base_prefix = (
+                remote_directory[:first_slash],
+                remote_directory[first_slash + 1 :],
+            )
 
         super().__init__(
             bucket_name,
             endpoint_url,
-            access_key,
-            secret_access_key,
+            access_key_id=access_key,
+            secret_access_key=secret_access_key,
             base_prefix=base_prefix,
         )

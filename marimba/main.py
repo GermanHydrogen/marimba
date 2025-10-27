@@ -535,7 +535,7 @@ def install_command(
     except Exception as e:
         project_wrapper.logger.exception("Operation failed")
         rprint(error_panel(f"Could not install pipelines: {e}"))
-        raise typer.Exit from None
+        raise typer.Exit(1) from None
 
 
 @marimba_cli.command("version")

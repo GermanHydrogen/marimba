@@ -1339,7 +1339,7 @@ class ProjectWrapper(LogMixin):
 
         Raises:
             ProjectWrapper.NameError: If the name is invalid.
-            FileExistsError: If the dataset root directory does not exist.
+            ProjectWrapper.NoSuchDatasetError: If the dataset does not exist.
         """
         # Check the name is valid
         ProjectWrapper.check_name(dataset_name)
@@ -1353,8 +1353,8 @@ class ProjectWrapper(LogMixin):
                     f'Deleted dataset "{dataset_name}" at {format_path_for_logging(dataset_root_dir, self._root_dir)}',
                 )
         else:
-            msg = f'"{dataset_root_dir}" dataset does not exist'
-            raise FileExistsError(msg)
+            msg = f'A dataset with the name "{dataset_name}" does not exist'
+            raise ProjectWrapper.NoSuchDatasetError(msg)
         return dataset_root_dir
 
     def create_target(
@@ -1419,7 +1419,7 @@ class ProjectWrapper(LogMixin):
 
         Raises:
             ProjectWrapper.NameError: If the name is invalid.
-            FileExistsError: If the target not found.
+            ProjectWrapper.NoSuchTargetError: If the target does not exist.
         """
         # Check the name is valid
         ProjectWrapper.check_name(target_name)
@@ -1432,8 +1432,8 @@ class ProjectWrapper(LogMixin):
                     f'"{format_path_for_logging(target_config_path, self._root_dir)}"',
                 )
         else:
-            msg = f'"{target_config_path}"target does not exist'
-            raise FileExistsError(msg)
+            msg = f'A distribution target with the name "{target_name}" does not exist'
+            raise ProjectWrapper.NoSuchTargetError(msg)
         return target_config_path
 
     def distribute(

@@ -283,9 +283,9 @@ def calculate_zoom_level(
     lon_range = max(lon_range, min_range)
 
     # Add padding to prevent points being too close to edges
-    padding_factor = 0.2  # 20% padding
-    lat_range = lat_range * (1 + padding_factor)
-    lon_range = lon_range * (1 + padding_factor)
+    padding_factor = 1.2  # 20% padding (1.0 + 0.2)
+    lat_range = lat_range * padding_factor
+    lon_range = lon_range * padding_factor
 
     # Convert to pixels (assuming 256 pixel tiles)
     pixels_per_tile = 256

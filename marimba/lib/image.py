@@ -173,7 +173,7 @@ def scale(
 
     Args:
         path: The path to the image file.
-        scale_factor: The scale factor to apply to the image, 0-1.
+        scale_factor: The scale factor to apply to the image (positive float).
         destination: The path to save the scaled image to. If not provided, the original file will be overwritten.
     """
     path = Path(path)
@@ -304,6 +304,7 @@ def is_blurry(path: str | Path, threshold: float = 100.0) -> bool:
 
     # Explicitly cast the result to float for type clarity
     variance_of_laplacian = float(variance_of_laplacian)
+    threshold = float(threshold)
 
     image_is_blurry = variance_of_laplacian < threshold
 

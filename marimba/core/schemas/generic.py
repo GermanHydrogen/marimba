@@ -109,11 +109,15 @@ class GenericMetadata(BaseMetadata):
 
     def __le__(self, other: Union["GenericMetadata", datetime]) -> bool:
         """Compare if this metadata is older than or equal to another metadata or datetime."""
-        return self < other or self == other
+        if isinstance(other, GenericMetadata | datetime):
+            return self < other or self == other
+        return NotImplemented
 
     def __ge__(self, other: Union["GenericMetadata", datetime]) -> bool:
         """Compare if this metadata is newer than or equal to another metadata or datetime."""
-        return self > other or self == other
+        if isinstance(other, GenericMetadata | datetime):
+            return self > other or self == other
+        return NotImplemented
 
     def __hash__(self) -> int:
         """Enable use in sets and as dictionary keys."""
@@ -165,12 +169,22 @@ class GenericMetadata(BaseMetadata):
     def hash_sha256(self) -> str | None:
         """SHA256 hash of the associated file as a hexadecimal string."""
         value = self._data.get("hash_sha256")
-        return cast("str | None", value)
+        if value is None:
+            return None
+        if isinstance(value, bytes):
+            return value.hex()
+        return cast("str", value)
 
     @hash_sha256.setter
     def hash_sha256(self, value: str | None) -> None:
         """Set the SHA256 hash of the associated file."""
-        self._data["hash_sha256"] = value
+        if value is None:
+            self._data["hash_sha256"] = None
+        else:
+            try:
+                self._data["hash_sha256"] = bytes.fromhex(value)
+            except ValueError:
+                self._data["hash_sha256"] = value.encode("utf-8")
 
     def format_hash(self) -> str | None:
         """Format the hash value as a hexadecimal string."""

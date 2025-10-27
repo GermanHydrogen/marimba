@@ -81,14 +81,14 @@ class UvExecutor:
 
     def _handle_uv_error(self, return_code: int) -> None:
         """
-        Handle uv pip installation errors by raising appropriate exceptions.
+        Handle uv pip command errors by raising appropriate exceptions.
 
         Args:
-            return_code: The return code from uv pip installation process
+            return_code: The return code from uv pip command process
 
         Raises:
-            UvError: If uv pip installation fails
+            UvError: If uv pip command fails
         """
         if return_code != 0:
-            msg = f"uv pip install had a non-zero return code: {return_code}"
+            msg = f"uv pip command had a non-zero return code: {return_code}"
             raise self.UvError(msg)

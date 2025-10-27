@@ -132,9 +132,10 @@ class DatasetWrapper(LogMixin):
             # Get the base logger
             self._logger = get_logger(self.__class__.__name__)
 
-            # Remove any existing handlers
+            # Remove any existing handlers and close them properly
             for handler in self._logger.handlers[:]:
                 self._logger.removeHandler(handler)
+                handler.close()
 
             # Add back just the null handler
             self._logger.addHandler(logging.NullHandler())

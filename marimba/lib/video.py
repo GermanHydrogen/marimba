@@ -204,7 +204,7 @@ def generate_video_thumbnails(
                 if isinstance(frame, av.video.frame.VideoFrame):
                     frame_number = int(frame.pts * time_base * frame_rate)
                     if frame_number in potential_filenames:
-                        output_path = output_directory / potential_filenames[frame_number]
+                        output_path = potential_filenames[frame_number]
                         logger.info(
                             f"Generating video thumbnail at frame {frame_number}: {output_path}",
                         )

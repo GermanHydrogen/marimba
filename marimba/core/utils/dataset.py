@@ -133,7 +133,7 @@ def get_mapping_processor_decorator(
     if level == MetadataGenerationLevelOptions.pipeline:
         return _run_mapping_processor_per_pipeline
     if level == MetadataGenerationLevelOptions.collection:
-        return _run_mapping_processor_per_pipline_and_collection
+        return _run_mapping_processor_per_pipeline_and_collection
 
     msg = f"Unknown mapping processor type: {level}"
     raise TypeError(msg)
@@ -158,7 +158,7 @@ def _run_mapping_processor_per_pipeline(
         dataset_mapping_processor(pipeline_data, f"{pipeline_name}")
 
 
-def _run_mapping_processor_per_pipline_and_collection(
+def _run_mapping_processor_per_pipeline_and_collection(
     dataset_mapping_processor: MAPPING_PROCESSOR_TYPE,
     dataset_mapping: MAPPED_GROUPED_ITEMS,
 ) -> None:

@@ -148,11 +148,9 @@ def _configure_pipeline_logging(
         prefix_filter = LogPrefixFilter(log_string_prefix)
         pipeline_instance.logger.addFilter(prefix_filter.apply_prefix)
 
-    # Check if this handler already exists before adding
+    # Add the new file handler
     file_handler = get_file_handler(root_dir, pipeline_name, dry_run)
-    handler_paths = [h.baseFilename for h in pipeline_instance.logger.handlers if hasattr(h, "baseFilename")]
-    if not any(h == file_handler.baseFilename for h in handler_paths):
-        pipeline_instance.logger.addHandler(file_handler)
+    pipeline_instance.logger.addHandler(file_handler)
 
 
 def load_pipeline_instance(
