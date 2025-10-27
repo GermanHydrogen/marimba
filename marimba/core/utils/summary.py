@@ -30,6 +30,7 @@ from typing import TYPE_CHECKING, Any, ClassVar, cast
 from PIL import Image
 from tabulate import tabulate
 
+import marimba
 from marimba.core.utils.dependencies import ToolDependency, check_dependency_available, show_dependency_error_and_exit
 from marimba.core.utils.log import get_logger
 
@@ -50,6 +51,7 @@ class ImagerySummary:
     context: str = ""
     contributors: str = ""
     version: str | None = ""
+    marimba_version: str = ""
     licenses: str = ""
     contact: str | None = None
 
@@ -738,6 +740,7 @@ class ImagerySummary:
             "context": str,
             "contributors": str,
             "version": (str, type(None)),
+            "marimba_version": str,
             "licenses": str,
             "contact": (str, type(None)),
             "image_num": int,
@@ -805,6 +808,7 @@ class ImagerySummary:
         info = {
             "dataset_name": dataset_wrapper.name,
             "version": dataset_wrapper.version,
+            "marimba_version": marimba.__version__,
             "contact": None,
         }
 
@@ -1087,6 +1091,8 @@ class ImagerySummary:
             dataset_metadata.insert(1, ["Context", self.context])
         if self.version:
             dataset_metadata.append(["Dataset Version", self.version])
+        if self.marimba_version:
+            dataset_metadata.append(["Marimba Version", self.marimba_version])
         if self.contact:
             dataset_metadata.append(["Contact", self.contact])
 
