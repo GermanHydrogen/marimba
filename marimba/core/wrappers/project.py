@@ -622,6 +622,8 @@ class ProjectWrapper(LogMixin):
         name: str,
         url: str,
         config: dict[str, Any],
+        *,
+        accept_defaults: bool = False,
     ) -> PipelineWrapper:
         """
         Create a new pipeline.
@@ -630,6 +632,7 @@ class ProjectWrapper(LogMixin):
             name: The name of the pipeline.
             url: URL of the pipeline git repository.
             config: The pipeline configuration.
+            accept_defaults: If True, automatically use default values without prompting.
 
         Returns:
             The pipeline directory wrapper.
@@ -670,6 +673,7 @@ class ProjectWrapper(LogMixin):
             config,
             project_logger=self.logger,
             allow_empty=True,
+            accept_defaults=accept_defaults,
         )
         if pipeline_config is not None:
             pipeline_wrapper.save_config(pipeline_config)
@@ -1630,6 +1634,8 @@ class ProjectWrapper(LogMixin):
         self,
         parent_collection_name: str | None = None,
         config: dict[str, Any] | None = None,
+        *,
+        accept_defaults: bool = False,
     ) -> dict[str, Any]:
         """
         Prompt the user for a collection configuration using predefined schemas and optional parent collection settings.
@@ -1638,6 +1644,7 @@ class ProjectWrapper(LogMixin):
             parent_collection_name (Optional[str]): The name of the parent collection. Defaults to the last modified
             collection if unspecified.
             config (Optional[Dict[str, Any]]): Initial configuration values, if any.
+            accept_defaults (bool): If True, automatically use default values without prompting. Defaults to False.
 
         Returns:
             Dict[str, Any]: The complete collection configuration.
@@ -1653,7 +1660,7 @@ class ProjectWrapper(LogMixin):
             resolved_collection_schema,
             parent_collection_name,
         )
-        return self._collect_final_config(resolved_collection_schema, config)
+        return self._collect_final_config(resolved_collection_schema, config, accept_defaults=accept_defaults)
 
     def _get_unified_collection_schema(self) -> dict[str, Any]:
         """Aggregate collection config schemas from all pipelines in the project."""
@@ -1713,6 +1720,8 @@ class ProjectWrapper(LogMixin):
         self,
         schema: dict[str, Any],
         provided_config: dict[str, Any] | None,
+        *,
+        accept_defaults: bool = False,
     ) -> dict[str, Any]:
         """Combine the user-provided config with additional prompted entries from the schema."""
         final_config = provided_config or {}
@@ -1723,7 +1732,7 @@ class ProjectWrapper(LogMixin):
 
         # Prompt for additional configuration and update
         if schema:
-            additional_config = prompt_schema(schema)
+            additional_config = prompt_schema(schema, accept_defaults=accept_defaults)
             if additional_config:  # Ensure additional_config is not None
                 final_config.update(additional_config)
 

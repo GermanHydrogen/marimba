@@ -245,3 +245,95 @@ class TestPromptSchema:
         assert mock_ask.call_count == 2, "Should call Prompt.ask twice"
         mock_ask.assert_any_call("name", default="default_name")
         mock_ask.assert_any_call("description", default="default_desc")
+
+    def test_accept_defaults_returns_schema_copy(self, mocker: MockerFixture) -> None:
+        """Test that accept_defaults=True returns schema defaults without prompting."""
+        # Arrange
+        mock_prompt = mocker.patch("rich.prompt.Prompt.ask")
+        mock_int = mocker.patch("rich.prompt.IntPrompt.ask")
+        mock_float = mocker.patch("rich.prompt.FloatPrompt.ask")
+        mock_confirm = mocker.patch("rich.prompt.Confirm.ask")
+        schema = {"name": "default_name", "count": 42, "ratio": 0.5, "enabled": True}
+
+        # Act
+        result = prompt_schema(schema, accept_defaults=True)
+
+        # Assert
+        assert result == schema, "Should return schema unchanged when accept_defaults=True"
+        assert result is not schema, "Should return a copy, not the original schema object"
+        # Verify no prompts were called
+        mock_prompt.assert_not_called()
+        mock_int.assert_not_called()
+        mock_float.assert_not_called()
+        mock_confirm.assert_not_called()
+
+    def test_accept_defaults_with_empty_schema(self, mocker: MockerFixture) -> None:
+        """Test that accept_defaults=True with empty schema returns empty dict without prompting."""
+        # Arrange
+        mock_prompt = mocker.patch("rich.prompt.Prompt.ask")
+        schema: dict[str, Any] = {}
+
+        # Act
+        result = prompt_schema(schema, accept_defaults=True)
+
+        # Assert
+        assert result == {}, "Should return empty dict for empty schema with accept_defaults=True"
+        assert result is not None, "Should not return None"
+        mock_prompt.assert_not_called()
+
+    def test_accept_defaults_string_values(self, mocker: MockerFixture) -> None:
+        """Test accept_defaults=True with string values returns defaults without calling Prompt.ask."""
+        # Arrange
+        mock_ask = mocker.patch("rich.prompt.Prompt.ask")
+        schema = {"voyage_id": "IN2018_V06", "voyage_pi": "Alan Williams", "platform_id": "MRITC"}
+
+        # Act
+        result = prompt_schema(schema, accept_defaults=True)
+
+        # Assert
+        assert result == {
+            "voyage_id": "IN2018_V06",
+            "voyage_pi": "Alan Williams",
+            "platform_id": "MRITC",
+        }, "Should return all default string values"
+        mock_ask.assert_not_called()
+
+    def test_accept_defaults_mixed_types(self, mocker: MockerFixture) -> None:
+        """Test accept_defaults=True with mixed types returns all defaults without prompting."""
+        # Arrange
+        mock_prompt = mocker.patch("rich.prompt.Prompt.ask")
+        mock_int = mocker.patch("rich.prompt.IntPrompt.ask")
+        mock_float = mocker.patch("rich.prompt.FloatPrompt.ask")
+        mock_confirm = mocker.patch("rich.prompt.Confirm.ask")
+        schema = {
+            "name": "test_pipeline",
+            "max_workers": 4,
+            "threshold": 0.75,
+            "enabled": True,
+            "debug": False,
+        }
+
+        # Act
+        result = prompt_schema(schema, accept_defaults=True)
+
+        # Assert
+        assert result == schema, "Should return all default values for mixed types"
+        # Verify no prompt functions were called
+        mock_prompt.assert_not_called()
+        mock_int.assert_not_called()
+        mock_float.assert_not_called()
+        mock_confirm.assert_not_called()
+
+    def test_accept_defaults_false_prompts_normally(self, mocker: MockerFixture) -> None:
+        """Test that accept_defaults=False still prompts for values (normal behavior)."""
+        # Arrange
+        mock_ask = mocker.patch("rich.prompt.Prompt.ask")
+        schema = {"name": "default_name"}
+        mock_ask.return_value = "custom_name"
+
+        # Act
+        result = prompt_schema(schema, accept_defaults=False)
+
+        # Assert
+        assert result == {"name": "custom_name"}, "Should prompt and return custom value when accept_defaults=False"
+        mock_ask.assert_called_once_with("name", default="default_name")

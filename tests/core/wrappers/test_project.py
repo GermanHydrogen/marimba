@@ -722,6 +722,7 @@ created: 2024-01-01T00:00:00Z
             input_config,
             project_logger=project_wrapper.logger,
             allow_empty=True,
+            accept_defaults=False,
         ), "prompt_pipeline_config should be called with input config and project logger"
 
         mock_pipeline_wrapper.save_config.assert_called_once_with(

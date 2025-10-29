@@ -218,7 +218,7 @@ class TestPipelineCommand:
         ), f"Pipeline name should be displayed in success message: {result.output}"
 
         # Verify the create_pipeline method was called with correct arguments
-        mock_create_pipeline.assert_called_once_with(pipeline_name, url, {})
+        mock_create_pipeline.assert_called_once_with(pipeline_name, url, {}, accept_defaults=False)
 
     @pytest.mark.integration
     def test_pipeline_creates_with_empty_config_dict_parsing(self, mocker: MockerFixture, tmp_path: Path) -> None:
@@ -271,7 +271,7 @@ class TestPipelineCommand:
 
         # Assert - Verify create_pipeline was called with exact expected arguments (key integration test)
         # This tests that CLI correctly parses None config parameter and converts to empty dict
-        mock_create_pipeline.assert_called_once_with(pipeline_name, url, {})
+        mock_create_pipeline.assert_called_once_with(pipeline_name, url, {}, accept_defaults=False)
 
         # Assert - Verify the mock was called exactly once with no additional calls
         assert mock_create_pipeline.call_count == 1, "create_pipeline should be called exactly once"
@@ -318,7 +318,7 @@ class TestPipelineCommand:
         ), f"Should include specific error details '{expected_error_message}', got: {result.output}"
 
         # Assert - Verify the correct method was called with expected arguments
-        mock_create_pipeline.assert_called_once_with(pipeline_name, url, {})
+        mock_create_pipeline.assert_called_once_with(pipeline_name, url, {}, accept_defaults=False)
 
     @pytest.mark.unit
     def test_pipeline_creation_failure(self, mocker: MockerFixture, tmp_path: Path) -> None:
@@ -362,7 +362,7 @@ class TestPipelineCommand:
         ), f"Should include specific error details '{expected_error_message}', got: {result.output}"
 
         # Assert - Verify the correct method was called with expected arguments
-        mock_create_pipeline.assert_called_once_with(pipeline_name, url, {})
+        mock_create_pipeline.assert_called_once_with(pipeline_name, url, {}, accept_defaults=False)
 
     @pytest.mark.integration
     def test_pipeline_creates_with_explicit_project_dir_argument(self, mocker: MockerFixture, tmp_path: Path) -> None:
@@ -401,7 +401,7 @@ class TestPipelineCommand:
         assert result.exit_code == 0, f"Command should succeed with exit code 0, got {result.exit_code}"
         assert "Created new Marimba pipeline" in result.output, "Success message should be displayed"
         assert f'"{pipeline_name}"' in result.output, "Pipeline name should be in success message"
-        mock_create_pipeline.assert_called_once_with(pipeline_name, url, {})
+        mock_create_pipeline.assert_called_once_with(pipeline_name, url, {}, accept_defaults=False)
 
     @pytest.mark.integration
     def test_pipeline_integration_with_real_project(self, mocker: MockerFixture, tmp_path: Path) -> None:
@@ -465,11 +465,87 @@ class TestPipelineCommand:
 
         # Assert - Verify create_pipeline was called with correct parsed config
         expected_config = {"key": "value"}
-        mock_create_pipeline.assert_called_once_with(pipeline_name, url, expected_config)
+        mock_create_pipeline.assert_called_once_with(pipeline_name, url, expected_config, accept_defaults=False)
 
         # Assert - Verify real project structure remains intact
         assert (project_dir / ".marimba").exists(), "Project marker should still exist"
         assert (project_dir / "pipelines").exists(), "Pipelines directory should still exist"
+
+    @pytest.mark.integration
+    def test_pipeline_with_accept_defaults_flag(self, mocker: MockerFixture, tmp_path: Path) -> None:
+        """
+        Test pipeline command with --accept-defaults flag passes accept_defaults=True to create_pipeline.
+
+        This integration test verifies that when the --accept-defaults/-y flag is provided,
+        the CLI correctly passes accept_defaults=True to ProjectWrapper.create_pipeline(),
+        allowing the pipeline to be created without user prompts.
+        """
+        # Arrange
+        project_dir = tmp_path / "accept_defaults_project"
+        pipeline_name = "test_pipeline"
+        url = "https://example.com/repo.git"
+
+        # Create a real Marimba project structure
+        ProjectWrapper.create(project_dir)
+
+        mock_pipeline_wrapper = mocker.MagicMock()
+        mock_pipeline_wrapper.root_dir = project_dir / "pipelines" / pipeline_name
+
+        # Mock create_pipeline to verify it's called with accept_defaults=True
+        mock_create_pipeline = mocker.patch(
+            "marimba.core.wrappers.project.ProjectWrapper.create_pipeline",
+            return_value=mock_pipeline_wrapper,
+        )
+
+        # Act - Execute CLI command with --accept-defaults flag
+        result = runner.invoke(
+            marimba_cli,
+            ["new", "pipeline", pipeline_name, url, "--project-dir", str(project_dir), "--accept-defaults"],
+        )
+
+        # Assert
+        assert result.exit_code == 0, f"Command should succeed, got {result.exit_code} with output: {result.output}"
+        assert "Created new Marimba pipeline" in result.output, f"Success message should be displayed: {result.output}"
+
+        # Verify create_pipeline was called with accept_defaults=True
+        mock_create_pipeline.assert_called_once_with(pipeline_name, url, {}, accept_defaults=True)
+
+    @pytest.mark.integration
+    def test_pipeline_with_accept_defaults_short_flag(self, mocker: MockerFixture, tmp_path: Path) -> None:
+        """
+        Test pipeline command with -y short flag passes accept_defaults=True to create_pipeline.
+
+        This integration test verifies that the short form -y flag works identically to --accept-defaults.
+        """
+        # Arrange
+        project_dir = tmp_path / "accept_defaults_short_project"
+        pipeline_name = "test_pipeline"
+        url = "https://example.com/repo.git"
+
+        # Create a real Marimba project structure
+        ProjectWrapper.create(project_dir)
+
+        mock_pipeline_wrapper = mocker.MagicMock()
+        mock_pipeline_wrapper.root_dir = project_dir / "pipelines" / pipeline_name
+
+        # Mock create_pipeline to verify it's called with accept_defaults=True
+        mock_create_pipeline = mocker.patch(
+            "marimba.core.wrappers.project.ProjectWrapper.create_pipeline",
+            return_value=mock_pipeline_wrapper,
+        )
+
+        # Act - Execute CLI command with -y short flag
+        result = runner.invoke(
+            marimba_cli,
+            ["new", "pipeline", pipeline_name, url, "--project-dir", str(project_dir), "-y"],
+        )
+
+        # Assert
+        assert result.exit_code == 0, f"Command should succeed, got {result.exit_code} with output: {result.output}"
+        assert "Created new Marimba pipeline" in result.output, f"Success message should be displayed: {result.output}"
+
+        # Verify create_pipeline was called with accept_defaults=True
+        mock_create_pipeline.assert_called_once_with(pipeline_name, url, {}, accept_defaults=True)
 
 
 # ---------------------------------------------------------------------------------------------------------------------#
@@ -585,7 +661,7 @@ class TestCollectionCommand:
         ), f"Should include specific error details '{expected_error_message}', got: {result.output}"
 
         # Verify the correct methods were called with expected arguments
-        mock_prompt_config.assert_called_once_with(parent_collection_name=None, config={})
+        mock_prompt_config.assert_called_once_with(parent_collection_name=None, config={}, accept_defaults=False)
         mock_create_collection.assert_called_once_with(collection_name, mock_collection_config)
 
     @pytest.mark.unit
@@ -644,7 +720,11 @@ class TestCollectionCommand:
         ), f"Should include specific error details '{expected_error_message}', got: {result.output}"
 
         # Verify the correct methods were called with expected arguments
-        mock_prompt_config.assert_called_once_with(parent_collection_name=parent_collection_name, config={})
+        mock_prompt_config.assert_called_once_with(
+            parent_collection_name=parent_collection_name,
+            config={},
+            accept_defaults=False,
+        )
         mock_create_collection.assert_called_once_with(collection_name, mock_collection_config)
 
     @pytest.mark.unit
@@ -689,7 +769,7 @@ class TestCollectionCommand:
         ), f"Should include specific error details '{expected_error_message}', got: {result.output}"
 
         # Verify the correct methods were called with expected arguments
-        mock_prompt_config.assert_called_once_with(parent_collection_name=None, config={})
+        mock_prompt_config.assert_called_once_with(parent_collection_name=None, config={}, accept_defaults=False)
         mock_create_collection.assert_called_once_with(collection_name, mock_collection_config)
 
     @pytest.mark.unit
@@ -734,7 +814,7 @@ class TestCollectionCommand:
         ), f"Should include specific error details '{expected_error_message}', got: {result.output}"
 
         # Verify the correct methods were called with expected arguments
-        mock_prompt_config.assert_called_once_with(parent_collection_name=None, config={})
+        mock_prompt_config.assert_called_once_with(parent_collection_name=None, config={}, accept_defaults=False)
         mock_create_collection.assert_called_once_with(collection_name, mock_collection_config)
 
     @pytest.mark.integration
@@ -1159,7 +1239,7 @@ class TestProjectDirectoryDetection:
         mock_cwd.assert_called(), "Project directory detection should check current working directory"
 
         # Verify the prompt configuration was called correctly
-        mock_prompt_config.assert_called_once_with(parent_collection_name=None, config={})
+        mock_prompt_config.assert_called_once_with(parent_collection_name=None, config={}, accept_defaults=False)
 
         # Verify collection was actually created in the real project structure
         expected_collection_dir = project_dir / "collections" / collection_name
@@ -1223,7 +1303,7 @@ class TestProjectDirectoryDetection:
         ), f"Collection name '{collection_name}' should appear in success message, got: {result.output}"
 
         # Assert - Verify real component interactions occurred correctly
-        mock_prompt_config.assert_called_once_with(parent_collection_name=None, config={})
+        mock_prompt_config.assert_called_once_with(parent_collection_name=None, config={}, accept_defaults=False)
 
         # Assert - Verify collection was created in the real project directory through symlink resolution
         real_collections_dir = real_project_dir / "collections"

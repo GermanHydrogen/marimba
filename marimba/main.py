@@ -150,6 +150,12 @@ def import_command(
         None,
         help="A custom configuration in JSON format to be merged with the prompted collection configuration.",
     ),
+    accept_defaults: bool = typer.Option(
+        False,
+        "--accept-defaults",
+        "-y",
+        help="Automatically accept all default configuration values without prompting.",
+    ),
     extra: list[str] = typer.Option([], help="Extra key-value pass-through arguments."),
     dry_run: bool = typer.Option(
         False,
@@ -185,6 +191,7 @@ def import_command(
             collection_config = project_wrapper.prompt_collection_config(
                 parent_collection_name=parent_collection_name,
                 config=config_dict,
+                accept_defaults=accept_defaults,
             )
             project_wrapper.create_collection(collection_name, collection_config)
         except ProjectWrapper.InvalidNameError as e:

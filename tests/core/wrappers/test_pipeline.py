@@ -1334,7 +1334,7 @@ class TestPipelineWrapperPipelineConfigPrompt:
         ), "load_pipeline_instance should be called with wrapper properties and allow_empty=False by default"
 
         # Assert: Verify schema was prompted with the correct schema from pipeline
-        mock_prompt_schema.assert_called_once_with(expected_schema), (
+        mock_prompt_schema.assert_called_once_with(expected_schema, accept_defaults=False), (
             "prompt_schema should be called with the schema returned by pipeline.get_pipeline_config_schema()"
         )
 
@@ -1420,7 +1420,7 @@ class TestPipelineWrapperPipelineConfigPrompt:
 
         # Assert: Verify only missing parameters were prompted (schema without existing param1)
         expected_prompted_schema = {"param2": 42, "param3": "default3"}  # param1 removed since it exists
-        mock_prompt_schema.assert_called_once_with(expected_prompted_schema), (
+        mock_prompt_schema.assert_called_once_with(expected_prompted_schema, accept_defaults=False), (
             "prompt_schema should be called only with schema parameters not present in existing config"
         )
 
@@ -1621,7 +1621,7 @@ class TestPipelineWrapperPipelineConfigPrompt:
         ), "load_pipeline_instance should be called with wrapper properties and allow_empty=False by default"
 
         # Assert: Verify schema was prompted with the correct schema from pipeline
-        mock_prompt_schema.assert_called_once_with(expected_schema), (
+        mock_prompt_schema.assert_called_once_with(expected_schema, accept_defaults=False), (
             "prompt_schema should be called with the schema returned by pipeline.get_pipeline_config_schema()"
         )
 
@@ -1696,7 +1696,7 @@ class TestPipelineWrapperPipelineConfigPrompt:
         ), "load_pipeline_instance should be called with wrapper properties and default allow_empty=False"
 
         # Assert: Verify prompt_schema was called with the real pipeline schema
-        mock_prompt_schema.assert_called_once_with(expected_schema), (
+        mock_prompt_schema.assert_called_once_with(expected_schema, accept_defaults=False), (
             "prompt_schema should be called with the schema returned by real pipeline instance"
         )
 

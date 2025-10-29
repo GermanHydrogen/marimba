@@ -348,6 +348,7 @@ class TestCLI:
         mock_project.prompt_collection_config.assert_called_once_with(
             parent_collection_name=None,
             config={},
+            accept_defaults=False,
         )
         mock_project.create_collection.assert_called_once_with(
             "test_collection",
@@ -437,6 +438,7 @@ class TestCLI:
         mock_project.prompt_collection_config.assert_called_once_with(
             parent_collection_name=None,
             config={},
+            accept_defaults=False,
         )
         mock_project.create_collection.assert_called_once_with(
             "test_collection",

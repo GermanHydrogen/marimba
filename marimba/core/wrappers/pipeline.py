@@ -316,6 +316,7 @@ class PipelineWrapper(LogMixin):
         project_logger: logging.Logger | None = None,
         *,
         allow_empty: bool = False,
+        accept_defaults: bool = False,
     ) -> dict[str, Any] | None:
         """
         Prompt for and process pipeline configuration.
@@ -330,6 +331,7 @@ class PipelineWrapper(LogMixin):
                 logger will be used. Defaults to None.
             allow_empty (bool): If True, allow empty pipeline repositories and return None instead of raising an error.
                 Defaults to False.
+            accept_defaults (bool): If True, automatically use default values without prompting. Defaults to False.
 
         Returns:
             dict[str, Any] | None: A dictionary containing the final pipeline configuration after merging existing
@@ -357,7 +359,7 @@ class PipelineWrapper(LogMixin):
 
         # Prompt from the remaining resolved schema
         if pipeline_config_schema:
-            additional_config = prompt_schema(pipeline_config_schema)
+            additional_config = prompt_schema(pipeline_config_schema, accept_defaults=accept_defaults)
             if additional_config:
                 pipeline_config.update(additional_config)
 

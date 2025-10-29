@@ -100,6 +100,12 @@ def pipeline(
         None,
         help="A custom configuration in JSON format to be merged with the prompted pipeline configuration.",
     ),
+    accept_defaults: bool = typer.Option(
+        False,
+        "--accept-defaults",
+        "-y",
+        help="Automatically accept all default configuration values without prompting.",
+    ),
 ) -> None:
     """
     Create and configure a new Marimba pipeline in a project.
@@ -125,6 +131,7 @@ def pipeline(
             pipeline_name,
             url,
             config_dict,
+            accept_defaults=accept_defaults,
         )
     except ProjectWrapper.InvalidNameError as e:
         error_message = f"Invalid pipeline name: {e}"
@@ -166,6 +173,12 @@ def collection(
         None,
         help="A custom configuration in JSON format to be merged with the prompted collection configuration.",
     ),
+    accept_defaults: bool = typer.Option(
+        False,
+        "--accept-defaults",
+        "-y",
+        help="Automatically accept all default configuration values without prompting.",
+    ),
 ) -> None:
     """
     Create and configure a new Marimba collection in a project.
@@ -190,6 +203,7 @@ def collection(
         collection_config = project_wrapper.prompt_collection_config(
             parent_collection_name=parent_collection_name,
             config=config_dict,
+            accept_defaults=accept_defaults,
         )
 
         # Create the collection
