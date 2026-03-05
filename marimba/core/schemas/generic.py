@@ -193,6 +193,73 @@ class GenericMetadata(BaseMetadata):
         return self.hash_sha256
 
     @classmethod
+    def _extract_common_fields(
+        cls,
+        items: dict[str, list["BaseMetadata"]],
+    ) -> dict[str, Any]:
+        """
+        Extract fields that are identical across all metadata items.
+
+        Args:
+            items: Mapping of file paths to metadata items
+
+        Returns:
+            Dictionary of field names to values that are common across all items
+        """
+        if not items:
+            return {}
+
+        all_items = [item for metadata_list in items.values() for item in metadata_list]
+        if not all_items:
+            return {}
+
+        fields_to_check = ["latitude", "longitude", "altitude", "context", "license", "creators"]
+
+        common_fields = {}
+        for field in fields_to_check:
+            values = [getattr(item, field) for item in all_items if getattr(item, field) is not None]
+            if values and all(v == values[0] for v in values):
+                common_fields[field] = values[0]
+
+        return common_fields
+
+    @classmethod
+    def _deduplicate_items(
+        cls,
+        items: dict[str, list["BaseMetadata"]],
+        common_fields: dict[str, Any],
+    ) -> dict[str, list[dict[str, Any]]]:
+        """
+        Remove common fields from items since they're in the header.
+
+        Args:
+            items: Original items mapping
+            common_fields: Fields that are in the header
+
+        Returns:
+            Deduplicated items as dictionaries
+        """
+        deduplicated: dict[str, list[dict[str, Any]]] = {}
+
+        for path, metadata_items in items.items():
+            deduplicated[path] = []
+            for item in metadata_items:
+                item_dict = {
+                    "datetime": item.datetime.isoformat() if item.datetime else None,
+                    "latitude": item.latitude if "latitude" not in common_fields else None,
+                    "longitude": item.longitude if "longitude" not in common_fields else None,
+                    "altitude": item.altitude if "altitude" not in common_fields else None,
+                    "context": item.context if "context" not in common_fields else None,
+                    "license": item.license if "license" not in common_fields else None,
+                    "creators": item.creators if "creators" not in common_fields else None,
+                    "hash_sha256": item.format_hash() if hasattr(item, "format_hash") else None,
+                }
+                item_dict = {k: v for k, v in item_dict.items() if v is not None}
+                deduplicated[path].append(item_dict)
+
+        return deduplicated
+
+    @classmethod
     def create_dataset_metadata(
         cls,
         dataset_name: str,
@@ -206,24 +273,19 @@ class GenericMetadata(BaseMetadata):
         """Create dataset-level metadata by combining all items into a YAML file."""
         saver = yaml_saver if saver_overwrite is None else saver_overwrite
 
-        dataset_metadata = {
-            "dataset_name": dataset_name,
-            "items": {
-                path: [
-                    {
-                        "datetime": item.datetime.isoformat() if item.datetime else None,
-                        "latitude": item.latitude,
-                        "longitude": item.longitude,
-                        "altitude": item.altitude,
-                        "context": item.context,
-                        "license": item.license,
-                        "creators": item.creators,
-                        "hash_sha256": item.format_hash() if hasattr(item, "format_hash") else None,
-                    }
-                    for item in metadata_items
-                ]
-                for path, metadata_items in items.items()
-            },
+        common_fields = cls._extract_common_fields(items)
+
+        if common_fields:
+            logging.getLogger(__name__).debug(
+                f"Deduplicated {len(common_fields)} common field(s) to header: {', '.join(common_fields.keys())}",
+            )
+
+        header: dict[str, Any] = {"name": dataset_name}
+        header.update(common_fields)
+
+        dataset_metadata: dict[str, Any] = {
+            "header": header,
+            "items": cls._deduplicate_items(items, common_fields),
         }
 
         output_name = metadata_name or cls.DEFAULT_METADATA_NAME

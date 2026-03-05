@@ -1,7 +1,7 @@
 import re
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, Any, cast
 
 import pytest
 import pytest_mock
@@ -1288,10 +1288,10 @@ class TestiFDOMetadataDatasetCreation:
 
         # Assert - Verify header structure and content
         header = actual_data["image-set-header"]
-        expected_header_keys = {"image-set-name", "image-set-uuid", "image-set-handle", "image-set-ifdo-version"}
-        assert (
-            set(header.keys()) == expected_header_keys
-        ), f"Header should contain exactly these keys: {expected_header_keys}, got {set(header.keys())}"
+        required_header_keys = {"image-set-name", "image-set-uuid", "image-set-handle", "image-set-ifdo-version"}
+        assert required_header_keys.issubset(
+            set(header.keys()),
+        ), f"Header should contain at least: {required_header_keys}, got {set(header.keys())}"
         assert (
             header["image-set-name"] == dataset_name
         ), f"Header name should match input: expected '{dataset_name}', got '{header['image-set-name']}'"
@@ -1308,15 +1308,15 @@ class TestiFDOMetadataDatasetCreation:
             header["image-set-ifdo-version"] == "v2.1.0"
         ), f"Header version should be 'v2.1.0', got '{header['image-set-ifdo-version']}'"
 
-        # Assert - Verify image-set-items structure and content
+        # Assert - Verify image-set-items structure; common fields are deduplicated to header
         items_data = actual_data["image-set-items"]
         assert "image.jpg" in items_data, "Items should contain the input image filename"
         image_data = items_data["image.jpg"]
         assert isinstance(image_data, dict), f"Image data should be a dict, got {type(image_data)}"
-        assert "image-altitude-meters" in image_data, "Image data should contain altitude from source ImageData"
-        assert (
-            image_data["image-altitude-meters"] == 100.0
-        ), f"Altitude should match sample metadata value: expected 100.0, got {image_data['image-altitude-meters']}"
+        # Altitude is a common field (only one image), so it should be promoted to the header
+        assert "image-altitude-meters" in header, "Common altitude field should be deduplicated to header"
+        assert header["image-altitude-meters"] == 100.0, "Deduplicated altitude should match sample metadata value"
+        assert "image-altitude-meters" not in image_data, "Common altitude field should not remain in item data"
 
     @pytest.mark.unit
     def test_create_dataset_metadata_custom_name(
@@ -1485,3 +1485,112 @@ class TestiFDOMetadataDatasetCreation:
 
         # Assert - Primary dry-run behavior: no file operations performed
         mock_saver.assert_not_called(), "Saver function should not be called when dry_run=True"
+
+
+class TestiFDOMetadataDeduplication:
+    """Test auto-deduplication helpers in iFDOMetadata."""
+
+    @pytest.mark.unit
+    def test_extract_common_header_fields_all_same(self) -> None:
+        """Fields identical across all images are extracted as common."""
+        items: dict[str, ImageData | list[ImageData]] = {
+            "img1.jpg": ImageData(image_latitude=45.0, image_altitude_meters=100.0),
+            "img2.jpg": ImageData(image_latitude=45.0, image_altitude_meters=100.0),
+        }
+        result = iFDOMetadata._extract_common_header_fields(items)
+        assert result["image_latitude"] == 45.0
+        assert result["image_altitude_meters"] == 100.0
+
+    @pytest.mark.unit
+    def test_extract_common_header_fields_varying_field_excluded(self) -> None:
+        """Fields that differ between images are not extracted."""
+        items: dict[str, ImageData | list[ImageData]] = {
+            "img1.jpg": ImageData(image_latitude=45.0, image_altitude_meters=100.0),
+            "img2.jpg": ImageData(image_latitude=45.0, image_altitude_meters=200.0),
+        }
+        result = iFDOMetadata._extract_common_header_fields(items)
+        assert "image_latitude" in result
+        assert "image_altitude_meters" not in result
+
+    @pytest.mark.unit
+    def test_extract_common_header_fields_empty(self) -> None:
+        """Empty input returns empty dict."""
+        assert iFDOMetadata._extract_common_header_fields({}) == {}
+
+    @pytest.mark.unit
+    def test_extract_common_header_fields_video_items(self) -> None:
+        """Video lists are flattened before comparison."""
+        items: dict[str, ImageData | list[ImageData]] = {
+            "video.mp4": [
+                ImageData(image_latitude=45.0),
+                ImageData(image_latitude=45.0),
+            ],
+            "img.jpg": ImageData(image_latitude=45.0),
+        }
+        result = iFDOMetadata._extract_common_header_fields(items)
+        assert result["image_latitude"] == 45.0
+
+    @pytest.mark.unit
+    def test_remove_common_fields_sets_to_none(self) -> None:
+        """Common fields are set to None in individual items."""
+        items: dict[str, ImageData | list[ImageData]] = {
+            "img1.jpg": ImageData(image_latitude=45.0, image_altitude_meters=100.0),
+            "img2.jpg": ImageData(image_latitude=45.0, image_altitude_meters=200.0),
+        }
+        result = iFDOMetadata._remove_common_fields(items, {"image_latitude"})
+        img1 = result["img1.jpg"]
+        img2 = result["img2.jpg"]
+        assert isinstance(img1, ImageData)
+        assert isinstance(img2, ImageData)
+        assert img1.image_latitude is None
+        assert img2.image_latitude is None
+        assert img1.image_altitude_meters == 100.0
+        assert img2.image_altitude_meters == 200.0
+
+    @pytest.mark.unit
+    def test_remove_common_fields_video_list(self) -> None:
+        """Common fields are removed from each frame in video lists."""
+        items: dict[str, ImageData | list[ImageData]] = {
+            "video.mp4": [
+                ImageData(image_latitude=45.0, image_altitude_meters=100.0),
+                ImageData(image_latitude=45.0, image_altitude_meters=200.0),
+            ],
+        }
+        result = iFDOMetadata._remove_common_fields(items, {"image_latitude"})
+        frames = result["video.mp4"]
+        assert isinstance(frames, list)
+        assert all(f.image_latitude is None for f in frames)
+        assert frames[0].image_altitude_meters == 100.0
+        assert frames[1].image_altitude_meters == 200.0
+
+    @pytest.mark.unit
+    def test_create_dataset_metadata_deduplicates_to_header(self) -> None:
+        """Common fields appear in iFDO header and not in individual items."""
+        meta1 = iFDOMetadata(ImageData(image_latitude=45.0, image_altitude_meters=100.0))
+        meta2 = iFDOMetadata(ImageData(image_latitude=45.0, image_altitude_meters=100.0))
+        items = {
+            "img1.jpg": [cast("BaseMetadata", meta1)],
+            "img2.jpg": [cast("BaseMetadata", meta2)],
+        }
+
+        captured: list[dict[str, Any]] = []
+
+        def mock_saver(_root: Path, _name: str, data: dict[str, Any]) -> None:
+            captured.append(data)
+
+        iFDOMetadata.create_dataset_metadata(
+            "TestDataset",
+            Path("/tmp"),
+            items,
+            saver_overwrite=mock_saver,
+        )
+
+        data = captured[0]
+        header = data["image-set-header"]
+        assert "image-latitude" in header, "Common latitude should be promoted to header"
+        assert "image-altitude-meters" in header, "Common altitude should be promoted to header"
+
+        for filename in ("img1.jpg", "img2.jpg"):
+            item = data["image-set-items"][filename]
+            assert "image-latitude" not in item, "Latitude should not remain in item after deduplication"
+            assert "image-altitude-meters" not in item, "Altitude should not remain in item after deduplication"

@@ -56,6 +56,9 @@ logger = get_logger(__name__)
 _ESTIMATED_IMAGE_MEMORY_MB = 100  # Conservative estimate per 24MP image
 _MEMORY_SAFETY_FACTOR = 0.7  # Use 70% of available memory
 
+# iFDO specification version
+IFDO_VERSION = "v2.1.0"
+
 
 @dataclass
 class ProcessedImageData:
@@ -373,27 +376,15 @@ class iFDOMetadata(BaseMetadata):  # noqa: N801
         return image_data
 
     @classmethod
-    def create_dataset_metadata(
+    def _convert_items_to_image_data(
         cls,
-        dataset_name: str,
-        root_dir: Path,
         items: dict[str, list["BaseMetadata"]],
-        metadata_name: str | None = None,
-        *,
-        dry_run: bool = False,
-        saver_overwrite: Callable[[Path, str, dict[str, Any]], None] | None = None,
-    ) -> None:
-        """Create an iFDO from the metadata items."""
-        saver = yaml_saver if saver_overwrite is None else saver_overwrite
-
-        # Convert BaseMetadata items to ImageData for iFDO
-        # Use filename only as keys per iFDO standard instead of full paths
-        image_set_items = {}
+    ) -> dict[str, "ImageData | list[ImageData]"]:
+        """Convert BaseMetadata items to ImageData for iFDO."""
+        image_set_items: dict[str, ImageData | list[ImageData]] = {}
         for path_str, metadata_items in items.items():
             path = Path(path_str)
             filename = path.name
-
-            # Check if this is a video file
             is_video = cls._is_video_file(filename)
 
             ifdo_items = [item for item in metadata_items if isinstance(item, iFDOMetadata)]
@@ -408,21 +399,138 @@ class iFDOMetadata(BaseMetadata):  # noqa: N801
                 image_data = cls._process_image_metadata(ifdo_items, path)
                 image_set_items[filename] = image_data
 
-        ifdo = iFDO(
-            image_set_header=ImageSetHeader(
-                image_set_name=dataset_name,
-                image_set_uuid=str(uuid.uuid4()),
-                image_set_handle="",  # TODO @<cjackett>: Populate from distribution target URL
-            ),
-            image_set_items=image_set_items,
-        )
+        return image_set_items
 
-        # If no metadata_name provided, use default
-        if not metadata_name:
-            output_name = cls.DEFAULT_METADATA_NAME
-        # If metadata_name is provided but missing extension, add it
-        else:
-            output_name = metadata_name if metadata_name.endswith(".ifdo") else f"{metadata_name}.ifdo"
+    @classmethod
+    def _extract_common_header_fields(
+        cls,
+        image_set_items: dict[str, "ImageData | list[ImageData]"],
+    ) -> dict[str, Any]:
+        """
+        Extract fields that are identical across ALL images.
+
+        Scans all ImageData objects and identifies fields where every image
+        has the same value. These fields can be promoted to the header to
+        reduce file size.
+
+        Args:
+            image_set_items: Dict mapping filenames to ImageData objects or lists of ImageData
+
+        Returns:
+            Dict of field names to values that are common across all images.
+            Only includes fields that are non-None and identical for every image.
+        """
+        if not image_set_items:
+            return {}
+
+        # Flatten video items (lists) into individual ImageData objects
+        all_items: list[ImageData] = []
+        for item in image_set_items.values():
+            if isinstance(item, list):
+                all_items.extend(item)
+            else:
+                all_items.append(item)
+
+        if not all_items:
+            return {}
+
+        changing_fields: set[str] = set()
+        common_fields: dict[str, Any] = {}
+
+        # Single pass through all images
+        for item in all_items:
+            item_dict = item.model_dump(exclude_none=True)
+
+            for key, value in item_dict.items():
+                if key in changing_fields:
+                    continue
+
+                if key not in common_fields:
+                    common_fields[key] = value
+                elif common_fields[key] != value:
+                    changing_fields.add(key)
+                    del common_fields[key]
+
+        return common_fields
+
+    @classmethod
+    def _remove_common_fields(
+        cls,
+        image_set_items: dict[str, "ImageData | list[ImageData]"],
+        common_field_names: set[str],
+    ) -> dict[str, "ImageData | list[ImageData]"]:
+        """
+        Remove fields from individual images that are in the header.
+
+        Creates new ImageData objects with common fields set to None,
+        since they're now in the header.
+
+        Args:
+            image_set_items: Original image items
+            common_field_names: Names of fields that are in the header
+
+        Returns:
+            New dict with deduplicated ImageData objects
+        """
+        deduplicated: dict[str, ImageData | list[ImageData]] = {}
+
+        for filename, image_data in image_set_items.items():
+            if isinstance(image_data, list):
+                deduplicated_list = []
+                for img in image_data:
+                    data_dict = img.model_dump()
+                    for field_name in common_field_names:
+                        if field_name in data_dict:
+                            data_dict[field_name] = None
+                    deduplicated_list.append(ImageData(**data_dict))
+                deduplicated[filename] = deduplicated_list
+            else:
+                data_dict = image_data.model_dump()
+                for field_name in common_field_names:
+                    if field_name in data_dict:
+                        data_dict[field_name] = None
+                deduplicated[filename] = ImageData(**data_dict)
+
+        return deduplicated
+
+    @classmethod
+    def create_dataset_metadata(
+        cls,
+        dataset_name: str,
+        root_dir: Path,
+        items: dict[str, list["BaseMetadata"]],
+        metadata_name: str | None = None,
+        *,
+        dry_run: bool = False,
+        saver_overwrite: Callable[[Path, str, dict[str, Any]], None] | None = None,
+    ) -> None:
+        """Create an iFDO from the metadata items."""
+        saver = yaml_saver if saver_overwrite is None else saver_overwrite
+
+        image_set_items = cls._convert_items_to_image_data(items)
+        common_fields = cls._extract_common_header_fields(image_set_items)
+
+        if common_fields:
+            logger.debug(f"Deduplicated {len(common_fields)} field(s) to header: {', '.join(common_fields.keys())}")
+
+        header_data: dict[str, Any] = {
+            "image_set_name": dataset_name,
+            "image_set_uuid": str(uuid.uuid4()),
+            "image_set_handle": "",  # TODO @<cjackett>: Populate from distribution target URL
+            "image_set_ifdo_version": IFDO_VERSION,
+        }
+        header_data.update({k: v for k, v in common_fields.items() if k not in header_data})
+
+        image_set_header = ImageSetHeader(**header_data)
+        deduplicated_items = cls._remove_common_fields(image_set_items, set(common_fields.keys()))
+
+        ifdo = iFDO(image_set_header=image_set_header, image_set_items=deduplicated_items)
+
+        output_name = (
+            metadata_name
+            if metadata_name and metadata_name.endswith(".ifdo")
+            else (f"{metadata_name}.ifdo" if metadata_name else cls.DEFAULT_METADATA_NAME)
+        )
 
         if not dry_run:
             saver(root_dir, output_name, ifdo.model_dump(mode="json", by_alias=True, exclude_none=True))

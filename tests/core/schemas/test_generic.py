@@ -617,16 +617,16 @@ class TestGenericMetadata:
 
         # Verify metadata structure passed to custom saver
         metadata_dict = call_args[0][2]
-        assert "dataset_name" in metadata_dict, "Metadata should contain dataset_name field"
+        assert "header" in metadata_dict, "Metadata should contain header field"
         assert "items" in metadata_dict, "Metadata should contain items field"
-        assert metadata_dict["dataset_name"] == "test_dataset", "Dataset name should match input value"
+        assert metadata_dict["header"]["name"] == "test_dataset", "Dataset name should match input value"
         assert "file1.jpg" in metadata_dict["items"], "Items should contain the input file key"
 
-        # Verify file metadata structure
+        # Verify file metadata structure (latitude is common, so deduped to header)
         file_metadata = metadata_dict["items"]["file1.jpg"][0]
         assert file_metadata["datetime"] == sample_datetime.isoformat(), "Datetime should be serialized as ISO format"
-        assert file_metadata["latitude"] == 37.7749, "Latitude should match input value"
-        assert file_metadata["context"] == "test", "Context should match input value"
+        assert metadata_dict["header"]["latitude"] == 37.7749, "Common latitude should be in header"
+        assert metadata_dict["header"]["context"] == "test", "Common context should be in header"
 
     @pytest.mark.unit
     def test_create_dataset_metadata_with_custom_name(
@@ -664,9 +664,9 @@ class TestGenericMetadata:
 
         # Verify the structure of the metadata dictionary
         metadata_dict = call_args[0][2]
-        assert "dataset_name" in metadata_dict, "Metadata should contain dataset_name field"
+        assert "header" in metadata_dict, "Metadata should contain header field"
         assert "items" in metadata_dict, "Metadata should contain items field"
-        assert metadata_dict["dataset_name"] == "test_dataset", "Dataset name should match input"
+        assert metadata_dict["header"]["name"] == "test_dataset", "Dataset name should match input"
 
     @pytest.mark.unit
     def test_create_dataset_metadata_with_items_missing_format_hash(
@@ -712,23 +712,24 @@ class TestGenericMetadata:
 
         # Verify metadata structure contains expected top-level fields
         metadata_dict = call_args[0][2]
-        assert "dataset_name" in metadata_dict, "Metadata should contain dataset_name field"
+        assert "header" in metadata_dict, "Metadata should contain header field"
         assert "items" in metadata_dict, "Metadata should contain items field"
-        assert metadata_dict["dataset_name"] == "test_dataset", "Dataset name should match input value"
+        assert metadata_dict["header"]["name"] == "test_dataset", "Dataset name should match input value"
         assert "file1.jpg" in metadata_dict["items"], "Items should contain the input file key"
 
-        # Verify hash handling for items without format_hash method
-        file_metadata = metadata_dict["items"]["file1.jpg"][0]
-        assert file_metadata["hash_sha256"] is None, "Missing format_hash method should result in None hash_sha256"
+        # Common fields (all same across one item) are deduplicated to header
+        header = metadata_dict["header"]
+        assert header["latitude"] == 42.0, "Common latitude should be in header"
+        assert header["longitude"] == -71.0, "Common longitude should be in header"
+        assert header["altitude"] == 10.0, "Common altitude should be in header"
+        assert header["context"] == "test context", "Common context should be in header"
+        assert header["license"] == "MIT", "Common license should be in header"
+        assert header["creators"] == ["Test Creator"], "Common creators should be in header"
 
-        # Verify all other BaseMetadata fields are properly transferred
-        assert file_metadata["datetime"] is None, "Datetime should be None when mock has None datetime"
-        assert file_metadata["latitude"] == 42.0, "Latitude should match mock value"
-        assert file_metadata["longitude"] == -71.0, "Longitude should match mock value"
-        assert file_metadata["altitude"] == 10.0, "Altitude should match mock value"
-        assert file_metadata["context"] == "test context", "Context should match mock value"
-        assert file_metadata["license"] == "MIT", "License should match mock value"
-        assert file_metadata["creators"] == ["Test Creator"], "Creators should match mock value"
+        # Item should have datetime only (other fields deduplicated); hash_sha256 absent (no format_hash)
+        file_metadata = metadata_dict["items"]["file1.jpg"][0]
+        assert "datetime" not in file_metadata, "Datetime should be absent when mock has None datetime"
+        assert "latitude" not in file_metadata, "Deduplicated latitude should not appear in item"
 
     @pytest.mark.unit
     def test_process_files_method_noop_with_empty_mapping(self) -> None:
@@ -796,3 +797,107 @@ class TestGenericMetadata:
         # Verify metadata item properties remain unchanged after no-op processing
         assert metadata_item.datetime == original_datetime, "Metadata datetime should remain unchanged by no-op"
         assert metadata_item.latitude == original_latitude, "Metadata latitude should remain unchanged by no-op"
+
+
+class TestGenericMetadataDeduplication:
+    """Test auto-deduplication helpers in GenericMetadata."""
+
+    @pytest.mark.unit
+    def test_extract_common_fields_all_same(self) -> None:
+        """Fields identical across all items are returned as common."""
+        items: dict[str, list[BaseMetadata]] = {
+            "img1.jpg": [GenericMetadata(latitude=45.0, longitude=-123.0, license_="CC-BY")],
+            "img2.jpg": [GenericMetadata(latitude=45.0, longitude=-123.0, license_="CC-BY")],
+        }
+        result = GenericMetadata._extract_common_fields(items)
+        assert result["latitude"] == 45.0
+        assert result["longitude"] == -123.0
+        assert result["license"] == "CC-BY"
+
+    @pytest.mark.unit
+    def test_extract_common_fields_varying_excluded(self) -> None:
+        """Fields that differ are excluded from common fields."""
+        items: dict[str, list[BaseMetadata]] = {
+            "img1.jpg": [GenericMetadata(latitude=45.0, longitude=-123.0)],
+            "img2.jpg": [GenericMetadata(latitude=46.0, longitude=-123.0)],
+        }
+        result = GenericMetadata._extract_common_fields(items)
+        assert "latitude" not in result
+        assert result["longitude"] == -123.0
+
+    @pytest.mark.unit
+    def test_extract_common_fields_empty(self) -> None:
+        """Empty input returns empty dict."""
+        assert GenericMetadata._extract_common_fields({}) == {}
+
+    @pytest.mark.unit
+    def test_deduplicate_items_removes_common_fields(self) -> None:
+        """Common fields are absent from deduplicated items."""
+        dt = datetime(2024, 1, 1, tzinfo=UTC)
+        items: dict[str, list[BaseMetadata]] = {
+            "img1.jpg": [GenericMetadata(datetime_=dt, latitude=45.0, license_="CC-BY")],
+            "img2.jpg": [GenericMetadata(datetime_=dt, latitude=45.0, license_="CC-BY")],
+        }
+        common = {"latitude": 45.0, "license": "CC-BY"}
+        result = GenericMetadata._deduplicate_items(items, common)
+        for filename in ("img1.jpg", "img2.jpg"):
+            item = result[filename][0]
+            assert "latitude" not in item, "Common latitude should be removed from item"
+            assert "license" not in item, "Common license should be removed from item"
+            assert "datetime" in item, "Datetime should remain in item"
+
+    @pytest.mark.unit
+    def test_create_dataset_metadata_promotes_common_fields_to_header(
+        self,
+        mocker: MockerFixture,
+        tmp_path: Path,
+    ) -> None:
+        """Common fields appear in header and not in items."""
+        dt = datetime(2024, 1, 1, tzinfo=UTC)
+        items: dict[str, list[BaseMetadata]] = {
+            "img1.jpg": [GenericMetadata(datetime_=dt, latitude=45.0, license_="CC-BY")],
+            "img2.jpg": [GenericMetadata(datetime_=dt, latitude=45.0, license_="CC-BY")],
+        }
+        mock_saver = mocker.patch("marimba.core.schemas.generic.yaml_saver")
+
+        GenericMetadata.create_dataset_metadata(
+            dataset_name="TestDataset",
+            root_dir=tmp_path,
+            items=items,
+        )
+
+        call_args = mock_saver.call_args
+        data = call_args[0][2]
+        header = data["header"]
+        assert header["latitude"] == 45.0, "Common latitude should be in header"
+        assert header["license"] == "CC-BY", "Common license should be in header"
+
+        for filename in ("img1.jpg", "img2.jpg"):
+            item = data["items"][filename][0]
+            assert "latitude" not in item, "Latitude should not remain in item"
+            assert "license" not in item, "License should not remain in item"
+
+    @pytest.mark.unit
+    def test_create_dataset_metadata_non_common_fields_stay_in_items(
+        self,
+        mocker: MockerFixture,
+        tmp_path: Path,
+    ) -> None:
+        """Fields that vary across items remain in item data."""
+        dt = datetime(2024, 1, 1, tzinfo=UTC)
+        items: dict[str, list[BaseMetadata]] = {
+            "img1.jpg": [GenericMetadata(datetime_=dt, latitude=45.0)],
+            "img2.jpg": [GenericMetadata(datetime_=dt, latitude=46.0)],
+        }
+        mock_saver = mocker.patch("marimba.core.schemas.generic.yaml_saver")
+
+        GenericMetadata.create_dataset_metadata(
+            dataset_name="TestDataset",
+            root_dir=tmp_path,
+            items=items,
+        )
+
+        data = mock_saver.call_args[0][2]
+        assert "latitude" not in data["header"], "Varying latitude should not be in header"
+        assert data["items"]["img1.jpg"][0]["latitude"] == 45.0
+        assert data["items"]["img2.jpg"][0]["latitude"] == 46.0
