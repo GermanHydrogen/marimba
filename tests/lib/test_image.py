@@ -142,6 +142,7 @@ class TestImageUtilities:
 
         # Check color with tolerance for JPEG compression artifacts
         color_tolerance = 5  # Allow small variations due to JPEG compression
+        assert isinstance(actual_color, tuple), "Center pixel should be an RGB tuple"
         r_diff = abs(actual_color[0] - expected_color[0])
         g_diff = abs(actual_color[1] - expected_color[1])
         b_diff = abs(actual_color[2] - expected_color[2])
@@ -1050,8 +1051,8 @@ class TestImageUtilities:
             # For a 90-degree clockwise rotation, the red square that was at top-left
             # should now be at bottom-left (when not expanding canvas)
             with Image.open(test_image_path) as original_for_comparison:
-                original_pixels = list(original_for_comparison.getdata())
-                rotated_pixels = list(rotated_img.getdata())
+                original_pixels = list(original_for_comparison.get_flattened_data())
+                rotated_pixels = list(rotated_img.get_flattened_data())
                 assert original_pixels != rotated_pixels, "Rotated image should have different pixel data than original"
 
                 # More specific test: check that the red pixel from position (25, 20) in original
@@ -1171,7 +1172,7 @@ class TestImageUtilities:
             original_format = original_img.format
             original_mode = original_img.mode
             original_size = original_img.size
-            original_data = list(original_img.getdata())
+            original_data = list(original_img.get_flattened_data())
 
         # Act
         rotate_clockwise(test_image_path, rotation_degrees)
@@ -1191,7 +1192,7 @@ class TestImageUtilities:
             ), f"Image dimensions should remain {original_size} for 90-degree rotation without expand"
 
             # Verify the image content has been modified by rotation
-            rotated_data = list(rotated_img.getdata())
+            rotated_data = list(rotated_img.get_flattened_data())
             assert original_data != rotated_data, "Rotated image should have different pixel data than original"
 
             # Verify rotation worked by checking that pixel data actually changed
@@ -1217,7 +1218,7 @@ class TestImageUtilities:
             original_format = original_img.format
             original_mode = original_img.mode
             original_size = original_img.size
-            original_pixels = list(original_img.getdata())
+            original_pixels = list(original_img.get_flattened_data())
 
         # Act
         rotate_clockwise(test_image_rgb, rotation_degrees, destination=output_path)
@@ -1233,7 +1234,7 @@ class TestImageUtilities:
             ), f"Image size should remain {original_size} for zero-degree rotation"
 
             # For zero-degree rotation, pixel data should be identical
-            rotated_pixels = list(rotated_img.getdata())
+            rotated_pixels = list(rotated_img.get_flattened_data())
             assert original_pixels == rotated_pixels, "Zero-degree rotation should preserve all pixel data unchanged"
 
     @pytest.mark.unit
@@ -1256,7 +1257,7 @@ class TestImageUtilities:
         degrees = -90
 
         with Image.open(test_image_rgb) as original_img:
-            original_pixels = list(original_img.getdata())
+            original_pixels = list(original_img.get_flattened_data())
             original_size = original_img.size
 
         # Act - Rotate using negative degrees
@@ -1267,7 +1268,7 @@ class TestImageUtilities:
 
         # Verify rotation modified the image and preserved dimensions (expand=False by default)
         with Image.open(output_path) as rotated_img:
-            rotated_pixels = list(rotated_img.getdata())
+            rotated_pixels = list(rotated_img.get_flattened_data())
 
             assert (
                 original_pixels != rotated_pixels
@@ -1319,7 +1320,7 @@ class TestImageUtilities:
             assert zero_equivalent_img.size[1] > 0, "720-degree rotation should produce valid height"
 
             # Verify images contain valid pixel data (not all transparent/black)
-            large_positive_pixels = list(large_positive_img.getdata())
+            large_positive_pixels = list(large_positive_img.get_flattened_data())
             assert len(large_positive_pixels) > 0, "Large positive rotation should contain pixel data"
             assert any(
                 pixel != (0, 0, 0) for pixel in large_positive_pixels
