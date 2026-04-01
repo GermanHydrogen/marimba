@@ -420,6 +420,8 @@ class TestDarwinCoreMetadata:
             "__qualname__",
             "__abstractmethods__",  # ABC automatically adds this
             "_abc_impl",  # ABC automatically adds this
+            "__firstlineno__",  # Python 3.13+ adds this automatically
+            "__static_attributes__",  # Python 3.13+ adds this automatically
         }
         actual_class_attributes = set(class_dict.keys())
         new_attributes = actual_class_attributes - expected_class_attributes
