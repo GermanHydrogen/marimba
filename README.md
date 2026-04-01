@@ -1,35 +1,13 @@
 <a name="readme-top"></a>
 
-<!-- PROJECT LOGO -->
-<figure markdown style="text-align: center">
+<div align="center">
 
 ![Marimba Logo](https://raw.githubusercontent.com/csiro-fair/marimba/main/docs/img/marimba-logo.png "Marimba logo")
 
-</figure>
+<i>A Python framework for structuring, processing, packaging and distributing FAIR scientific image datasets</i>
 
-<div style="text-align: center">
-<p><i>A Python framework for structuring, processing, packaging and distributing FAIR scientific image datasets</i></p>
-<div>
-  <a href="https://github.com/csiro-fair/marimba/stargazers">
-    <img src="https://img.shields.io/github/stars/csiro-fair/marimba" alt="Stars Badge"/>
-  </a>
-  <a href="https://github.com/csiro-fair/marimba/network/members">
-    <img src="https://img.shields.io/github/forks/csiro-fair/marimba" alt="Forks Badge"/>
-  </a>
-  <a href="https://github.com/csiro-fair/marimba/pulls">
-    <img src="https://img.shields.io/github/issues-pr/csiro-fair/marimba" alt="Pull Requests Badge"/>
-  </a>
-  <a href="https://github.com/csiro-fair/marimba/issues">
-    <img src="https://img.shields.io/github/issues/csiro-fair/marimba" alt="Issues Badge"/>
-  </a>
-  <a href="https://github.com/csiro-fair/marimba/graphs/contributors">
-    <img alt="GitHub contributors" src="https://img.shields.io/github/contributors/csiro-fair/marimba?color=2b9348">
-  </a>
-  <a href="https://github.com/csiro-fair/marimba/blob/master/LICENSE">
-    <img src="https://img.shields.io/github/license/csiro-fair/marimba?color=2b9348" alt="License Badge"/>
-  </a>
-</div>
-<br>
+[![Python Versions](https://img.shields.io/pypi/pyversions/marimba)](https://pypi.org/project/marimba/) [![PyPI Version](https://img.shields.io/pypi/v/marimba)](https://pypi.org/project/marimba/) [![PyPI Downloads](https://img.shields.io/pypi/dm/marimba)](https://pypi.org/project/marimba/) [![Stars](https://img.shields.io/github/stars/csiro-fair/marimba?color=blue)](https://github.com/csiro-fair/marimba/stargazers) [![Forks](https://img.shields.io/github/forks/csiro-fair/marimba?color=blue)](https://github.com/csiro-fair/marimba/network/members) [![Pull Requests](https://img.shields.io/github/issues-pr/csiro-fair/marimba)](https://github.com/csiro-fair/marimba/pulls) [![Issues](https://img.shields.io/github/issues/csiro-fair/marimba)](https://github.com/csiro-fair/marimba/issues) [![Contributors](https://img.shields.io/github/contributors/csiro-fair/marimba?color=2b9348)](https://github.com/csiro-fair/marimba/graphs/contributors) [![License](https://img.shields.io/badge/license-CSIRO_BSD%2FMIT-2b9348)](https://github.com/csiro-fair/marimba/blob/main/LICENSE)
+
 </div>
 
 ---
