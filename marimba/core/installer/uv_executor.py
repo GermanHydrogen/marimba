@@ -75,20 +75,21 @@ class UvExecutor:
             stderr=subprocess.PIPE,
         ) as process:
             output, error = process.communicate()
-            self._handle_uv_error(process.returncode)
+            self._handle_uv_error(process.returncode, error.decode())
 
             return ExecutorResult(output.decode(), error.decode())
 
-    def _handle_uv_error(self, return_code: int) -> None:
+    def _handle_uv_error(self, return_code: int, stderr: str = "") -> None:
         """
         Handle uv pip command errors by raising appropriate exceptions.
 
         Args:
             return_code: The return code from uv pip command process
+            stderr: The stderr output from the uv pip command
 
         Raises:
             UvError: If uv pip command fails
         """
         if return_code != 0:
-            msg = f"uv pip command had a non-zero return code: {return_code}"
+            msg = f"uv pip command failed (return code {return_code}): {stderr.strip()}"
             raise self.UvError(msg)

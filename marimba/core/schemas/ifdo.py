@@ -887,24 +887,27 @@ class iFDOMetadata(BaseMetadata):  # noqa: N801
         """Embed pre-generated thumbnails using ExifTool."""
         for img in processed_images:
             if img.thumbnail_data:
+                tmp_path: Path | None = None
                 try:
                     # Write thumbnail data to temporary file
                     with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as tmp_file:
+                        tmp_path = Path(tmp_file.name)
                         tmp_file.write(img.thumbnail_data)
                         tmp_file.flush()
 
-                        # Embed thumbnail using ExifTool
-                        et.set_tags(
-                            [str(img.file_path)],
-                            {"ThumbnailImage": tmp_file.name},
-                            params=["-overwrite_original_in_place", "-tagsfromfile", tmp_file.name],
-                        )
-
-                    # Clean up temporary file
-                    Path(tmp_file.name).unlink()
+                    # Embed thumbnail using ExifTool
+                    et.set_tags(
+                        [str(img.file_path)],
+                        {"ThumbnailImage": str(tmp_path)},
+                        params=["-overwrite_original_in_place", "-tagsfromfile", str(tmp_path)],
+                    )
 
                 except (OSError, ExifToolException) as e:
                     logger.warning(f"Failed to embed thumbnail for {img.file_path}: {e}")
+
+                finally:
+                    if tmp_path is not None:
+                        tmp_path.unlink(missing_ok=True)
 
     @classmethod
     def _log_non_exif_files(
@@ -916,21 +919,6 @@ class iFDOMetadata(BaseMetadata):  # noqa: N801
         """Log non-EXIF files that were skipped."""
         for file_path in non_exif_files:
             logger.debug(f"Thread {thread_num} - Skipping EXIF processing for non-supported file: {file_path}")
-
-    @staticmethod
-    def _add_image_dimensions(
-        exif_tags: dict[str, Any],
-        existing_exif: dict[str, Any],
-        image_file: Image.Image,
-    ) -> None:
-        """Add image dimensions to EXIF tags if missing."""
-        if "EXIF:ExifImageWidth" not in existing_exif:
-            width, height = image_file.size
-            exif_tags["EXIF:ExifImageWidth"] = width
-
-        if "EXIF:ExifImageHeight" not in existing_exif:
-            width, height = image_file.size
-            exif_tags["EXIF:ExifImageHeight"] = height
 
     @staticmethod
     def _add_datetime_tags(exif_tags: dict[str, Any], image_data: ImageData) -> None:
@@ -985,49 +973,6 @@ class iFDOMetadata(BaseMetadata):  # noqa: N801
         }
         user_comment_json = json.dumps(user_comment_data)
         exif_tags["EXIF:UserComment"] = user_comment_json
-
-    @staticmethod
-    def _add_thumbnail_to_exif(file_path: Path, image_file: Image.Image, logger: logging.Logger) -> None:
-        """
-        Add a thumbnail to the EXIF metadata using PIL and exiftool.
-
-        Args:
-            file_path: Path to the image file.
-            image_file: PIL Image object.
-            logger: Logger instance.
-        """
-        try:
-            # Create a copy for the thumbnail to avoid modifying original
-            with image_file.copy() as thumb:
-                # Set max dimension to 240px - aspect ratio will be maintained
-                thumbnail_size = (240, 240)
-
-                # Use LANCZOS resampling for better quality
-                thumb.thumbnail(thumbnail_size, Image.Resampling.LANCZOS)
-
-                # Convert to RGB if not already
-                if thumb.mode != "RGB":
-                    with (
-                        thumb.convert("RGB") as rgb_thumb,
-                        tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as temp_file,
-                    ):
-                        rgb_thumb.save(temp_file.name, format="JPEG", quality=90, optimize=True)
-                        temp_thumb_path = temp_file.name
-                else:
-                    # Save thumbnail to a temporary file
-                    with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as temp_file:
-                        thumb.save(temp_file.name, format="JPEG", quality=90, optimize=True)
-                        temp_thumb_path = temp_file.name
-
-                # Use exiftool to embed the thumbnail
-                with exiftool.ExifToolHelper() as et:
-                    et.execute("-ThumbnailImage<=" + temp_thumb_path, "-overwrite_original_in_place", str(file_path))
-
-                # Clean up temporary file
-                Path(temp_thumb_path).unlink()
-
-        except ExifToolException as e:
-            logger.debug(f"Failed to add thumbnail to {file_path}: {e}")
 
     @staticmethod
     def _extract_image_properties(

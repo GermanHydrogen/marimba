@@ -16,11 +16,10 @@ Imports:
 Functions:
     - find_project_dir: Locates the project root directory starting from a specified path.
     - find_project_dir_or_exit: Locates the project root directory or exits with an error if not found.
-    - remove_all_subdirectories: Deletes all subdirectories within a specified directory, with optional dry-run and root
-    directory removal features.
-    - detect_hardlinked_files: Detects files that are hard-linked to locations outside a specified directory.
+    - remove_directory_tree: Recursively deletes a directory and all of its contents.
+    - detect_hardlinked_files: Detects files that are hard-linked (have multiple links).
     - detect_readonly_files: Detects files that are read-only and cannot be written to.
-    - count_external_hardlinks: Counts files with hard-links pointing outside a specified directory.
+    - format_path_for_logging: Converts an absolute path to a path relative to the project root.
 """
 
 import os
@@ -208,10 +207,6 @@ def detect_readonly_files(files: list[Path]) -> list[Path]:
             continue
 
         try:
-            # Check if file is writable - use the same method as os.access
-            if not file_path.is_file():
-                continue
-
             # Check write permission on the file itself
             if not os.access(file_path, os.W_OK):
                 readonly_files.append(file_path)

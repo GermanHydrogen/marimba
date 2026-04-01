@@ -194,7 +194,7 @@ class TestUvExecutor:
         mock_popen.return_value.__enter__.return_value = mock_process
 
         # Act & Assert
-        with pytest.raises(UvExecutor.UvError, match=r"uv pip command had a non-zero return code: 1"):
+        with pytest.raises(UvExecutor.UvError, match=r"uv pip command failed \(return code 1\)"):
             uv_executor("install", invalid_package)
 
         # Assert subprocess integration
@@ -320,7 +320,7 @@ class TestUvExecutor:
         mock_popen.return_value.__enter__.return_value = mock_process
 
         # Act & Assert - Verify UvError is raised with specific message
-        with pytest.raises(UvExecutor.UvError, match=r"uv pip command had a non-zero return code: 2"):
+        with pytest.raises(UvExecutor.UvError, match=r"uv pip command failed \(return code 2\)"):
             uv_executor(invalid_command, invalid_flag)
 
         # Assert - Verify subprocess was called with correct parameters

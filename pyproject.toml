@@ -24,8 +24,8 @@ dependencies = [
     "av>=15.0.0,<16",
     "distlib>=0.4.0,<0.5",
     "numpy>=2.2.5,<2.3.0",
-    "botocore>=1.40.6",
-    "requests>=2.32.4",
+    "botocore>=1.40.6,<2",
+    "requests>=2.32.4,<3",
     "psutil>=7.0.0,<8",
 ]
 classifiers = [
