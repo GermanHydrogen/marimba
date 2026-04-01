@@ -71,6 +71,8 @@ diverse aggregation of data from a single or multi-instrument system. Each Colle
 Marimba's core processing environment. During execution, Marimba Pipelines operate on each Collection in parallel, 
 applying the specialised processing to the data contained within each Collection.
 
+![Marimba Workflow](docs/img/marimba-workflow.png "Marimba workflow")
+
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 ---
