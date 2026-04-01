@@ -41,6 +41,10 @@ class Manifest:
     hashes: dict[Path, str]
     logger: logging.Logger | None = None
 
+    def __hash__(self) -> int:
+        """Enable use in sets and as dictionary keys."""
+        return hash(tuple(sorted(self.hashes.items())))
+
     @staticmethod
     def _validate_directory(directory: Path) -> None:
         """
@@ -53,12 +57,17 @@ class Manifest:
             ValueError: If the directory doesn't exist or isn't a directory
         """
         if not directory.exists():
-            raise ValueError(f"Directory does not exist: {directory}")
+            msg = f"Directory does not exist: {directory}"
+            raise ValueError(msg)
         if not directory.is_dir():
-            raise ValueError(f"Path is not a directory: {directory}")
+            msg = f"Path is not a directory: {directory}"
+            raise ValueError(msg)
 
     @staticmethod
-    def _get_files_from_directory(directory: Path, logger: logging.Logger | None) -> list[Path]:
+    def _get_files_from_directory(
+        directory: Path,
+        logger: logging.Logger | None,
+    ) -> list[Path]:
         """
         Get all files from a directory.
 
@@ -76,8 +85,9 @@ class Manifest:
             return list(directory.glob("**/*"))
         except Exception as e:
             if logger:
-                logger.exception(f"Failed to glob directory {directory}: {e!s}")
-            raise OSError(f"Failed to scan directory {directory}: {e!s}") from e
+                logger.exception(f"Failed to glob directory {directory}")
+            msg = f"Failed to scan directory {directory}: {e!s}"
+            raise OSError(msg) from e
 
     @staticmethod
     def _get_hash_from_metadata(
@@ -137,8 +147,9 @@ class Manifest:
             return rel_path, compute_hash(item, directory)
         except (OSError, PermissionError) as e:
             if logger:
-                logger.exception(f"Failed to process file {item}: {e!s}")
-            raise OSError(f"Failed to process file {item}: {e!s}") from e
+                logger.exception(f"Failed to process file {item}")
+            msg = f"Failed to process file {item}: {e!s}"
+            raise OSError(msg) from e
 
     @classmethod
     def _process_files_with_progress(
@@ -194,14 +205,20 @@ class Manifest:
                 return
 
             try:
-                result = cls._process_single_file(item, directory, dataset_items, logger)
+                result = cls._process_single_file(
+                    item,
+                    directory,
+                    dataset_items,
+                    logger,
+                )
                 if result:
                     rel_path, file_hash = result
                     hashes[rel_path] = file_hash
             except Exception as e:
                 if logger:
-                    logger.exception(f"Error processing file {item}: {e!s}")
-                raise RuntimeError(f"Failed to process file {item}: {e!s}") from e
+                    logger.exception(f"Error processing file {item}")
+                msg = f"Failed to process file {item}: {e!s}"
+                raise RuntimeError(msg) from e
 
         process_file(
             self=manifest_instance,
@@ -267,8 +284,9 @@ class Manifest:
 
         except Exception as e:
             if logger:
-                logger.exception(f"Failed to create manifest: {e!s}")
-            raise RuntimeError("Failed to create manifest completely") from e
+                logger.exception("Failed to create manifest")
+            msg = "Failed to create manifest completely"
+            raise RuntimeError(msg) from e
 
     def validate(
         self,
@@ -309,8 +327,9 @@ class Manifest:
             )
         except Exception as e:
             if logger:
-                logger.exception(f"Failed to create comparison manifest: {e!s}")
-            raise RuntimeError("Failed to validate directory") from e
+                logger.exception("Failed to create comparison manifest")
+            msg = "Failed to validate directory"
+            raise RuntimeError(msg) from e
 
         return self == manifest
 
@@ -411,8 +430,9 @@ class Manifest:
                     f.write(f"{file_path.as_posix()}:{file_hash}\n")
         except OSError as e:
             if logger:
-                logger.exception(f"Failed to save manifest to {path}: {e!s}")
-            raise OSError(f"Failed to save manifest to {path}: {e!s}") from e
+                logger.exception(f"Failed to save manifest to {path}")
+            msg = f"Failed to save manifest to {path}: {e!s}"
+            raise OSError(msg) from e
 
     @classmethod
     def load(cls, path: Path) -> "Manifest":
@@ -434,7 +454,11 @@ class Manifest:
                             path_str, hash_str = line.strip().split(":")
                             hashes[Path(path_str)] = hash_str
                         except ValueError as e:
-                            raise ValueError(f"Invalid manifest file format at line: {line.strip()}") from e
+                            msg = f"Invalid manifest file format at line: {line.strip()}"
+                            raise ValueError(
+                                msg,
+                            ) from e
             return cls(hashes)
         except OSError as e:
-            raise OSError(f"Failed to load manifest from {path}: {e!s}") from e
+            msg = f"Failed to load manifest from {path}: {e!s}"
+            raise OSError(msg) from e

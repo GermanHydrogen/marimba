@@ -45,7 +45,8 @@ def compute_hash(path: Path, root_dir: Path | None = None) -> str:
                 while chunk := f.read(1_048_576):  # 1MB chunks
                     file_hash.update(chunk)
         except OSError as e:
-            raise OSError(f"Failed to read file {path}: {e!s}") from e
+            msg = f"Failed to read file {path}: {e!s}"
+            raise OSError(msg) from e
     else:
         # For non-files, hash the path string
         if root_dir is not None:
@@ -53,7 +54,10 @@ def compute_hash(path: Path, root_dir: Path | None = None) -> str:
                 relative_path = path.resolve().relative_to(root_dir.resolve())
                 path_to_hash = relative_path
             except ValueError as e:
-                raise ValueError(f"Path {path} is not within root directory {root_dir}") from e
+                msg = f"Path {path} is not within root directory {root_dir}"
+                raise ValueError(
+                    msg,
+                ) from e
         else:
             path_to_hash = path
 

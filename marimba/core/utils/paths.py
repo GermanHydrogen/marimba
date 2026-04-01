@@ -16,10 +16,13 @@ Imports:
 Functions:
     - find_project_dir: Locates the project root directory starting from a specified path.
     - find_project_dir_or_exit: Locates the project root directory or exits with an error if not found.
-    - remove_all_subdirectories: Deletes all subdirectories within a specified directory, with optional dry-run and root
-    directory removal features.
+    - remove_directory_tree: Recursively deletes a directory and all of its contents.
+    - detect_hardlinked_files: Detects files that are hard-linked (have multiple links).
+    - detect_readonly_files: Detects files that are read-only and cannot be written to.
+    - format_path_for_logging: Converts an absolute path to a path relative to the project root.
 """
 
+import os
 import shutil
 from os import R_OK, access
 from pathlib import Path
@@ -152,8 +155,67 @@ def hardlink_path(src_path: Path, dest_path: Path, dry_run: bool) -> None:
                 try:
                     destination.hardlink_to(src_file)
                     logger.info(f"Created hard link: {destination} -> {src_file}")
-                except OSError as e:
-                    logger.exception(f"Failed to create hard link: {destination} -> {src_file}: {e}")
+                except OSError:
+                    logger.exception(
+                        f"Failed to create hard link: {destination} -> {src_file}",
+                    )
+
+
+def detect_hardlinked_files(files: list[Path]) -> list[Path]:
+    """
+    Detect files that are hard-linked (have multiple links).
+
+    Args:
+        files: List of file paths to check for hard-links
+
+    Returns:
+        list: List of file paths that are hard-linked
+    """
+    hardlinked_files = []
+
+    for file_path in files:
+        if not file_path.exists() or not file_path.is_file():
+            continue
+
+        try:
+            file_stat = file_path.stat()
+
+            # Check if file has multiple hard-links
+            if hasattr(file_stat, "st_nlink") and file_stat.st_nlink > 1:
+                hardlinked_files.append(file_path)
+
+        except (OSError, PermissionError):
+            continue
+
+    return hardlinked_files
+
+
+def detect_readonly_files(files: list[Path]) -> list[Path]:
+    """
+    Detect files that are read-only and cannot be written to.
+
+    Args:
+        files: List of file paths to check for write permissions
+
+    Returns:
+        list: List of file paths that are read-only
+    """
+    readonly_files = []
+
+    for file_path in files:
+        if not file_path.exists() or not file_path.is_file():
+            continue
+
+        try:
+            # Check write permission on the file itself
+            if not os.access(file_path, os.W_OK):
+                readonly_files.append(file_path)
+
+        except (OSError, PermissionError):
+            # If we can't check permissions, assume it's not writable
+            readonly_files.append(file_path)
+
+    return readonly_files
 
 
 def format_path_for_logging(path: Path | str, project_dir: Path | None = None) -> str:

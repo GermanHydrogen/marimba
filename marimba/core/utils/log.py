@@ -34,7 +34,9 @@ from rich.console import Console
 from rich.logging import RichHandler
 
 # Global file log format - this is used for all file handlers.
-file_formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+file_formatter = logging.Formatter(
+    "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+)
 
 
 class DryRunRichHandler(RichHandler):
@@ -153,7 +155,8 @@ def get_file_handler(
 
     # Ensure the directory exists
     if not output_dir.is_dir():
-        raise FileNotFoundError(f"Output directory {output_dir} does not exist")
+        msg = f"Output directory {output_dir} does not exist"
+        raise FileNotFoundError(msg)
 
     # Build the path as `output_dir/name.log`
     path = output_dir / f"{name}.log"

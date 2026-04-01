@@ -36,7 +36,11 @@ from marimba.core.utils.config import load_config
 from marimba.core.utils.log import LogPrefixFilter, get_file_handler, get_logger
 
 
-def _find_pipeline_module_path(repo_dir: Path, *, allow_empty: bool = False) -> Path | None:
+def _find_pipeline_module_path(
+    repo_dir: Path,
+    *,
+    allow_empty: bool = False,
+) -> Path | None:
     """Find the pipeline implementation file in the repository."""
     pipeline_module_paths = list(repo_dir.glob("**/*.pipeline.py"))
 
@@ -44,13 +48,19 @@ def _find_pipeline_module_path(repo_dir: Path, *, allow_empty: bool = False) -> 
         if allow_empty:
             _log_empty_repo_warning(repo_dir)
             return None
-        raise FileNotFoundError(
+        msg = (
             f'No pipeline implementation found in "{repo_dir}". '
-            f"The repository must contain a .pipeline.py file with a class that inherits from BasePipeline.",
+            f"The repository must contain a .pipeline.py file with a class that inherits from BasePipeline."
+        )
+        raise FileNotFoundError(
+            msg,
         )
 
     if len(pipeline_module_paths) > 1:
-        raise FileNotFoundError(f'Multiple pipeline implementations found in "{repo_dir}": {pipeline_module_paths}')
+        msg = f'Multiple pipeline implementations found in "{repo_dir}": {pipeline_module_paths}'
+        raise FileNotFoundError(
+            msg,
+        )
 
     return pipeline_module_paths[0]
 
@@ -78,7 +88,9 @@ def _log_empty_repo_warning(repo_dir: Path) -> None:
     )
 
 
-def _load_pipeline_module(module_path: Path) -> tuple[str, types.ModuleType, machinery.ModuleSpec]:
+def _load_pipeline_module(
+    module_path: Path,
+) -> tuple[str, types.ModuleType, machinery.ModuleSpec]:
     """Load the pipeline module from the given path."""
     module_name = module_path.stem
     module_spec = spec_from_file_location(
@@ -87,10 +99,12 @@ def _load_pipeline_module(module_path: Path) -> tuple[str, types.ModuleType, mac
     )
 
     if module_spec is None:
-        raise ImportError(f"Could not load spec for {module_name} from {module_path}")
+        msg = f"Could not load spec for {module_name} from {module_path}"
+        raise ImportError(msg)
 
     if module_spec.loader is None:
-        raise ImportError(f"Could not find loader for {module_name} from {module_path}")
+        msg = f"Could not find loader for {module_name} from {module_path}"
+        raise ImportError(msg)
 
     module = module_from_spec(module_spec)
     sys.modules[module_name] = module  # Register the module in sys.modules
@@ -108,13 +122,15 @@ def _is_valid_pipeline_class(obj: type[object]) -> bool:
 def _find_pipeline_class(module: types.ModuleType) -> type[BasePipeline]:
     """Find the pipeline class in the module."""
     if not hasattr(module, "__dict__"):
-        raise ImportError("Invalid module: module has no __dict__ attribute")
+        msg = "Invalid module: module has no __dict__ attribute"
+        raise ImportError(msg)
 
     for obj in module.__dict__.values():
         if isinstance(obj, type) and _is_valid_pipeline_class(obj):
             return obj  # type: ignore[return-value]  # We know it's a Type[BasePipeline] due to _is_valid_pipeline_class
 
-    raise ImportError("Pipeline class has not been set or could not be found")
+    msg = "Pipeline class has not been set or could not be found"
+    raise ImportError(msg)
 
 
 def _configure_pipeline_logging(
@@ -132,11 +148,9 @@ def _configure_pipeline_logging(
         prefix_filter = LogPrefixFilter(log_string_prefix)
         pipeline_instance.logger.addFilter(prefix_filter.apply_prefix)
 
-    # Check if this handler already exists before adding
+    # Add the new file handler
     file_handler = get_file_handler(root_dir, pipeline_name, dry_run)
-    handler_paths = [h.baseFilename for h in pipeline_instance.logger.handlers if hasattr(h, "baseFilename")]
-    if not any(h == file_handler.baseFilename for h in handler_paths):
-        pipeline_instance.logger.addHandler(file_handler)
+    pipeline_instance.logger.addHandler(file_handler)
 
 
 def load_pipeline_instance(
@@ -180,16 +194,27 @@ def load_pipeline_instance(
     sys.path.insert(0, str(repo_dir.absolute()))
     try:
         if module_spec.loader is None:
-            raise ImportError(f"Module loader is None for {module_name}")
+            msg = f"Module loader is None for {module_name}"
+            raise ImportError(msg)
         module_spec.loader.exec_module(module)
     finally:
         sys.path.pop(0)
 
     # Find and instantiate the pipeline class
     pipeline_class = _find_pipeline_class(module)
-    pipeline_instance = pipeline_class(repo_dir, config=load_config(config_path), dry_run=dry_run)
+    pipeline_instance = pipeline_class(
+        repo_dir,
+        config=load_config(config_path),
+        dry_run=dry_run,
+    )
 
     # Configure logging
-    _configure_pipeline_logging(pipeline_instance, root_dir, pipeline_name, dry_run, log_string_prefix)
+    _configure_pipeline_logging(
+        pipeline_instance,
+        root_dir,
+        pipeline_name,
+        dry_run,
+        log_string_prefix,
+    )
 
     return pipeline_instance

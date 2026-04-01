@@ -37,7 +37,7 @@ from pathlib import Path
 from typing import TypeVar
 
 import typer
-from rich import print
+from rich import print as rprint
 from rich.progress import Progress, SpinnerColumn
 
 from marimba.core.utils.constants import PROJECT_DIR_HELP
@@ -62,7 +62,7 @@ app = typer.Typer(
 T = TypeVar("T")
 
 
-def batch_delete_operation(
+def batch_delete_operation[T](
     items: list[str],
     delete_func: Callable[[str, bool], T],
     entity_type: str,
@@ -88,8 +88,20 @@ def batch_delete_operation(
     def attempt_delete(item_name: str) -> tuple[str, T | None, str | None]:
         try:
             result = delete_func(item_name, dry_run)
+        except (
+            ProjectWrapper.NoSuchCollectionError,
+            ProjectWrapper.NoSuchPipelineError,
+            ProjectWrapper.NoSuchDatasetError,
+            ProjectWrapper.NoSuchTargetError,
+            ProjectWrapper.DeletePipelineError,
+            ProjectWrapper.InvalidNameError,
+            FileExistsError,  # Used by dataset deletion when dataset doesn't exist
+        ) as e:
+            logger.error(f"Error deleting {entity_type} {item_name}: {e}")  # noqa: TRY400
+            return item_name, None, str(e)
         except Exception as e:
-            logger.exception(f"Error deleting {entity_type} {item_name}")
+            # Catch-all for unexpected errors - these should show tracebacks
+            logger.exception(f"Unexpected error deleting {entity_type} {item_name}")
             return item_name, None, str(e)
         else:
             return item_name, result, None
@@ -118,11 +130,15 @@ def print_results(
     """Print the results of a batch deletion operation."""
     if success_items:
         for name, path in success_items:
-            print(success_panel(f'Deleted {MARIMBA} {format_entity(entity_type)} "{name}" at: "{path}"'))
+            rprint(
+                success_panel(
+                    f'Deleted {MARIMBA} {format_entity(entity_type)} "{name}" at: "{path}"',
+                ),
+            )
 
     if errors:
         for name, error_msg in errors:
-            print(error_panel(f'Failed to delete {entity_type} "{name}": {error_msg}'))
+            rprint(error_panel(f'Failed to delete {entity_type} "{name}": {error_msg}'))
         raise typer.Exit(code=1)
 
 
@@ -141,18 +157,27 @@ def project(
         project_dir = find_project_dir_or_exit(project_dir)
         project_wrapper = ProjectWrapper(project_dir, dry_run=dry_run)
         root_path = project_wrapper.delete_project()
-        logger.info(f'Project Deleted {MARIMBA} {format_entity("project")} "{project_wrapper.root_dir}"')
-        print(success_panel(f'Deleted {MARIMBA} {format_entity("project")} "{root_path}"'))
+        logger.info(
+            f'Project Deleted {MARIMBA} {format_entity("project")} "{project_wrapper.root_dir}"',
+        )
+        rprint(
+            success_panel(
+                f'Deleted {MARIMBA} {format_entity("project")} "{root_path}"',
+            ),
+        )
     except ProjectWrapper.InvalidStructureError as e:
         error_message = f'A {MARIMBA} {format_entity("project")} not valid project: "{project_dir}"'
         logger.exception(error_message)
-        print(error_panel(error_message))
+        rprint(error_panel(error_message))
         raise typer.Exit(code=1) from e
 
 
 @app.command()
 def pipeline(
-    pipeline_names: list[str] = typer.Argument(..., help="Names of the pipelines to delete."),
+    pipeline_names: list[str] = typer.Argument(
+        ...,
+        help="Names of the pipelines to delete.",
+    ),
     project_dir: Path | None = typer.Option(None, help=PROJECT_DIR_HELP),
     dry_run: bool = typer.Option(
         False,
@@ -177,7 +202,10 @@ def pipeline(
 
 @app.command()
 def collection(
-    collection_names: list[str] = typer.Argument(..., help="Names of the collections to delete"),
+    collection_names: list[str] = typer.Argument(
+        ...,
+        help="Names of the collections to delete",
+    ),
     project_dir: Path = typer.Option(None, help=PROJECT_DIR_HELP),
     dry_run: bool = typer.Option(
         False,
@@ -186,7 +214,9 @@ def collection(
 ) -> None:
     """Delete one or more Marimba collections in a project."""
     project_dir = find_project_dir_or_exit(project_dir)
-    logger.info(f"Executing the {MARIMBA} {format_command('delete collection')} command")
+    logger.info(
+        f"Executing the {MARIMBA} {format_command('delete collection')} command",
+    )
     project_wrapper = ProjectWrapper(project_dir)
 
     success_items, errors = batch_delete_operation(
@@ -202,7 +232,10 @@ def collection(
 
 @app.command()
 def target(
-    target_names: list[str] = typer.Argument(..., help="Names of the distribution targets to delete."),
+    target_names: list[str] = typer.Argument(
+        ...,
+        help="Names of the distribution targets to delete.",
+    ),
     project_dir: Path = typer.Option(None, help=PROJECT_DIR_HELP),
     dry_run: bool = typer.Option(
         False,
@@ -227,7 +260,10 @@ def target(
 
 @app.command()
 def dataset(
-    dataset_names: list[str] = typer.Argument(..., help="Names of the datasets to delete"),
+    dataset_names: list[str] = typer.Argument(
+        ...,
+        help="Names of the datasets to delete",
+    ),
     project_dir: Path = typer.Option(None, help=PROJECT_DIR_HELP),
     dry_run: bool = typer.Option(
         False,

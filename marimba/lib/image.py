@@ -44,7 +44,6 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
 from shutil import copy2
-from typing import cast
 
 import cv2
 import numpy as np
@@ -52,7 +51,11 @@ from PIL import Image
 from PIL.Image import Image as PILImage
 
 
-def generate_image_thumbnail(image: Path, output_directory: Path, suffix: str = "_THUMB") -> Path:
+def generate_image_thumbnail(
+    image: Path,
+    output_directory: Path,
+    suffix: str = "_THUMB",
+) -> Path:
     """
     Generate a thumbnail image from the given image file.
 
@@ -73,7 +76,11 @@ def generate_image_thumbnail(image: Path, output_directory: Path, suffix: str = 
     return output_path
 
 
-def convert_to_jpeg(path: str | Path, quality: int = 95, destination: str | Path | None = None) -> Path:
+def convert_to_jpeg(
+    path: str | Path,
+    quality: int = 95,
+    destination: str | Path | None = None,
+) -> Path:
     """
     Convert an image to JPEG format.
 
@@ -95,8 +102,8 @@ def convert_to_jpeg(path: str | Path, quality: int = 95, destination: str | Path
     if path.suffix.lower() in (".jpg", ".jpeg"):
         copy2(path, destination)
     else:
-        img = cast(Image.Image, Image.open(path))
-        img.convert("RGB").save(destination, "JPEG", quality=quality)
+        with Image.open(path) as img:
+            img.convert("RGB").save(destination, "JPEG", quality=quality)
     return destination
 
 
@@ -128,9 +135,9 @@ def resize_fit(
     path = Path(path)
     destination = Path(destination) if destination is not None else path
 
-    img = cast(Image.Image, Image.open(path))
-    img = _resize_fit(img, max_width, max_height)
-    img.save(destination)
+    with Image.open(path) as img:
+        resized_img = _resize_fit(img, max_width, max_height)
+        resized_img.save(destination)
 
 
 def resize_exact(
@@ -151,28 +158,32 @@ def resize_exact(
     path = Path(path)
     destination = Path(destination) if destination is not None else path
 
-    img = cast(Image.Image, Image.open(path))
-    img = img.resize((width, height), Image.Resampling.LANCZOS)
-    img.save(destination)
+    with Image.open(path) as img:
+        resized_img = img.resize((width, height), Image.Resampling.LANCZOS)
+        resized_img.save(destination)
 
 
-def scale(path: str | Path, scale_factor: float, destination: str | Path | None = None) -> None:
+def scale(
+    path: str | Path,
+    scale_factor: float,
+    destination: str | Path | None = None,
+) -> None:
     """
     Scale an image by a given factor.
 
     Args:
         path: The path to the image file.
-        scale_factor: The scale factor to apply to the image, 0-1.
+        scale_factor: The scale factor to apply to the image (positive float).
         destination: The path to save the scaled image to. If not provided, the original file will be overwritten.
     """
     path = Path(path)
     destination = Path(destination) if destination is not None else path
-    img = cast(Image.Image, Image.open(path))
-    width, height = img.size
-    new_width = int(width * scale_factor)
-    new_height = int(height * scale_factor)
-    img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
-    img.save(destination)
+    with Image.open(path) as img:
+        width, height = img.size
+        new_width = int(width * scale_factor)
+        new_height = int(height * scale_factor)
+        scaled_img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
+        scaled_img.save(destination)
 
 
 def rotate_clockwise(
@@ -200,12 +211,16 @@ def rotate_clockwise(
     path = Path(path)
     destination = Path(destination) if destination is not None else path
 
-    img = cast(Image.Image, Image.open(path))
-    img = img.rotate(-degrees, expand=expand)  # type: ignore[no-untyped-call]
-    img.save(destination)
+    with Image.open(path) as img:
+        rotated_img = img.rotate(-degrees, expand=expand)  # type: ignore[no-untyped-call]
+        rotated_img.save(destination)
 
 
-def turn_clockwise(path: str | Path, turns: int = 1, destination: str | Path | None = None) -> None:
+def turn_clockwise(
+    path: str | Path,
+    turns: int = 1,
+    destination: str | Path | None = None,
+) -> None:
     """
     Turn an image clockwise in steps of 90 degrees.
 
@@ -219,7 +234,8 @@ def turn_clockwise(path: str | Path, turns: int = 1, destination: str | Path | N
 
     # Validate the turns value
     if turns not in [1, 2, 3]:
-        raise ValueError("Turns must be an integer between 1 and 3 inclusive")
+        msg = "Turns must be an integer between 1 and 3 inclusive"
+        raise ValueError(msg)
 
     # Map turns to the corresponding rotation constants
     rotation_constants = {
@@ -228,9 +244,9 @@ def turn_clockwise(path: str | Path, turns: int = 1, destination: str | Path | N
         3: Image.Transpose.ROTATE_270,
     }
 
-    img = cast(Image.Image, Image.open(path))
-    img = img.transpose(rotation_constants[turns])
-    img.save(destination)
+    with Image.open(path) as img:
+        turned_img = img.transpose(rotation_constants[turns])
+        turned_img.save(destination)
 
 
 def flip_vertical(path: str | Path, destination: str | Path | None = None) -> None:
@@ -244,9 +260,9 @@ def flip_vertical(path: str | Path, destination: str | Path | None = None) -> No
     path = Path(path)
     destination = Path(destination) if destination is not None else path
 
-    img = cast(Image.Image, Image.open(path))
-    img = img.transpose(Image.Transpose.FLIP_TOP_BOTTOM)
-    img.save(destination)
+    with Image.open(path) as img:
+        flipped_img = img.transpose(Image.Transpose.FLIP_TOP_BOTTOM)
+        flipped_img.save(destination)
 
 
 def flip_horizontal(path: str | Path, destination: str | Path | None = None) -> None:
@@ -260,9 +276,9 @@ def flip_horizontal(path: str | Path, destination: str | Path | None = None) -> 
     path = Path(path)
     destination = Path(destination) if destination is not None else path
 
-    img = cast(Image.Image, Image.open(path))
-    img = img.transpose(Image.Transpose.FLIP_LEFT_RIGHT)
-    img.save(destination)
+    with Image.open(path) as img:
+        flipped_img = img.transpose(Image.Transpose.FLIP_LEFT_RIGHT)
+        flipped_img.save(destination)
 
 
 def is_blurry(path: str | Path, threshold: float = 100.0) -> bool:
@@ -280,18 +296,21 @@ def is_blurry(path: str | Path, threshold: float = 100.0) -> bool:
     """
     image = cv2.imread(str(path))
     if image is None:
-        raise ValueError(f"Could not load the image from the path: {path}")
+        msg = f"Could not load the image from the path: {path}"
+        raise ValueError(msg)
 
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     variance_of_laplacian = cv2.Laplacian(gray, cv2.CV_64F).var()
 
     # Explicitly cast the result to float for type clarity
     variance_of_laplacian = float(variance_of_laplacian)
+    threshold = float(threshold)
 
     image_is_blurry = variance_of_laplacian < threshold
 
     if not isinstance(image_is_blurry, bool):
-        raise TypeError("Expected image_is_blurry to be a boolean")
+        msg = "Expected image_is_blurry to be a boolean"
+        raise TypeError(msg)
 
     return image_is_blurry
 
@@ -318,9 +337,9 @@ def crop(
     path = Path(path)
     destination = Path(destination) if destination is not None else path
 
-    img = cast(Image.Image, Image.open(path))
-    img = img.crop((x, y, x + width, y + height))
-    img.save(destination)
+    with Image.open(path) as img:
+        cropped_img = img.crop((x, y, x + width, y + height))
+        cropped_img.save(destination)
 
 
 def apply_clahe(
@@ -344,6 +363,9 @@ def apply_clahe(
     destination = Path(destination) if destination is not None else path
 
     img = cv2.imread(str(path), 0)
+    if img is None:
+        msg = f"Could not read image from {path}"
+        raise ValueError(msg)
 
     # Apply CLAHE to the image
     clahe = cv2.createCLAHE(clipLimit=clip_limit, tileGridSize=tile_grid_size)
@@ -369,6 +391,9 @@ def gaussian_blur(
     destination = Path(destination) if destination is not None else path
 
     img = cv2.imread(str(path))
+    if img is None:
+        msg = f"Could not read image from {path}"
+        raise ValueError(msg)
 
     # Apply Gaussian blur to the image
     img_blur = cv2.GaussianBlur(img, kernel_size, 0)
@@ -388,6 +413,9 @@ def sharpen(path: str | Path, destination: str | Path | None = None) -> None:
     destination = Path(destination) if destination is not None else path
 
     img = cv2.imread(str(path))
+    if img is None:
+        msg = f"Could not read image from {path}"
+        raise ValueError(msg)
 
     # Apply sharpening to the image
     kernel = np.array([[-1, -1, -1], [-1, 9, -1], [-1, -1, -1]])
@@ -409,11 +437,12 @@ def get_width_height(path: str | Path) -> tuple[int, int]:
     expected_dimensions = 2
 
     path = Path(path)
-    img = cast(Image.Image, Image.open(path))
-    size = img.size
+    with Image.open(path) as img:
+        size = img.size
 
     if not (isinstance(size, tuple) and len(size) == expected_dimensions and all(isinstance(x, int) for x in size)):
-        raise ValueError("Size must be a tuple of two integers")
+        msg = "Size must be a tuple of two integers"
+        raise ValueError(msg)
 
     return size
 
@@ -485,7 +514,7 @@ class GridRow:
         scale_factor = self.dimensions.column_width / img_width
         scaled_height = int(img_height * scale_factor)
 
-        # Resize image
+        # Resize image - create a copy to avoid memory issues
         resized_img = img.resize(
             (self.dimensions.column_width, scaled_height),
             Image.Resampling.LANCZOS,
@@ -560,7 +589,9 @@ class GridImageProcessor:
         """
         try:
             with Image.open(path) as img:
-                return row.add_image(img)
+                # Create a copy to avoid issues with the context manager
+                img_copy = img.copy()
+                return row.add_image(img_copy)
         except OSError:
             return False
 
@@ -588,37 +619,48 @@ class GridImageProcessor:
         """
         rows: list[GridRow] = []
         current_height = 0
-        current_row = GridRow(self.dimensions)
+        current_row: GridRow | None = GridRow(self.dimensions)
         images_processed = 0
 
-        while images_processed < len(paths_subset):
-            path = paths_subset[images_processed]
-            if not self.process_single_image(path, current_row):
+        try:
+            while images_processed < len(paths_subset):
+                path = paths_subset[images_processed]
+                if current_row is None or not self.process_single_image(path, current_row):
+                    images_processed += 1
+                    continue
+
+                # If row is full, start a new one
+                if current_row is not None and len(current_row.images) >= self.dimensions.columns:
+                    if current_height + current_row.height <= self.dimensions.max_height:
+                        current_height += current_row.height
+                        rows.append(current_row)
+                        current_row = GridRow(self.dimensions)
+                    else:
+                        break
+
                 images_processed += 1
-                continue
 
-            # If row is full, start a new one
-            if len(current_row.images) >= self.dimensions.columns:
-                if current_height + current_row.height <= self.dimensions.max_height:
-                    current_height += current_row.height
-                    rows.append(current_row)
-                    current_row = GridRow(self.dimensions)
-                else:
-                    break
+            # Handle last row
+            if (
+                current_row is not None
+                and current_row.images
+                and current_height + current_row.height <= self.dimensions.max_height
+            ):
+                rows.append(current_row)
+                current_height += current_row.height
+            else:
+                if current_row is not None:
+                    current_row.cleanup()
+                current_row = None  # Clear reference
 
-            images_processed += 1
+            if not rows:
+                return None, 0, images_processed
 
-        # Handle last row
-        if current_row.images and current_height + current_row.height <= self.dimensions.max_height:
-            rows.append(current_row)
-            current_height += current_row.height
-        else:
-            current_row.cleanup()
-
-        if not rows:
-            return None, 0, images_processed
-
-        return self._render_grid(rows), current_height, images_processed
+            return self._render_grid(rows), current_height, images_processed
+        finally:
+            # Ensure cleanup happens even if there's an exception
+            if current_row is not None and current_row not in rows:
+                current_row.cleanup()
 
     def _render_grid(self, rows: list[GridRow]) -> PILImage:
         """
@@ -787,7 +829,7 @@ def get_shannon_entropy(image_data: Image.Image) -> float:
     return float(entropy)
 
 
-def get_average_image_color(image_data: Image.Image) -> tuple[int, ...]:
+def get_average_image_color(image_data: Image.Image) -> list[int]:
     """
     Calculate the average color of an image.
 
@@ -806,4 +848,4 @@ def get_average_image_color(image_data: Image.Image) -> tuple[int, ...]:
     # Calculate the average color for each channel
     average_color = np.mean(np_image, axis=(0, 1))
 
-    return tuple(map(int, average_color))
+    return list(map(int, average_color))

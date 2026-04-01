@@ -33,6 +33,7 @@ def load_config(config_path: str | Path) -> dict[str, Any]:
     Raises:
         FileNotFoundError: If the config file does not exist.
         yaml.scanner.ScannerError: If the config file is not valid YAML.
+        TypeError: If the configuration data is not a dictionary.
     """
     config_path = Path(config_path)
 
@@ -40,7 +41,8 @@ def load_config(config_path: str | Path) -> dict[str, Any]:
         data = yaml.safe_load(file)
 
         if not isinstance(data, dict):
-            raise TypeError("Configuration data must be a dictionary")
+            msg = "Configuration data must be a dictionary"
+            raise TypeError(msg)
 
     return data
 

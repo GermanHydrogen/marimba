@@ -25,12 +25,9 @@ Imports:
 Classes:
     - PipelineWrapper: Pipeline directory wrapper class for managing pipeline directories.
         - InvalidStructureError: Exception raised when the project file structure is invalid.
-        - InstallError: Exception raised when there is an error installing pipeline dependencies.
 """
 
 import logging
-import shutil
-import subprocess  # nosec
 import sys
 from importlib.util import module_from_spec, spec_from_file_location
 from pathlib import Path
@@ -38,6 +35,7 @@ from typing import Any
 
 from git import Repo
 
+from marimba.core.installer.pipeline_installer import PipelineInstaller
 from marimba.core.parallel.pipeline_loader import load_pipeline_instance
 from marimba.core.pipeline import BasePipeline
 from marimba.core.utils.config import load_config, save_config
@@ -53,11 +51,6 @@ class PipelineWrapper(LogMixin):
     class InvalidStructureError(Exception):
         """
         Raised when the project file structure is invalid.
-        """
-
-    class InstallError(Exception):
-        """
-        Raised when there is an error installing pipeline dependencies.
         """
 
     def __init__(self, root_dir: str | Path, *, dry_run: bool = False) -> None:
@@ -77,6 +70,8 @@ class PipelineWrapper(LogMixin):
 
         self._check_file_structure()
         self._setup_logging()
+
+        self._pipeline_installer = PipelineInstaller.create(self.repo_dir, self.logger)
 
     @property
     def root_dir(self) -> Path:
@@ -98,13 +93,6 @@ class PipelineWrapper(LogMixin):
         The path to the pipeline configuration file.
         """
         return self.root_dir / "pipeline.yml"
-
-    @property
-    def requirements_path(self) -> Path:
-        """
-        The path to the pipeline requirements file.
-        """
-        return self.repo_dir / "requirements.txt"
 
     @property
     def log_path(self) -> Path:
@@ -138,11 +126,17 @@ class PipelineWrapper(LogMixin):
 
         def check_dir_exists(path: Path) -> None:
             if not path.is_dir():
-                raise PipelineWrapper.InvalidStructureError(f'"{path}" does not exist or is not a directory')
+                msg = f'"{path}" does not exist or is not a directory'
+                raise PipelineWrapper.InvalidStructureError(
+                    msg,
+                )
 
         def check_file_exists(path: Path) -> None:
             if not path.is_file():
-                raise PipelineWrapper.InvalidStructureError(f'"{path}" does not exist or is not a file')
+                msg = f'"{path}" does not exist or is not a file'
+                raise PipelineWrapper.InvalidStructureError(
+                    msg,
+                )
 
         check_dir_exists(self.root_dir)
         check_dir_exists(self.repo_dir)
@@ -159,7 +153,13 @@ class PipelineWrapper(LogMixin):
         self.logger.addHandler(self._file_handler)
 
     @classmethod
-    def create(cls, root_dir: str | Path, url: str, *, dry_run: bool = False) -> "PipelineWrapper":
+    def create(
+        cls,
+        root_dir: str | Path,
+        url: str,
+        *,
+        dry_run: bool = False,
+    ) -> "PipelineWrapper":
         """
         Create a new pipeline directory from a remote git repository.
 
@@ -176,7 +176,10 @@ class PipelineWrapper(LogMixin):
 
         # Check that the root directory doesn't already exist
         if root_dir.exists():
-            raise FileExistsError(f'Pipeline root directory "{root_dir}" already exists')
+            msg = f'Pipeline root directory "{root_dir}" already exists'
+            raise FileExistsError(
+                msg,
+            )
 
         # Create the pipeline root directory
         root_dir.mkdir(parents=True)
@@ -256,11 +259,15 @@ class PipelineWrapper(LogMixin):
 
             # Ensure there is one result
             if len(pipeline_module_paths) == 0:
-                raise FileNotFoundError(f'No pipeline implementation found in "{self.repo_dir}"')
+                msg = f'No pipeline implementation found in "{self.repo_dir}"'
+                raise FileNotFoundError(
+                    msg,
+                )
 
             if len(pipeline_module_paths) > 1:
+                msg = f'Multiple pipeline implementations found in "{self.repo_dir}": {pipeline_module_paths}.'
                 raise FileNotFoundError(
-                    f'Multiple pipeline implementations found in "{self.repo_dir}": {pipeline_module_paths}.',
+                    msg,
                 )
             pipeline_module_path = pipeline_module_paths[0]
 
@@ -271,7 +278,10 @@ class PipelineWrapper(LogMixin):
             )
 
             if pipeline_module_spec is None:
-                raise ImportError(f"Could not load spec for {pipeline_module_name} from {pipeline_module_path}")
+                msg = f"Could not load spec for {pipeline_module_name} from {pipeline_module_path}"
+                raise ImportError(
+                    msg,
+                )
 
             # Create the pipeline module
             pipeline_module = module_from_spec(pipeline_module_spec)
@@ -281,7 +291,10 @@ class PipelineWrapper(LogMixin):
 
             # Ensure that loader is not None before executing the module
             if pipeline_module_spec.loader is None:
-                raise ImportError(f"Could not find loader for {pipeline_module_name} from {pipeline_module_path}")
+                msg = f"Could not find loader for {pipeline_module_name} from {pipeline_module_path}"
+                raise ImportError(
+                    msg,
+                )
 
             # Execute it
             pipeline_module_spec.loader.exec_module(pipeline_module)
@@ -303,6 +316,7 @@ class PipelineWrapper(LogMixin):
         project_logger: logging.Logger | None = None,
         *,
         allow_empty: bool = False,
+        accept_defaults: bool = False,
     ) -> dict[str, Any] | None:
         """
         Prompt for and process pipeline configuration.
@@ -317,6 +331,7 @@ class PipelineWrapper(LogMixin):
                 logger will be used. Defaults to None.
             allow_empty (bool): If True, allow empty pipeline repositories and return None instead of raising an error.
                 Defaults to False.
+            accept_defaults (bool): If True, automatically use default values without prompting. Defaults to False.
 
         Returns:
             dict[str, Any] | None: A dictionary containing the final pipeline configuration after merging existing
@@ -344,7 +359,7 @@ class PipelineWrapper(LogMixin):
 
         # Prompt from the remaining resolved schema
         if pipeline_config_schema:
-            additional_config = prompt_schema(pipeline_config_schema)
+            additional_config = prompt_schema(pipeline_config_schema, accept_defaults=accept_defaults)
             if additional_config:
                 pipeline_config.update(additional_config)
 
@@ -361,85 +376,11 @@ class PipelineWrapper(LogMixin):
         repo = Repo(self.repo_dir)
         repo.remotes.origin.pull()
 
-    def _handle_install_error(self, returncode: int) -> None:
-        """
-        Handle package installation errors by raising appropriate exceptions.
-
-        Args:
-            returncode: The return code from the installation process
-
-        Raises:
-            PipelineWrapper.InstallError: If installation fails
-        """
-        if returncode != 0:
-            raise PipelineWrapper.InstallError(
-                f"uv pip install had a non-zero return code: {returncode}",
-            )
-
-    def _validate_requirements(self, requirements_path: str) -> None:
-        """
-        Validate that the requirements file exists and is accessible.
-
-        Args:
-            requirements_path: Path to the requirements.txt file
-
-        Raises:
-            PipelineWrapper.InstallError: If requirements file is not found
-        """
-        if not Path(requirements_path).is_file():
-            raise PipelineWrapper.InstallError(f"Requirements file not found: {requirements_path}")
-
-    def _validate_uv(self) -> str:
-        """
-        Validate that uv is available in the system PATH.
-
-        Returns:
-            str: Path to uv executable
-
-        Raises:
-            PipelineWrapper.InstallError: If uv is not found
-        """
-        uv_path = shutil.which("uv")
-        if uv_path is None:
-            raise PipelineWrapper.InstallError("uv executable not found in PATH")
-        return uv_path
-
     def install(self) -> None:
         """
-        Install the pipeline dependencies as provided in a requirements.txt file, if present.
+        Installs pipeline dependencies.
 
-        Uses the uv package manager to install dependencies.
-
-        Raises:
-            PipelineWrapper.InstallError: If there is an error installing pipeline dependencies.
+        Returns:
+            None
         """
-        if not self.requirements_path.is_file():
-            self.logger.exception(f"Requirements file does not exist: {self.requirements_path}")
-            raise PipelineWrapper.InstallError(f"Requirements file does not exist: {self.requirements_path}")
-
-        self.logger.info(f"Started installing pipeline dependencies from {self.requirements_path}")
-        try:
-            # Ensure the requirements path is an absolute path and exists
-            requirements_path = str(self.requirements_path.absolute())
-            self._validate_requirements(requirements_path)
-
-            # Find and validate uv executable
-            uv_path = self._validate_uv()
-
-            with subprocess.Popen(  # nosec
-                [uv_path, "pip", "install", "-r", requirements_path],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-            ) as process:
-                output, error = process.communicate()
-                if output:
-                    self.logger.debug(output.decode("utf-8"))
-                if error:
-                    self.logger.warning(error.decode("utf-8"))
-
-                self._handle_install_error(process.returncode)
-
-            self.logger.info("Pipeline dependencies installed")
-        except Exception as e:
-            self.logger.exception(f"Error installing pipeline dependencies: {e}")
-            raise PipelineWrapper.InstallError from e
+        self._pipeline_installer()
