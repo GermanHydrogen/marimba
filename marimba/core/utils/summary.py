@@ -21,7 +21,7 @@ Classes:
 """
 
 import json
-import subprocess
+import subprocess  # nosec
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
