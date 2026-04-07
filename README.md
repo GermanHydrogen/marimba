@@ -281,7 +281,7 @@ integrating Marimba into your existing systems.
 Marimba is an open-source project, and we welcome feedback and contributions from the community. If you have ideas or 
 suggestions to improve Marimba, we encourage you to submit them using our 
 [GitHub issue tracker](https://github.com/csiro-fair/marimba/issues). For enhancements or new features, we encourage you 
-to fork the repository and submit a pull request. Please refer to the [Contributing Guide](docs/contributing.md) for 
+to fork the repository and submit a pull request. Please refer to the [Contributing Guide](.github/CONTRIBUTING.md) for 
 detailed guidelines on how to contribute.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
