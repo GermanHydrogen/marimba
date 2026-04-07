@@ -28,12 +28,23 @@ dependencies = [
     "requests>=2.32.4,<3",
     "psutil>=7.0.0,<8",
 ]
+keywords = [
+    "FAIR", "scientific-data", "image-processing", "marine-science",
+    "metadata", "iFDO", "dataset", "pipeline", "ocean-imaging",
+]
 classifiers = [
     "Development Status :: 5 - Production/Stable",
-    "Programming Language :: Python :: 3.12",
-    "Topic :: Scientific/Engineering :: Image Processing",
     "Intended Audience :: Science/Research",
-    "License :: OSI Approved :: MIT License",
+    "Natural Language :: English",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Scientific/Engineering :: Image Processing",
+    "Topic :: Scientific/Engineering :: Information Analysis",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "License :: Other/Proprietary License",
 ]
 
 [project.scripts]
@@ -43,6 +54,8 @@ marimba = "marimba.main:marimba_cli"
 "Homepage" = "https://github.com/csiro-fair/marimba"
 "Documentation" = "https://github.com/csiro-fair/marimba/tree/main/docs"
 "Bug Tracker" = "https://github.com/csiro-fair/marimba/issues"
+"Changelog" = "https://github.com/csiro-fair/marimba/blob/main/CHANGELOG.md"
+"Source" = "https://github.com/csiro-fair/marimba"
 
 [dependency-groups]
 dev = [
