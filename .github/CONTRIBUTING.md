@@ -31,9 +31,7 @@ contributions can be efficiently integrated into the project.
 
 ## Code of Conduct
 
-By participating in this project, you are expected to be respectful, considerate,
-and collaborative. We are committed to providing a welcoming and inclusive
-environment for all contributors.
+By participating in this project, you are expected to uphold our [Code of Conduct](CODE_OF_CONDUCT.md).
 
 ## Getting Started
 
