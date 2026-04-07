@@ -68,7 +68,7 @@ Follow these steps to set up your development environment:
 2. Install project dependencies:
    ```bash
    # Creates a virtual environment .venv and installs dependencies
-   uv sync --group dev --python 3.12
+   uv sync --dev --python 3.12
    ```
 
 3. Run commands:
