@@ -20,7 +20,7 @@ This guide provides a detailed walkthrough for setting up a development environm
 Start by cloning the Marimba repository to your local machine. Open a terminal and execute the following command:
 
 ```bash
-git clone https://bitbucket.csiro.au/scm/biaa/marimba.git
+git clone https://github.com/csiro-fair/marimba.git
 ```
 
 <p align="right">(<a href="#marimba-development-environment-setup-guide-top">back to top</a>)</p>
