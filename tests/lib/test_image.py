@@ -312,7 +312,11 @@ class TestImageUtilities:
         expected_path = output_dir / expected_filename
 
         # Act - Generate thumbnail with custom suffix
-        result_path = generate_image_thumbnail(test_image_rgb, output_dir, custom_suffix)
+        result_path = generate_image_thumbnail(
+            test_image_rgb,
+            output_dir,
+            custom_suffix,
+        )
 
         # Assert - Verify custom suffix is applied correctly
         assert result_path == expected_path, f"Should return expected path with custom suffix: {expected_path}"
@@ -327,7 +331,11 @@ class TestImageUtilities:
         mock_resize_fit.assert_called_once_with(test_image_rgb, 300, 300, expected_path)
 
     @pytest.mark.integration
-    def test_generate_image_thumbnail_existing(self, test_image_rgb: Path, tmp_path: Path) -> None:
+    def test_generate_image_thumbnail_existing(
+        self,
+        test_image_rgb: Path,
+        tmp_path: Path,
+    ) -> None:
         """Test that existing thumbnail is not regenerated unnecessarily.
 
         Verifies that generate_image_thumbnail skips regeneration when thumbnail already exists,
@@ -356,7 +364,11 @@ class TestImageUtilities:
         assert first_result_path.exists(), "Thumbnail file should exist after both calls"
 
     @pytest.mark.unit
-    def test_convert_to_jpeg_from_png(self, test_image_rgb: Path, tmp_path: Path) -> None:
+    def test_convert_to_jpeg_from_png(
+        self,
+        test_image_rgb: Path,
+        tmp_path: Path,
+    ) -> None:
         """Test converting PNG to JPEG format with proper image preservation.
 
         Verifies that the convert_to_jpeg function successfully converts a PNG image
@@ -387,7 +399,11 @@ class TestImageUtilities:
             assert converted_img.mode == "RGB", "JPEG images should be in RGB mode after conversion"
 
     @pytest.mark.unit
-    def test_convert_to_jpeg_existing_jpeg(self, test_image_jpeg: Path, tmp_path: Path) -> None:
+    def test_convert_to_jpeg_existing_jpeg(
+        self,
+        test_image_jpeg: Path,
+        tmp_path: Path,
+    ) -> None:
         """Test converting existing JPEG copies the file without re-encoding.
 
         Verifies that when convert_to_jpeg is called on a file that is already
@@ -442,7 +458,11 @@ class TestImageUtilities:
             ), f"Image dimensions should be preserved as {original_dimensions}, got {converted_img.size}"
 
     @pytest.mark.integration
-    def test_convert_to_jpeg_custom_quality(self, test_image_rgb: Path, tmp_path: Path) -> None:
+    def test_convert_to_jpeg_custom_quality(
+        self,
+        test_image_rgb: Path,
+        tmp_path: Path,
+    ) -> None:
         """Test JPEG conversion with custom quality setting.
 
         Verifies that the convert_to_jpeg function properly applies a custom quality
@@ -460,7 +480,11 @@ class TestImageUtilities:
             original_size = original_img.size
 
         # Act - Convert with custom quality setting
-        result_path = convert_to_jpeg(test_image_rgb, quality=50, destination=output_path)
+        result_path = convert_to_jpeg(
+            test_image_rgb,
+            quality=50,
+            destination=output_path,
+        )
 
         # Assert - Verify conversion results and file properties
         assert result_path == output_path, "Function should return the specified destination path"
@@ -479,7 +503,10 @@ class TestImageUtilities:
         assert file_size < 1024 * 1024, "File size should be reasonable for test image"
 
     @pytest.mark.unit
-    def test_convert_to_jpeg_creates_jpeg_version_default_destination(self, test_image_rgb: Path) -> None:
+    def test_convert_to_jpeg_creates_jpeg_version_default_destination(
+        self,
+        test_image_rgb: Path,
+    ) -> None:
         """Test convert_to_jpeg creates JPEG version when no destination is specified.
 
         Verifies that when convert_to_jpeg is called without a destination parameter,
@@ -527,7 +554,11 @@ class TestImageUtilities:
         assert result_path.parent == original_path.parent, "Converted file should be in same directory as original"
 
     @pytest.mark.integration
-    def test_resize_fit_no_resize_needed(self, test_image_rgb: Path, tmp_path: Path) -> None:
+    def test_resize_fit_no_resize_needed(
+        self,
+        test_image_rgb: Path,
+        tmp_path: Path,
+    ) -> None:
         """Test resize_fit preserves original dimensions when image is already within bounds.
 
         Verifies that the resize_fit function correctly identifies when an image is already
@@ -965,7 +996,10 @@ class TestImageUtilities:
             assert original_check.size == original_size, "Original image dimensions should remain unchanged"
 
     @pytest.mark.unit
-    def test_scale_overwrites_original_when_no_destination_specified(self, test_image_rgb: Path) -> None:
+    def test_scale_overwrites_original_when_no_destination_specified(
+        self,
+        test_image_rgb: Path,
+    ) -> None:
         """Test scale function overwrites original image file when no destination path provided.
 
         Verifies that the scale function modifies the original image file in-place when
@@ -1065,7 +1099,11 @@ class TestImageUtilities:
                 ), "Rotated image should have different pixel at same coordinates, confirming rotation occurred"
 
     @pytest.mark.unit
-    def test_rotate_clockwise_expand_increases_canvas_size(self, test_image_rgb: Path, tmp_path: Path) -> None:
+    def test_rotate_clockwise_expand_increases_canvas_size(
+        self,
+        test_image_rgb: Path,
+        tmp_path: Path,
+    ) -> None:
         """Test clockwise rotation with expand parameter increases canvas dimensions.
 
         Verifies that the rotate_clockwise function with expand=True creates a larger
@@ -1085,7 +1123,12 @@ class TestImageUtilities:
             original_width, original_height = original_size
 
         # Act - Perform clockwise rotation with expand=True
-        rotate_clockwise(test_image_rgb, rotation_degrees, expand=True, destination=output_path)
+        rotate_clockwise(
+            test_image_rgb,
+            rotation_degrees,
+            expand=True,
+            destination=output_path,
+        )
 
         # Assert - Verify output file creation and expanded dimensions
         assert output_path.exists(), "Output file should be created at specified destination"
@@ -1200,7 +1243,11 @@ class TestImageUtilities:
             assert len(rotated_data) == len(original_data), "Rotated image should have same number of pixels"
 
     @pytest.mark.unit
-    def test_rotate_clockwise_zero_degrees_preserves_image(self, test_image_rgb: Path, tmp_path: Path) -> None:
+    def test_rotate_clockwise_zero_degrees_preserves_image(
+        self,
+        test_image_rgb: Path,
+        tmp_path: Path,
+    ) -> None:
         """Test rotate_clockwise with zero degrees preserves original image unchanged.
 
         Verifies that rotating an image by 0 degrees results in an identical image
@@ -1279,7 +1326,11 @@ class TestImageUtilities:
             )
 
     @pytest.mark.unit
-    def test_rotate_clockwise_large_degree_values_handled_correctly(self, test_image_rgb: Path, tmp_path: Path) -> None:
+    def test_rotate_clockwise_large_degree_values_handled_correctly(
+        self,
+        test_image_rgb: Path,
+        tmp_path: Path,
+    ) -> None:
         """Test rotate_clockwise handles large degree values gracefully.
 
         Verifies that the function can process large degree values (>360°) without errors
@@ -1395,7 +1446,11 @@ class TestImageUtilities:
 
     @pytest.mark.unit
     @pytest.mark.parametrize("invalid_turns", [0, 4, -1, 5])
-    def test_turn_clockwise_invalid_turns_raises_value_error(self, tmp_path: Path, invalid_turns: int) -> None:
+    def test_turn_clockwise_invalid_turns_raises_value_error(
+        self,
+        tmp_path: Path,
+        invalid_turns: int,
+    ) -> None:
         """Test turn_clockwise raises ValueError for invalid turns parameter values.
 
         Verifies that the turn_clockwise function properly validates the turns parameter
@@ -1412,7 +1467,10 @@ class TestImageUtilities:
         assert test_image.exists(), "Test image should exist for validation testing"
 
         # Act & Assert - Verify ValueError is raised with exact expected message
-        with pytest.raises(ValueError, match="Turns must be an integer between 1 and 3 inclusive"):
+        with pytest.raises(
+            ValueError,
+            match="Turns must be an integer between 1 and 3 inclusive",
+        ):
             turn_clockwise(test_image, invalid_turns)
 
         # Verify the original file is unchanged after validation error
@@ -1431,7 +1489,11 @@ class TestImageUtilities:
         4. The image format and quality are preserved during flipping
         """
         # Arrange - Create a test image with distinguishable top and bottom halves
-        test_img = Image.new("RGB", (100, 80), color=(255, 255, 255))  # White background
+        test_img = Image.new(
+            "RGB",
+            (100, 80),
+            color=(255, 255, 255),
+        )  # White background
         # Draw red rectangle on top half and blue rectangle on bottom half
         draw = ImageDraw.Draw(test_img)
         draw.rectangle([0, 0, 99, 39], fill=(255, 0, 0))  # Red top half
@@ -1463,8 +1525,12 @@ class TestImageUtilities:
 
             # Verify the vertical flip actually occurred by checking pixel positions
             # After vertical flip, what was on the top should now be on the bottom
-            flipped_top_pixel = flipped_img.getpixel((50, 20))  # Should now be blue (was bottom)
-            flipped_bottom_pixel = flipped_img.getpixel((50, 60))  # Should now be red (was top)
+            flipped_top_pixel = flipped_img.getpixel(
+                (50, 20),
+            )  # Should now be blue (was bottom)
+            flipped_bottom_pixel = flipped_img.getpixel(
+                (50, 60),
+            )  # Should now be red (was top)
 
             assert flipped_top_pixel == bottom_pixel, "Top of flipped image should match bottom of original"
             assert flipped_bottom_pixel == top_pixel, "Bottom of flipped image should match top of original"
@@ -1495,8 +1561,12 @@ class TestImageUtilities:
         # Capture original image properties before modification
         with Image.open(test_image_path) as original_img:
             original_size = original_img.size
-            original_top_pixel = original_img.getpixel((50, 20))  # Red pixel from top half
-            original_bottom_pixel = original_img.getpixel((50, 60))  # Blue pixel from bottom half
+            original_top_pixel = original_img.getpixel(
+                (50, 20),
+            )  # Red pixel from top half
+            original_bottom_pixel = original_img.getpixel(
+                (50, 60),
+            )  # Blue pixel from bottom half
 
         # Act - Flip the image without specifying a destination (overwrite original)
         flip_vertical(test_image_path)
@@ -1513,8 +1583,12 @@ class TestImageUtilities:
             ), f"Flipped image format '{flipped_img.format}' should be valid PNG or JPEG"
 
             # Verify the vertical flip occurred by checking pixel positions are swapped
-            flipped_top_pixel = flipped_img.getpixel((50, 20))  # Should now be blue (was bottom)
-            flipped_bottom_pixel = flipped_img.getpixel((50, 60))  # Should now be red (was top)
+            flipped_top_pixel = flipped_img.getpixel(
+                (50, 20),
+            )  # Should now be blue (was bottom)
+            flipped_bottom_pixel = flipped_img.getpixel(
+                (50, 60),
+            )  # Should now be red (was top)
 
             assert (
                 flipped_top_pixel == original_bottom_pixel
@@ -1542,7 +1616,11 @@ class TestImageUtilities:
         4. The image format and quality are preserved during flipping
         """
         # Arrange - Create a test image with distinguishable left and right sides
-        test_img = Image.new("RGB", (100, 80), color=(255, 255, 255))  # White background
+        test_img = Image.new(
+            "RGB",
+            (100, 80),
+            color=(255, 255, 255),
+        )  # White background
         # Draw red rectangle on left side and blue rectangle on right side
         draw = ImageDraw.Draw(test_img)
         draw.rectangle([0, 0, 49, 79], fill=(255, 0, 0))  # Red left half
@@ -1574,8 +1652,12 @@ class TestImageUtilities:
 
             # Verify the horizontal flip actually occurred by checking pixel positions
             # After horizontal flip, what was on the left should now be on the right
-            flipped_left_pixel = flipped_img.getpixel((10, 40))  # Should now be blue (was right)
-            flipped_right_pixel = flipped_img.getpixel((90, 40))  # Should now be red (was left)
+            flipped_left_pixel = flipped_img.getpixel(
+                (10, 40),
+            )  # Should now be blue (was right)
+            flipped_right_pixel = flipped_img.getpixel(
+                (90, 40),
+            )  # Should now be red (was left)
 
             assert flipped_left_pixel == right_pixel, "Left side of flipped image should match right side of original"
             assert flipped_right_pixel == left_pixel, "Right side of flipped image should match left side of original"
@@ -1678,7 +1760,11 @@ class TestImageUtilities:
         assert isinstance(result_default, bool), "Function should return a boolean value"
 
     @pytest.mark.unit
-    def test_is_blurry_invalid_image(self, mocker: pytest_mock.MockerFixture, test_image_rgb: Path) -> None:
+    def test_is_blurry_invalid_image(
+        self,
+        mocker: pytest_mock.MockerFixture,
+        test_image_rgb: Path,
+    ) -> None:
         """Test blur detection with invalid image path raises ValueError.
 
         Verifies that the is_blurry function properly handles cases where the image
@@ -1690,7 +1776,10 @@ class TestImageUtilities:
         mock_imread.return_value = None
 
         # Act & Assert - Verify ValueError is raised with correct message
-        with pytest.raises(ValueError, match=f"Could not load the image from the path: {test_image_rgb}"):
+        with pytest.raises(
+            ValueError,
+            match=f"Could not load the image from the path: {test_image_rgb}",
+        ):
             is_blurry(test_image_rgb)
 
         # Assert - Verify cv2.imread was called with correct path
@@ -1731,7 +1820,11 @@ class TestImageUtilities:
         ), f"Image should be blurry with threshold {high_threshold} (variance: {actual_variance})"
 
     @pytest.mark.unit
-    def test_crop_creates_correctly_sized_output(self, test_image_rgb: Path, tmp_path: Path) -> None:
+    def test_crop_creates_correctly_sized_output(
+        self,
+        test_image_rgb: Path,
+        tmp_path: Path,
+    ) -> None:
         """Test crop function creates output with specified dimensions and position.
 
         Verifies that the crop function correctly extracts a rectangular region from
@@ -1777,7 +1870,11 @@ class TestImageUtilities:
         a destination parameter, maintaining file integrity and correct cropping behavior.
         """
         # Arrange - Create a test image with distinguishable regions for cropping verification
-        test_img = Image.new("RGB", (100, 80), color=(255, 255, 255))  # White background
+        test_img = Image.new(
+            "RGB",
+            (100, 80),
+            color=(255, 255, 255),
+        )  # White background
         draw = ImageDraw.Draw(test_img)
         # Create distinct colored regions to verify correct cropping
         draw.rectangle([0, 0, 49, 39], fill=(255, 0, 0))  # Red top-left
@@ -1796,7 +1893,9 @@ class TestImageUtilities:
         with Image.open(test_image_path) as original_img:
             original_size = original_img.size
             # Sample pixel from the region we'll crop (green top-right area)
-            expected_crop_pixel = original_img.getpixel((75, 20))  # Should be green (0, 255, 0)
+            expected_crop_pixel = original_img.getpixel(
+                (75, 20),
+            )  # Should be green (0, 255, 0)
             assert expected_crop_pixel == (0, 255, 0), "Setup: expected crop region should be green"
 
         # Act - Crop the image without specifying a destination (overwrite original)
@@ -1867,7 +1966,12 @@ class TestImageUtilities:
         mock_create_clahe.return_value = mock_clahe_obj
 
         # Act - Apply CLAHE with custom parameters
-        apply_clahe(test_image_rgb, clip_limit=3.0, tile_grid_size=(16, 16), destination=output_path)
+        apply_clahe(
+            test_image_rgb,
+            clip_limit=3.0,
+            tile_grid_size=(16, 16),
+            destination=output_path,
+        )
 
         # Assert - Verify OpenCV functions called with correct parameters and sequence
         mock_imread.assert_called_once_with(str(test_image_rgb), 0)
@@ -1900,14 +2004,21 @@ class TestImageUtilities:
         mock_imread = mocker.patch("marimba.lib.image.cv2.imread", return_value=None)
 
         # Act & Assert - Verify ValueError is raised with correct message
-        with pytest.raises(ValueError, match=f"Could not read image from {test_image_path}"):
+        with pytest.raises(
+            ValueError,
+            match=f"Could not read image from {test_image_path}",
+        ):
             apply_clahe(test_image_path)
 
         # Assert that cv2.imread was called with correct parameters
         mock_imread.assert_called_once_with(str(test_image_path), 0)
 
     @pytest.mark.unit
-    def test_apply_clahe_default_parameters(self, mocker: pytest_mock.MockerFixture, test_image_rgb: Path) -> None:
+    def test_apply_clahe_default_parameters(
+        self,
+        mocker: pytest_mock.MockerFixture,
+        test_image_rgb: Path,
+    ) -> None:
         """Test apply_clahe with default parameters and overwrite behavior.
 
         Verifies that when no custom parameters are provided, apply_clahe uses
@@ -2080,7 +2191,10 @@ class TestImageUtilities:
         output_destination = tmp_path / "output.png"
 
         # Act & Assert
-        with pytest.raises(ValueError, match=f"Could not read image from {nonexistent_image_path}"):
+        with pytest.raises(
+            ValueError,
+            match=f"Could not read image from {nonexistent_image_path}",
+        ):
             gaussian_blur(nonexistent_image_path, destination=output_destination)
 
     @pytest.mark.integration
@@ -2175,11 +2289,17 @@ class TestImageUtilities:
         nonexistent_image_path = tmp_path / "nonexistent.png"
 
         # Act & Assert
-        with pytest.raises(ValueError, match=f"Could not read image from {nonexistent_image_path}"):
+        with pytest.raises(
+            ValueError,
+            match=f"Could not read image from {nonexistent_image_path}",
+        ):
             sharpen(nonexistent_image_path)
 
     @pytest.mark.unit
-    def test_get_width_height_returns_correct_dimensions(self, test_image_rgb: Path) -> None:
+    def test_get_width_height_returns_correct_dimensions(
+        self,
+        test_image_rgb: Path,
+    ) -> None:
         """Test get_width_height returns correct width and height tuple for valid image.
 
         Verifies that the get_width_height function correctly extracts and returns
@@ -2332,8 +2452,9 @@ class TestImageUtilities:
 
         # Assert - Verify exact entropy value for uniform distribution of 100 values
         # Expected entropy = -∑(p_i * log2(p_i)) where p_i = 1/100 for all i
-        # = -100 * (1/100) * log2(1/100) = log2(100) ≈ 6.644 bits
-        expected_entropy = np.log2(image_size)
+        # = -100 * (1/100) * log2(1/100) = log2(100) ≈ 6.6439 bit
+        # Expected normalized entropy = 6.6439 bit / 8 bit ≈ 0.830482
+        expected_entropy = 0.830482
         tolerance = 1e-6  # Appropriate tolerance for floating point precision
         assert abs(entropy - expected_entropy) < tolerance, (
             f"Expected entropy {expected_entropy:.6f} for uniform distribution of {image_size} values, "
@@ -2352,7 +2473,7 @@ class TestImageUtilities:
         rng = np.random.default_rng(42)  # Ensure reproducible test results
         noise_array = rng.integers(0, 256, size=(100, 100), dtype=np.uint8)
         noise_image = Image.fromarray(noise_array)
-        expected_entropy = 7.982  # Empirically determined value for this specific random seed and size
+        expected_entropy = 0.998  # Empirically determined value for this specific random seed and size
 
         # Act - Calculate Shannon entropy for noise image
         entropy = get_shannon_entropy(noise_image)
@@ -2362,9 +2483,7 @@ class TestImageUtilities:
         assert (
             abs(entropy - expected_entropy) < 0.01
         ), f"Random noise entropy should be approximately {expected_entropy:.3f} bits, got {entropy:.3f}"
-        assert (
-            entropy <= 8.0
-        ), f"Entropy cannot exceed theoretical maximum of 8.0 bits for 8-bit grayscale, got {entropy:.3f}"
+        assert entropy <= 1.0, f"Normaized entropy cannot exceed theoretical maximum of 1.0, got {entropy:.3f}"
 
     @pytest.mark.unit
     def test_get_shannon_entropy_rgb_to_grayscale_conversion(self) -> None:
@@ -2409,7 +2528,10 @@ class TestImageUtilities:
         )
 
     @pytest.mark.unit
-    def test_get_average_image_color_solid_rgb_image(self, mocker: pytest_mock.MockerFixture) -> None:
+    def test_get_average_image_color_solid_rgb_image(
+        self,
+        mocker: pytest_mock.MockerFixture,
+    ) -> None:
         """Test average color calculation for solid RGB image returns exact color values.
 
         Verifies that the get_average_image_color function correctly calculates the
@@ -2422,7 +2544,11 @@ class TestImageUtilities:
         """
         # Arrange - Create a solid color RGB image with known color values
         expected_red, expected_green, expected_blue = 100, 150, 200
-        test_image = Image.new("RGB", (100, 100), color=(expected_red, expected_green, expected_blue))
+        test_image = Image.new(
+            "RGB",
+            (100, 100),
+            color=(expected_red, expected_green, expected_blue),
+        )
         expected_color = [expected_red, expected_green, expected_blue]
 
         # Act - Calculate the average color of the solid image
@@ -2454,7 +2580,11 @@ class TestImageUtilities:
         expected_intensity = 128
         grayscale_image = Image.new("L", (100, 100), color=expected_intensity)
         rgb_converted_image = grayscale_image.convert("RGB")
-        expected_rgb_color = [expected_intensity, expected_intensity, expected_intensity]
+        expected_rgb_color = [
+            expected_intensity,
+            expected_intensity,
+            expected_intensity,
+        ]
 
         # Act - Calculate the average color of the converted grayscale image
         actual_average_color = get_average_image_color(rgb_converted_image)
@@ -2509,7 +2639,10 @@ class TestGridClasses:
         return images
 
     @pytest.mark.unit
-    def test_grid_dimensions_initialization_with_valid_parameters(self, grid_dimensions: GridDimensions) -> None:
+    def test_grid_dimensions_initialization_with_valid_parameters(
+        self,
+        grid_dimensions: GridDimensions,
+    ) -> None:
         """Test GridDimensions dataclass stores configuration parameters correctly.
 
         Verifies that the GridDimensions dataclass correctly initializes and stores
@@ -2602,7 +2735,11 @@ class TestGridClasses:
         # Arrange - Create test instances with same and different values
         dimensions_1 = GridDimensions(columns=2, column_width=300, max_height=1000)
         dimensions_2 = GridDimensions(columns=2, column_width=300, max_height=1000)
-        dimensions_different = GridDimensions(columns=3, column_width=400, max_height=1200)
+        dimensions_different = GridDimensions(
+            columns=3,
+            column_width=400,
+            max_height=1200,
+        )
 
         # Act - Get string representation
         str_repr = str(dimensions_1)
@@ -2618,7 +2755,10 @@ class TestGridClasses:
         assert "max_height=1000" in str_repr, "String representation should include max_height value"
 
     @pytest.mark.unit
-    def test_grid_row_init_creates_empty_row(self, grid_dimensions: GridDimensions) -> None:
+    def test_grid_row_init_creates_empty_row(
+        self,
+        grid_dimensions: GridDimensions,
+    ) -> None:
         """Test GridRow initialization creates empty row with correct default state.
 
         Verifies that GridRow constructor correctly initializes with empty images list,
@@ -2659,7 +2799,9 @@ class TestGridClasses:
 
         # Calculate expected scaled dimensions based on column width (200px)
         expected_scale_factor = grid_dimensions.column_width / original_width  # 200/300 = 0.667
-        expected_scaled_height = int(original_height * expected_scale_factor)  # int(200 * 0.667) = 133
+        expected_scaled_height = int(
+            original_height * expected_scale_factor,
+        )  # int(200 * 0.667) = 133
 
         # Verify preconditions
         assert len(row.images) == 0, "Row should start empty"
@@ -2706,7 +2848,7 @@ class TestGridClasses:
         for i in range(expected_capacity):
             img = Image.new("RGB", (300, 200), color=(255, 0, 0))
             success = row.add_image(img)
-            assert success is True, f"Setup: should successfully add image {i+1} to row"
+            assert success is True, f"Setup: should successfully add image {i + 1} to row"
 
         # Capture row state after filling to capacity
         initial_image_count = len(row.images)
@@ -2736,11 +2878,11 @@ class TestGridClasses:
 
         # Verify the row maintains its original images and structure
         for i, (stored_image, width, height) in enumerate(row.images):
-            assert stored_image is not None, f"Image {i+1} should remain valid after failed addition"
+            assert stored_image is not None, f"Image {i + 1} should remain valid after failed addition"
             assert (
                 width == grid_dimensions.column_width
-            ), f"Image {i+1} width should remain {grid_dimensions.column_width}px"
-            assert height > 0, f"Image {i+1} height should remain positive"
+            ), f"Image {i + 1} width should remain {grid_dimensions.column_width}px"
+            assert height > 0, f"Image {i + 1} height should remain positive"
 
     @pytest.mark.unit
     def test_grid_row_cleanup_closes_all_stored_images(
@@ -2826,7 +2968,11 @@ class TestGridClasses:
         )
 
     @pytest.mark.unit
-    def test_grid_image_processor_process_single_image_success(self, grid_dimensions, test_images):
+    def test_grid_image_processor_process_single_image_success(
+        self,
+        grid_dimensions,
+        test_images,
+    ):
         """Test processing single valid image successfully adds image to row.
 
         Verifies that the process_single_image method correctly processes a valid
@@ -2863,7 +3009,11 @@ class TestGridClasses:
         assert processed_image.size == (width, height), "PIL Image size should match the stored dimensions"
 
     @pytest.mark.unit
-    def test_grid_image_processor_process_invalid_image_returns_false(self, grid_dimensions, tmp_path):
+    def test_grid_image_processor_process_invalid_image_returns_false(
+        self,
+        grid_dimensions,
+        tmp_path,
+    ):
         """Test processing invalid image path returns False without modifying row.
 
         Verifies that the GridImageProcessor correctly handles invalid image paths
@@ -2917,7 +3067,7 @@ class TestGridClasses:
         # Fill the row to maximum capacity (3 columns in grid_dimensions fixture)
         for i in range(grid_dimensions.columns):
             success = processor.process_single_image(test_images[i], row)
-            assert success is True, f"Setup: should successfully add image {i+1} to row"
+            assert success is True, f"Setup: should successfully add image {i + 1} to row"
 
         # Verify preconditions - row is at capacity with expected state
         initial_image_count = len(row.images)
@@ -2959,11 +3109,15 @@ class TestGridClasses:
         # Calculate expected height based on grid configuration
         # Each test image is 300x200, scaled to column_width=200, so height becomes:
         # scale_factor = 200/300 = 0.6666..., new_height = int(200 * 0.6666...) = 133px
-        expected_scaled_height = int(200 * (grid_dimensions.column_width / 300))  # 133px per image
+        expected_scaled_height = int(
+            200 * (grid_dimensions.column_width / 300),
+        )  # 133px per image
         expected_grid_height = expected_scaled_height  # All 3 images fit in 1 row (3 columns)
 
         # Act - Create grid from the test images
-        grid_image, actual_height, actual_processed = processor.create_grid(input_images)
+        grid_image, actual_height, actual_processed = processor.create_grid(
+            input_images,
+        )
 
         # Assert - Verify grid creation was successful with expected results
         assert grid_image is not None, "Grid image should be created when valid images are provided"
@@ -2989,7 +3143,10 @@ class TestGridClasses:
         assert grid_image.format in (None, "JPEG", "PNG"), "Grid image should have valid format"
 
     @pytest.mark.unit
-    def test_grid_image_processor_create_grid_empty(self, grid_dimensions: GridDimensions) -> None:
+    def test_grid_image_processor_create_grid_empty(
+        self,
+        grid_dimensions: GridDimensions,
+    ) -> None:
         """Test creating grid with empty image paths list returns proper null values.
 
         Verifies that the GridImageProcessor correctly handles the edge case when
@@ -3032,13 +3189,19 @@ class TestGridClasses:
         # Test images are 300x200, when scaled to column_width=200 they become 200x133
         # Setting max_height=10 ensures even a single image row (height=133) exceeds the limit
         max_height_too_small = 10
-        small_dimensions = GridDimensions(columns=3, column_width=200, max_height=max_height_too_small)
+        small_dimensions = GridDimensions(
+            columns=3,
+            column_width=200,
+            max_height=max_height_too_small,
+        )
         processor = GridImageProcessor(small_dimensions)
         single_image_list = test_images[:1]
         expected_processed_count = 1  # Should still process the single image
 
         # Act - Attempt to create grid with insufficient height allowance
-        grid_image, actual_height, actual_processed_count = processor.create_grid(single_image_list)
+        grid_image, actual_height, actual_processed_count = processor.create_grid(
+            single_image_list,
+        )
 
         # Assert - Verify max height constraint prevents grid creation but allows processing
         assert grid_image is None, "No grid image should be created when max_height constraint cannot be satisfied"

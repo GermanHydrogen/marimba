@@ -36,7 +36,7 @@ Functions:
     - sharpen: Sharpen an image.
     - get_width_height: Get the dimensions of an image.
     - create_grid_image: Create a grid image from multiple images.
-    - get_shannon_entropy: Calculate the Shannon entropy of an image.
+    - get_shannon_entropy: Calculate the normalized Shannon entropy of an image.
     - get_average_image_color: Calculate the average color of an image.
 """
 
@@ -625,7 +625,10 @@ class GridImageProcessor:
         try:
             while images_processed < len(paths_subset):
                 path = paths_subset[images_processed]
-                if current_row is None or not self.process_single_image(path, current_row):
+                if current_row is None or not self.process_single_image(
+                    path,
+                    current_row,
+                ):
                     images_processed += 1
                     continue
 
@@ -801,9 +804,13 @@ def create_grid_image(
     return created_files
 
 
+# Maxiumum entropy for image mode "L" (8 bit)
+_MAX_ENTROPY = 8.0
+
+
 def get_shannon_entropy(image_data: Image.Image) -> float:
     """
-    Calculate the Shannon entropy of an image file.
+    Calculate the normalized Shannon entropy of an image file.
 
     Args:
         image_data: The loaded image data.
@@ -826,7 +833,10 @@ def get_shannon_entropy(image_data: Image.Image) -> float:
     # Calculate Shannon entropy
     entropy = -np.sum(probabilities * np.log2(probabilities))
 
-    return float(entropy)
+    # Calculate normalized entropy
+    normalized_entropy = entropy / _MAX_ENTROPY
+
+    return float(normalized_entropy)
 
 
 def get_average_image_color(image_data: Image.Image) -> list[int]:
